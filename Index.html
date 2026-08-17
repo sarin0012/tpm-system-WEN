@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TPM Management System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#080c18;--surface:#0f1629;--surface2:#162036;--surface3:#1e2d4a;
+  --border:rgba(99,130,255,.12);--border2:rgba(99,130,255,.2);
+  --primary:#6366f1;--primary-g:linear-gradient(135deg,#6366f1,#8b5cf6);--primary-glow:rgba(99,102,241,.25);
+  --success:#10b981;--success-g:linear-gradient(135deg,#10b981,#059669);
+  --warning:#f59e0b;--warning-g:linear-gradient(135deg,#f59e0b,#d97706);
+  --danger:#ef4444;--danger-g:linear-gradient(135deg,#ef4444,#dc2626);
+  --text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#475569;
+  --sidebar:240px;--header:64px;--r:14px;--r-sm:8px;
+  --shadow:0 8px 32px rgba(0,0,0,.5);--glass:rgba(255,255,255,.03);--glass-border:rgba(255,255,255,.08);
+  --transition:.2s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{font-size:14px;}
+body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px;}
+
+/* SIDEBAR */
+#sidebar{width:var(--sidebar);flex-shrink:0;height:100vh;position:fixed;top:0;left:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--primary-g);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px var(--primary-glow);}
+.logo-text{font-weight:700;font-size:13px;line-height:1.2;}
+.logo-text span{display:block;color:var(--text-muted);font-size:10px;font-weight:400;margin-top:1px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 10px;}
+.nav-section{font-size:10px;font-weight:600;color:var(--text-faint);letter-spacing:.1em;padding:16px 10px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all var(--transition);color:var(--text-muted);font-size:13px;font-weight:500;margin-bottom:2px;border:1px solid transparent;}
+.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border);}
+.nav-item.active{background:var(--primary-glow);color:#a5b4fc;border-color:var(--border2);}
+.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.nav-item.active .icon{background:var(--primary-g);box-shadow:0 0 12px var(--primary-glow);}
+.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;min-width:18px;text-align:center;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px;background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--r-sm);}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary-g);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+.user-info{flex:1;min-width:0;}
+.user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:10px;color:var(--text-muted);}
+
+/* MAIN */
+#main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+#header{height:var(--header);border-bottom:1px solid var(--border);background:rgba(8,12,24,.8);backdrop-filter:blur(20px);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;flex-shrink:0;}
+#header h1{font-size:18px;font-weight:700;flex:1;}
+#header h1 span{color:var(--text-muted);font-size:13px;font-weight:400;margin-left:8px;}
+#content{flex:1;overflow-y:auto;padding:24px;}
+.page{display:none;}.page.active{display:block;}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:600;}
+
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;position:relative;overflow:hidden;transition:all var(--transition);cursor:pointer;}
+.stat-card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 8px 24px rgba(99,102,241,.15);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--primary-g);}
+.stat-card.success::before{background:var(--success-g);}.stat-card.warning::before{background:var(--warning-g);}.stat-card.danger::before{background:var(--danger-g);}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:500;margin-bottom:10px;}
+.stat-value{font-size:32px;font-weight:700;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text-muted);margin-top:6px;}
+.stat-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.08;}
+
+/* TABLES */
+.table-wrapper{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
+tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:none;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
+.badge.active,.badge.done,.badge.closed{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
+.badge.planned,.badge.in-progress{background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);}
+.badge.overdue,.badge.critical,.badge.open{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
+.badge.warning,.badge.pending,.badge.high{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+.badge.medium{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+.badge.low{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.3);}
+.badge.mold{background:rgba(139,92,246,.15);color:#c4b5fd;border:1px solid rgba(139,92,246,.3);}
+.badge.machine{background:rgba(59,130,246,.15);color:#93c5fd;border:1px solid rgba(59,130,246,.3);}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all var(--transition);white-space:nowrap;}
+.btn-primary{background:var(--primary-g);color:#fff;box-shadow:0 0 20px var(--primary-glow);}.btn-primary:hover{opacity:.9;transform:translateY(-1px);}
+.btn-success{background:var(--success-g);color:#fff;}.btn-success:hover{opacity:.9;}
+.btn-danger{background:var(--danger-g);color:#fff;}.btn-danger:hover{opacity:.9;}
+.btn-outline{background:transparent;color:var(--text-muted);border:1px solid var(--border2);}.btn-outline:hover{background:var(--surface2);color:var(--text);}
+.btn-ghost{background:transparent;color:var(--text-muted);border:none;padding:6px 10px;}.btn-ghost:hover{background:var(--glass);color:var(--text);}
+.btn-sm{padding:5px 10px;font-size:12px;}.btn-lg{padding:12px 24px;font-size:15px;}
+
+/* FORMS */
+.form-group{margin-bottom:16px;}
+.form-row{display:grid;gap:16px;}.form-row.col-2{grid-template-columns:1fr 1fr;}.form-row.col-3{grid-template-columns:1fr 1fr 1fr;}
+label{display:block;font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em;}
+input,select,textarea{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:var(--r-sm);font-size:13px;font-family:inherit;transition:border-color var(--transition);}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);}
+select option{background:var(--surface2);}textarea{resize:vertical;min-height:80px;}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:modalIn .2s ease;}
+.modal.modal-lg{max-width:900px;}.modal.modal-sm{max-width:480px;}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)translateY(10px);}to{opacity:1;transform:none;}}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:16px;font-weight:700;}
+.modal-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px;border-radius:6px;transition:all var(--transition);}.modal-close:hover{background:var(--surface2);color:var(--text);}
+.modal-body{padding:24px;}.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+.search-input{flex:1;min-width:200px;max-width:320px;}
+
+/* PHOTOS */
+.photo-upload-area{border:2px dashed var(--border2);border-radius:var(--r);padding:24px;text-align:center;cursor:pointer;transition:all var(--transition);}
+.photo-upload-area:hover{border-color:var(--primary);background:var(--primary-glow);}
+.photo-preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-top:10px;}
+.photo-preview-item{position:relative;border-radius:var(--r-sm);overflow:hidden;aspect-ratio:1;background:var(--surface2);cursor:zoom-in;}
+.photo-preview-item img{width:100%;height:100%;object-fit:cover;transition:transform .2s;}
+.photo-preview-item:hover img{transform:scale(1.05);}
+.photo-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* LIGHTBOX */
+#lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;align-items:center;justify-content:center;}
+#lightbox-overlay.open{display:flex;}
+#lightbox-overlay img{max-width:90vw;max-height:88vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.8);}
+#lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2001;}
+#lightbox-close:hover{background:rgba(255,255,255,.3);}
+#lightbox-drive-link{position:fixed;top:20px;right:76px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;z-index:2001;}
+#lightbox-drive-link:hover{background:rgba(255,255,255,.3);}
+
+/* CALENDAR */
+.calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-header-cell{text-align:center;font-size:11px;font-weight:600;color:var(--text-muted);padding:8px 0;text-transform:uppercase;}
+.cal-day{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);min-height:90px;padding:6px;cursor:pointer;transition:all var(--transition);}
+.cal-day:hover{border-color:var(--border2);background:var(--surface3);}
+.cal-day.other-month{opacity:.35;}.cal-day.today{border-color:var(--primary);}
+.cal-day-num{font-size:12px;font-weight:600;margin-bottom:4px;}
+.cal-day.today .cal-day-num{background:var(--primary-g);width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;}
+.cal-event{font-size:10px;padding:2px 5px;border-radius:4px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cal-event.done{background:rgba(16,185,129,.2);color:#34d399;}.cal-event.planned{background:rgba(99,102,241,.2);color:#a5b4fc;}
+.cal-event.overdue{background:rgba(239,68,68,.2);color:#f87171;}.cal-event.due-soon{background:rgba(245,158,11,.2);color:#fbbf24;}
+
+/* CHECKLIST */
+.checklist-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.checklist-item:last-child{border-bottom:none;}
+.checklist-check{width:18px;height:18px;accent-color:var(--primary);flex-shrink:0;cursor:pointer;}
+.checklist-label{flex:1;font-size:13px;}.checklist-label.done{text-decoration:line-through;color:var(--text-muted);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-muted);}
+.empty-state .empty-icon{font-size:48px;margin-bottom:12px;opacity:.5;}
+.empty-state h3{font-size:16px;font-weight:600;margin-bottom:6px;color:var(--text);}
+.empty-state p{font-size:13px;}
+
+/* TOAST */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px 16px;min-width:280px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow);animation:toastIn .25s ease;font-size:13px;}
+.toast.success{border-left:3px solid var(--success);}.toast.error{border-left:3px solid var(--danger);}.toast.warning{border-left:3px solid var(--warning);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
+
+/* LOADING */
+#global-loading{position:fixed;inset:0;background:rgba(8,12,24,.6);z-index:800;display:none;align-items:center;justify-content:center;}
+#global-loading.show{display:flex;}
+.spinner{width:36px;height:36px;border-radius:50%;border:3px solid var(--border2);border-top-color:var(--primary);animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* SETUP SCREEN */
+#setup-screen{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:24px;text-align:center;}
+.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:32px;max-width:500px;width:100%;}
+
+/* LAYOUT */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
+.chart-wrap{position:relative;height:220px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.mb-16{margin-bottom:16px;}.mt-16{margin-top:16px;}
+.stock-progress{height:4px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:4px;}
+.stock-progress-bar{height:100%;border-radius:99px;transition:width .5s ease;}
+
+@media(max-width:900px){
+  #sidebar{display:none;}#main{margin-left:0;}
+  .chart-grid,.grid-2{grid-template-columns:1fr;}
+  .form-row.col-2,.form-row.col-3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen" style="display:none">
+  <div class="setup-card">
+    <div style="font-size:48px;margin-bottom:16px">&#9881;&#65039;</div>
+    <h2 style="font-size:20px;font-weight:700;margin-bottom:8px">TPM Management System</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-bottom:24px">&#3585;&#3619;&#3640;&#3603;&#3634;&#3651;&#3626;&#3656; URL &#3586;&#3629;&#3591; Google Apps Script Web App</p>
+    <div class="form-group">
+      <label>Google Apps Script URL</label>
+      <input id="gas-url-input" type="url" placeholder="https://script.google.com/macros/s/.../exec"/>
+    </div>
+    <p style="color:var(--text-faint);font-size:11px;margin-bottom:16px">URL &#3609;&#3637;&#3657;&#3592;&#3632;&#3606;&#3641;&#3585;&#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3651;&#3609;&#3648;&#3610;&#3619;&#3634;&#3623;&#3660;&#3648;&#3595;&#3629;&#3619;&#3660;&#3586;&#3629;&#3591;&#3588;&#3640;&#3603;</p>
+    <button class="btn btn-primary btn-lg" style="width:100%" onclick="connectGAS()">&#128279; &#3648;&#3594;&#3639;&#3656;&#3629;&#3617;&#3605;&#3656;&#3629;&#3619;&#3632;&#3610;&#3610;</button>
+    <div id="setup-error" style="margin-top:12px;color:var(--danger);font-size:13px;display:none"></div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">&#9881;&#65039;</div>
+    <div class="logo-text">TPM System<span>Total Productive Maintenance</span></div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Main</div>
+    <div class="nav-item active" onclick="nav('dashboard')" data-page="dashboard"><div class="icon">&#128202;</div>Dashboard</div>
+    <div class="nav-section">Registration</div>
+    <div class="nav-item" onclick="nav('molds')" data-page="molds"><div class="icon">&#129513;</div>&#3650;&#3617;&#3621; / Mold</div>
+    <div class="nav-item" onclick="nav('machines')" data-page="machines"><div class="icon">&#127981;</div>&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619; / Machine</div>
+    <div class="nav-section">Maintenance</div>
+    <div class="nav-item" onclick="nav('tpm')" data-page="tpm"><div class="icon">&#128295;</div>&#3649;&#3612;&#3609; TPM<span class="nav-badge" id="badge-tpm" style="display:none">0</span></div>
+    <div class="nav-section">Operations</div>
+    <div class="nav-item" onclick="nav('issues')" data-page="issues"><div class="icon">&#128680;</div>&#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634; / Issues<span class="nav-badge" id="badge-issues" style="display:none">0</span></div>
+    <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">&#128230;</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
+    <div class="nav-section">System</div>
+    <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">&#128200;</div>&#3619;&#3634;&#3618;&#3591;&#3634;&#3609; / Reports</div>
+    <div class="nav-item" onclick="nav('settings')" data-page="settings"><div class="icon">&#128101;</div>&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609; / Users</div>
+    <div class="nav-item" onclick="changeGASUrl()" data-page=""><div class="icon">&#128279;</div>&#3648;&#3611;&#3621;&#3637;&#3656;&#3618;&#3609; GAS URL</div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">T</div>
+      <div class="user-info"><div class="user-name">TPM System</div><div class="user-role">Connected</div></div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main id="main">
+  <header id="header">
+    <h1 id="page-title">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
+    <div class="header-actions">
+      <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
+    </div>
+  </header>
+  <div id="content">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="stats-grid" id="dash-stats"><div style="color:var(--text-muted);padding:20px">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</div></div>
+  <div class="chart-grid">
+    <div class="card"><div class="card-header"><div class="card-title">TPM Completion (6 &#3648;&#3604;&#3639;&#3629;&#3609;)</div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">&#3611;&#3633;&#3597;&#3627;&#3634; / Issues (6 &#3648;&#3604;&#3639;&#3629;&#3609;)</div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-header"><div class="card-title">&#128680; Open Issues</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-issues"></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">&#128308; TPM Overdue</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-tpm-overdue"></div></div>
+  </div>
+  <div class="card mt-16"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-low-stock"></div></div>
+</div>
+
+<!-- MOLDS -->
+<div class="page" id="page-molds">
+  <div class="toolbar">
+    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3650;&#3617;&#3621;..." oninput="filterMolds()"/>
+    <select id="molds-vendor-filter" style="width:160px" onchange="filterMolds()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
+    <select id="molds-status-filter" style="width:130px" onchange="filterMolds()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
+  </div>
+  <div class="card"><div class="table-wrapper"><table id="molds-table">
+    <thead><tr><th>&#3594;&#3639;&#3656;&#3629;&#3650;&#3617;&#3621;</th><th>Asset No.</th><th>Vendor</th><th>Material</th><th>Location</th><th>Status</th><th>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3595;&#3639;&#3657;&#3629;</th><th>&#3619;&#3641;&#3611;</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</td></tr></tbody>
+  </table></div></div>
+</div>
+
+<!-- MACHINES -->
+<div class="page" id="page-machines">
+  <div class="toolbar">
+    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619;..." oninput="filterMachines()"/>
+    <select id="machines-vendor-filter" style="width:160px" onchange="filterMachines()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
+    <select id="machines-status-filter" style="width:130px" onchange="filterMachines()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openMachineModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619;</button>
+  </div>
+  <div class="card"><div class="table-wrapper"><table id="machines-table">
+    <thead><tr><th>&#3594;&#3639;&#3656;&#3629;</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>&#3619;&#3641;&#3611;</th><th>Actions</th></tr></thead>
+    <tbody id="machines-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</td></tr></tbody>
+  </table></div></div>
+</div>
+
+<!-- TPM -->
+<div class="page" id="page-tpm">
+  <div class="toolbar">
+    <select id="tpm-view" onchange="renderTPM()"><option value="calendar">&#128197; &#3611;&#3599;&#3636;&#3607;&#3636;&#3609;</option><option value="list">&#128203; &#3619;&#3634;&#3618;&#3585;&#3634;&#3619;</option></select>
+    <select id="tpm-year" onchange="loadTPMPlans()"></select>
+    <select id="tpm-month" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</option></select>
+    <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Planned</option><option>Done</option><option>Overdue</option></select>
+    <div style="flex:1"></div>
+    <button class="btn btn-outline" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609;&#3619;&#3634;&#3618;&#3611;&#3637;</button>
+    <button class="btn btn-primary" onclick="openTPMModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3649;&#3612;&#3609; TPM</button>
+  </div>
+  <div id="tpm-container"></div>
+</div>
+
+<!-- ISSUES -->
+<div class="page" id="page-issues">
+  <div class="toolbar">
+    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3611;&#3633;&#3597;&#3627;&#3634;..." oninput="filterTable(this,'issues-table')"/>
+    <select onchange="filterTableByCol(this,'issues-table',5)" style="width:130px"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Open</option><option>In Progress</option><option>Closed</option></select>
+    <select onchange="filterTableByCol(this,'issues-table',4)" style="width:130px"><option value="">Severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openIssueModal()">+ &#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</button>
+  </div>
+  <div class="card"><div class="table-wrapper"><table id="issues-table">
+    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</th><th>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;</th><th>Severity</th><th>Status</th><th>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3585;&#3636;&#3604;</th><th>Actions</th></tr></thead>
+    <tbody id="issues-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- STOCK -->
+<div class="page" id="page-stock">
+  <div class="toolbar">
+    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;..." oninput="filterStock()"/>
+    <select id="stock-vendor-filter" style="width:160px" onchange="filterStock()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
+    <select id="stock-link-filter" style="width:160px" onchange="filterStock()"><option value="">&#128279; &#3607;&#3640;&#3585; Machine/Mold</option></select>
+    <select id="stock-level-filter" style="width:130px" onchange="filterStock()"><option value="">&#3607;&#3640;&#3585; Level</option><option value="low">&#9888;&#65039; Low Stock</option><option value="ok">&#9989; &#3611;&#3585;&#3605;&#3636;</option></select>
+    <div style="flex:1"></div>
+    <button class="btn btn-outline" onclick="openStockTxModal()">&#128230; &#3619;&#3633;&#3610;/&#3648;&#3610;&#3636;&#3585;</button>
+    <button class="btn btn-primary" onclick="openStockPartModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</button>
+  </div>
+  <div class="card"><div class="table-wrapper"><table id="stock-table">
+    <thead><tr><th>Part Name</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Linked To</th><th>Location</th><th>Actions</th></tr></thead>
+    <tbody id="stock-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">&#128202; Export &#3619;&#3634;&#3618;&#3591;&#3634;&#3609;</div></div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+        <button class="btn btn-primary" onclick="openGoogleSheet()">&#128202; &#3648;&#3611;&#3636;&#3604; Google Sheets</button>
+        <button class="btn btn-outline" onclick="exportCSV('tpm')">&#128203; Export TPM Plans (CSV)</button>
+        <button class="btn btn-outline" onclick="exportCSV('issues')">&#128680; Export Issues (CSV)</button>
+        <button class="btn btn-outline" onclick="exportCSV('stock')">&#128230; Export Stock (CSV)</button>
+      </div>
+    </div>
+    <div class="card"><div class="card-header"><div class="card-title">&#128200; KPI Summary</div></div><div id="kpi-summary"></div></div>
+  </div>
+</div>
+
+<!-- USERS -->
+<div class="page" id="page-settings">
+  <div class="toolbar"><div style="flex:1"></div><button class="btn btn-primary" onclick="openUserModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609;</button></div>
+  <div class="card"><div class="table-wrapper"><table id="users-table">
+    <thead><tr><th>Email</th><th>&#3594;&#3639;&#3656;&#3629;</th><th>Role</th><th>&#3649;&#3612;&#3609;&#3585;</th><th>Actions</th></tr></thead>
+    <tbody id="users-tbody"></tbody>
+  </table></div></div>
+</div>
+
+  </div>
+</main>
+
+<!-- MODALS -->
+<!-- MOLD -->
+<div class="modal-overlay" id="mold-modal">
+  <div class="modal"><div class="modal-header"><div class="modal-title" id="mold-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</div><button class="modal-close" onclick="closeModal('mold-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="mold-id"/>
+    <div class="form-row col-2"><div class="form-group"><label>Mold Name *</label><input id="mold-name" placeholder="&#3594;&#3639;&#3656;&#3629;&#3650;&#3617;&#3621;"/></div><div class="form-group"><label>Asset No. *</label><input id="mold-asset" placeholder="ASS-0001"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor"/></div><div class="form-group"><label>Material</label><input id="mold-material"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number"/></div><div class="form-group"><label>Location</label><input id="mold-location"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
+    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="mold-notes"></textarea></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
+      <div class="photo-upload-area" onclick="triggerUpload('mold-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:13px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
+      <input type="file" id="mold-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'mold-photos-preview','mold')"/>
+      <div class="photo-preview-grid" id="mold-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('mold-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveMold()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- MACHINE -->
+<div class="modal-overlay" id="machine-modal">
+  <div class="modal"><div class="modal-header"><div class="modal-title" id="machine-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619;</div><button class="modal-close" onclick="closeModal('machine-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="machine-id"/>
+    <div class="form-row col-2"><div class="form-group"><label>Machine Name *</label><input id="machine-name"/></div><div class="form-group"><label>Asset No. *</label><input id="machine-asset"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="machine-vendor"/></div><div class="form-group"><label>Model</label><input id="machine-model"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Serial No.</label><input id="machine-serial"/></div><div class="form-group"><label>Department</label><input id="machine-dept"/></div><div class="form-group"><label>Location</label><input id="machine-location"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Purchase Date</label><input id="machine-purchase-date" type="date"/></div><div class="form-group"><label>Status</label><select id="machine-status"><option>Active</option><option>Inactive</option></select></div></div>
+    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="machine-notes"></textarea></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
+      <div class="photo-upload-area" onclick="triggerUpload('machine-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611;</div></div>
+      <input type="file" id="machine-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'machine-photos-preview','machine')"/>
+      <div class="photo-preview-grid" id="machine-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('machine-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveMachine()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- TPM SINGLE -->
+<div class="modal-overlay" id="tpm-modal">
+  <div class="modal"><div class="modal-header"><div class="modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3649;&#3612;&#3609; TPM</div><button class="modal-close" onclick="closeModal('tpm-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="tpm-id"/>
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input id="tpm-planned-date" type="date"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610;</label><input id="tpm-assigned"/></div></div>
+    <div class="form-group"><label>Checklist Template</label><select id="tpm-checklist-template"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveTPMPlan()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- TPM BULK -->
+<div class="modal-overlay" id="tpm-bulk-modal">
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</div><button class="modal-close" onclick="closeModal('tpm-bulk-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row col-3"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- &#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; --</option></select></div><div class="form-group"><label>&#3611;&#3637;</label><input id="bulk-year" type="number"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>&#3592;&#3635;&#3609;&#3623;&#3609;&#3588;&#3619;&#3633;&#3657;&#3591;/&#3611;&#3637;</label><select id="bulk-freq" onchange="generateBulkDates()"><option value="12">12 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3648;&#3604;&#3639;&#3629;&#3609;)</option><option value="6">6 &#3588;&#3619;&#3633;&#3657;&#3591;</option><option value="4">4 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3652;&#3605;&#3619;&#3617;&#3634;&#3626;)</option><option value="2">2 &#3588;&#3619;&#3633;&#3657;&#3591;</option><option value="1">1 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3611;&#3637;)</option></select></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3651;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;</label><input id="bulk-day" type="number" value="15" min="1" max="28" onchange="generateBulkDates()"/></div><div class="form-group"><label>Checklist</label><select id="bulk-checklist"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div></div>
+    <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610;</label><input id="bulk-assigned"/></div>
+    <div id="bulk-dates-container"></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-bulk-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveBulkTPM()">&#9989; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609;</button></div>
+  </div>
+</div>
+
+<!-- TPM COMPLETE -->
+<div class="modal-overlay" id="tpm-complete-modal">
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#9989; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3612;&#3621; TPM</div><button class="modal-close" onclick="closeModal('tpm-complete-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="tpm-complete-id"/>
+    <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3592;&#3619;&#3636;&#3591; *</label><input id="tpm-actual-date" type="date"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3607;&#3635; *</label><input id="tpm-actual-by"/></div></div>
+    <div class="form-group"><label>Checklist</label><div id="tpm-checklist-items"></div></div>
+    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="tpm-complete-notes"></textarea></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3627;&#3621;&#3633;&#3591; TPM</label>
+      <div class="photo-upload-area" onclick="triggerUpload('tpm-complete-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</div></div>
+      <input type="file" id="tpm-complete-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'tpm-complete-photos-preview','tpm-complete')"/>
+      <div class="photo-preview-grid" id="tpm-complete-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-complete-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-success" onclick="completeTPM()">&#9989; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3612;&#3621;</button></div>
+  </div>
+</div>
+
+<!-- ISSUE -->
+<div class="modal-overlay" id="issue-modal">
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</div><button class="modal-close" onclick="closeModal('issue-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;&#3611;&#3633;&#3597;&#3627;&#3634;</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+    <div class="form-group"><label>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; *</label><textarea id="issue-description" placeholder="&#3629;&#3608;&#3636;&#3610;&#3634;&#3618;&#3629;&#3634;&#3585;&#3634;&#3619;/&#3611;&#3633;&#3597;&#3627;&#3634;..."></textarea></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;/&#3648;&#3623;&#3621;&#3634;&#3648;&#3585;&#3636;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634;</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3649;&#3592;&#3657;&#3591;</label><input id="issue-reporter"/></div></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3611;&#3633;&#3597;&#3627;&#3634;</label>
+      <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3611;&#3633;&#3597;&#3627;&#3634;</div></div>
+      <input type="file" id="issue-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-photos-preview','issue')"/>
+      <div class="photo-preview-grid" id="issue-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveIssue()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- CLOSE ISSUE -->
+<div class="modal-overlay" id="issue-close-modal">
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#9989; &#3611;&#3636;&#3604;&#3591;&#3634;&#3609; / Close Issue</div><button class="modal-close" onclick="closeModal('issue-close-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="close-issue-id"/>
+    <div id="close-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
+    <div class="form-group"><label>Root Cause *</label><textarea id="close-root-cause"></textarea></div>
+    <div class="form-group"><label>Corrective Action *</label><textarea id="close-corrective"></textarea></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3626;&#3619;&#3655;&#3592;</label><input id="close-date" type="datetime-local"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3649;&#3585;&#3657;&#3652;&#3586;</label><input id="close-by"/></div></div>
+    <div class="form-group"><label>Part &#3607;&#3637;&#3656;&#3651;&#3594;&#3657;</label><input id="close-parts-used"/></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3627;&#3621;&#3633;&#3591;&#3649;&#3585;&#3657;&#3652;&#3586;</label>
+      <div class="photo-upload-area" onclick="triggerUpload('close-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3627;&#3621;&#3633;&#3591;&#3595;&#3656;&#3629;&#3617;</div></div>
+      <input type="file" id="close-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-photos-preview','close')"/>
+      <div class="photo-preview-grid" id="close-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-close-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-success" onclick="closeIssue()">&#9989; &#3611;&#3636;&#3604;&#3591;&#3634;&#3609;</button></div>
+  </div>
+</div>
+
+<!-- STOCK PART -->
+<div class="modal-overlay" id="stock-part-modal">
+  <div class="modal"><div class="modal-header"><div class="modal-title" id="stock-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</div><button class="modal-close" onclick="closeModal('stock-part-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="stock-id"/>
+    <div class="form-row col-2"><div class="form-group"><label>Part Name *</label><input id="stock-name"/></div><div class="form-group"><label>Part No.</label><input id="stock-partno"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="stock-vendor"/></div><div class="form-group"><label>Unit</label><input id="stock-unit" placeholder="&#3594;&#3636;&#3657;&#3609; / &#3621;&#3636;&#3605;&#3619;..."/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div><div class="form-group"><label>Current Stock</label><input id="stock-current" type="number" value="0"/></div><div class="form-group"><label>Location</label><input id="stock-location"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#128279; Linked Type</label><select id="stock-link-type" onchange="loadStockLinkTargets()"><option value="">&#3652;&#3617;&#3656;&#3619;&#3632;&#3610;&#3640;</option><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>&#128279; Linked To</label><select id="stock-link-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
+    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="stock-notes"></textarea></div>
+    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
+      <div class="photo-upload-area" onclick="triggerUpload('stock-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
+      <input type="file" id="stock-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'stock-photos-preview','stock-part')"/>
+      <div class="photo-preview-grid" id="stock-photos-preview"></div>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('stock-part-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveStockPart()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- STOCK TX -->
+<div class="modal-overlay" id="stock-tx-modal">
+  <div class="modal modal-sm"><div class="modal-header"><div class="modal-title" id="tx-modal-title">&#128230; &#3619;&#3633;&#3610;&#3648;&#3586;&#3657;&#3634; / &#3648;&#3610;&#3636;&#3585;&#3629;&#3629;&#3585;</div><button class="modal-close" onclick="closeModal('stock-tx-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <div id="tx-stock-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;display:none"></div>
+    <div class="form-group"><label>&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</label><select id="tx-part-id" onchange="showTxStockInfo()"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <button id="tx-btn-in" class="btn btn-success" style="justify-content:center;font-size:15px" onclick="setTxType('IN')">&#128229; &#3619;&#3633;&#3610;&#3648;&#3586;&#3657;&#3634;</button>
+      <button id="tx-btn-out" class="btn btn-outline" style="justify-content:center;font-size:15px" onclick="setTxType('OUT')">&#128228; &#3648;&#3610;&#3636;&#3585;&#3629;&#3629;&#3585;</button>
+    </div>
+    <input type="hidden" id="tx-type" value="IN"/>
+    <div class="form-row col-2"><div class="form-group"><label>&#3592;&#3635;&#3609;&#3623;&#3609;</label><input id="tx-qty" type="number" min="1" placeholder="0"/></div><div class="form-group"><label>&#3627;&#3609;&#3656;&#3623;&#3618;</label><input id="tx-unit" readonly style="color:var(--text-muted)"/></div></div>
+    <div class="form-group"><label>&#3648;&#3627;&#3605;&#3640;&#3612;&#3621; / Reason</label><input id="tx-reason" placeholder="&#3648;&#3594;&#3656;&#3609; &#3619;&#3633;&#3610;&#3586;&#3629;&#3591;&#3648;&#3586;&#3657;&#3634; / &#3648;&#3610;&#3636;&#3585;&#3595;&#3656;&#3629;&#3617;..."/></div>
+    <div class="form-group"><label>&#3612;&#3641;&#3657;&#3607;&#3635;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;</label><input id="tx-by" placeholder="&#3594;&#3639;&#3656;&#3629;..."/></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('stock-tx-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="doTransaction()">&#9989; &#3618;&#3639;&#3609;&#3618;&#3633;&#3609;</button></div>
+  </div>
+</div>
+
+<!-- USER -->
+<div class="modal-overlay" id="user-modal">
+  <div class="modal modal-sm"><div class="modal-header"><div class="modal-title" id="user-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609;</div><button class="modal-close" onclick="closeModal('user-modal')">&#10005;</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="user-id"/>
+    <div class="form-group"><label>Email *</label><input id="user-email" type="email"/></div>
+    <div class="form-group"><label>&#3594;&#3639;&#3656;&#3629;</label><input id="user-name-input"/></div>
+    <div class="form-row col-2"><div class="form-group"><label>Role</label><select id="user-role-select"><option>Admin</option><option>Technician</option><option>Viewer</option></select></div><div class="form-group"><label>Department</label><input id="user-dept"/></div></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveUser()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox-overlay" onclick="if(event.target===this)closeLightbox()">
+  <button id="lightbox-close" onclick="closeLightbox()">&#10005;</button>
+  <a id="lightbox-drive-link" href="#" target="_blank">&#128279; Open in Drive</a>
+  <img id="lightbox-img" src="" alt=""/>
+</div>
+
+<div id="global-loading"><div class="spinner"></div></div>
+<div id="toast-container"></div>
+
+<script>
+// ============================================
+//  SUPABASE CONFIG & API LAYER
+// ============================================
+const SUPABASE_URL = 'https://kkghaqgdlxomoskrycgp.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y';
+const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+const STATE = {
+  molds:[], machines:[], tpmPlans:[], issues:[], stockParts:[],
+  checklistTemplates:[], pendingPhotos:{}
+};
+
+const TH_MONTHS = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
+const EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function imgUrl(id) {
+  if (!id) return '';
+  if (id.startsWith('data:') || id.startsWith('http://') || id.startsWith('https://')) return id;
+  return 'https://drive.google.com/thumbnail?id=' + id + '&sz=w600';
+}
+
+function _uid() {
+  return 'idx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
+}
+
+// High-Speed Supabase API Helper
+async function api(actionStr, payload = null) {
+  try {
+    if (!supabase) return { success: false, error: 'Supabase client failed to initialize' };
+    
+    let action = actionStr;
+    let urlParams = {};
+    if (actionStr && actionStr.indexOf('&') !== -1) {
+      const parts = actionStr.split('&');
+      action = parts[0];
+      parts.slice(1).forEach(p => {
+        const [k, v] = p.split('=');
+        if (k) urlParams[k] = decodeURIComponent(v || '');
+      });
+    }
+
+    switch(action) {
+      case 'ping':
+        return { success: true };
+
+      // DASHBOARD
+      case 'getDashboard': {
+        const [mRes, mcRes, sRes, iRes, tRes] = await Promise.all([
+          supabase.from('molds').select('*'),
+          supabase.from('machines').select('*'),
+          supabase.from('stock_parts').select('*'),
+          supabase.from('issues').select('*'),
+          supabase.from('tpm_plans').select('*')
+        ]);
+
+        const molds = mRes.data || [];
+        const machines = mcRes.data || [];
+        const stock = sRes.data || [];
+        const issues = iRes.data || [];
+        const tpmPlans = tRes.data || [];
+
+        const openIssues = issues.filter(x => x.Status !== 'Closed');
+        const criticalIssues = openIssues.filter(x => x.Severity === 'Critical').length;
+        const lowStock = stock.filter(x => (Number(x.Qty) || 0) <= (Number(x.MinQty) || 0)).length;
+
+        const now = new Date();
+        const curMo = now.getMonth();
+        const curYr = now.getFullYear();
+
+        const thisMoPlans = tpmPlans.filter(p => {
+          if (!p.PlannedDate) return false;
+          const d = new Date(p.PlannedDate);
+          return d.getMonth() === curMo && d.getFullYear() === curYr;
+        });
+
+        const tpmDone = thisMoPlans.filter(p => p.Status === 'Done').length;
+        const tpmOverdue = tpmPlans.filter(p => p.Status === 'Overdue').length;
+        const tpmDueSoon = tpmPlans.filter(p => {
+          if (p.Status === 'Done' || !p.PlannedDate) return false;
+          const diff = (new Date(p.PlannedDate) - now) / 86400000;
+          return diff >= 0 && diff <= 7;
+        }).length;
+
+        const thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
+        const tpmChart = [];
+        const issueChart = [];
+        for (let offset = 5; offset >= 0; offset--) {
+          const d = new Date(curYr, curMo - offset, 1);
+          const mIdx = d.getMonth();
+          const yVal = d.getFullYear();
+          const lbl = thMonths[mIdx];
+
+          const mPlans = tpmPlans.filter(p => {
+            if (!p.PlannedDate) return false;
+            const pd = new Date(p.PlannedDate);
+            return pd.getMonth() === mIdx && pd.getFullYear() === yVal;
+          });
+          tpmChart.push({
+            label: lbl,
+            total: mPlans.length,
+            done: mPlans.filter(p => p.Status === 'Done').length
+          });
+
+          const mIss = issues.filter(i => {
+            if (!i.OccurredAt) return false;
+            const idate = new Date(i.OccurredAt);
+            return idate.getMonth() === mIdx && idate.getFullYear() === yVal;
+          });
+          issueChart.push({ label: lbl, count: mIss.length });
+        }
+
+        const recentIssues = openIssues.slice(0, 5);
+        const overdueTPM = tpmPlans.filter(p => p.Status === 'Overdue').slice(0, 5);
+
+        return {
+          success: true,
+          data: {
+            totalMolds: molds.length,
+            totalMachines: machines.length,
+            openIssues: openIssues.length,
+            criticalIssues: criticalIssues,
+            tpmThisMonth: thisMoPlans.length,
+            tpmDone: tpmDone,
+            tpmOverdue: tpmOverdue,
+            tpmDueSoon: tpmDueSoon,
+            lowStock: lowStock,
+            tpmChart: tpmChart,
+            issueChart: issueChart,
+            recentIssues: recentIssues,
+            overdueTPM: overdueTPM
+          }
+        };
+      }
+
+      // MOLDS
+      case 'getMolds': {
+        const { data, error } = await supabase.from('molds').select('*').order('CreatedAt', { ascending: false });
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data || [] };
+      }
+      case 'saveMold': {
+        const item = Object.assign({}, payload.data);
+        if (!item.ID) item.ID = _uid();
+        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        const { error } = await supabase.from('molds').upsert(item);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: item.ID };
+      }
+      case 'deleteMold': {
+        const id = payload.id;
+        const { error } = await supabase.from('molds').delete().eq('ID', id);
+        if (error) return { success: false, error: error.message };
+        await supabase.from('tpm_plans').delete().eq('TargetID', id);
+        return { success: true };
+      }
+
+      // MACHINES
+      case 'getMachines': {
+        const { data, error } = await supabase.from('machines').select('*').order('CreatedAt', { ascending: false });
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data || [] };
+      }
+      case 'saveMachine': {
+        const item = Object.assign({}, payload.data);
+        if (!item.ID) item.ID = _uid();
+        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        const { error } = await supabase.from('machines').upsert(item);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: item.ID };
+      }
+      case 'deleteMachine': {
+        const id = payload.id;
+        const { error } = await supabase.from('machines').delete().eq('ID', id);
+        if (error) return { success: false, error: error.message };
+        await supabase.from('tpm_plans').delete().eq('TargetID', id);
+        return { success: true };
+      }
+
+      // STOCK PARTS
+      case 'getStockParts': {
+        const { data, error } = await supabase.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data || [] };
+      }
+      case 'saveStockPart': {
+        const item = Object.assign({}, payload.data);
+        if (!item.ID) item.ID = _uid();
+        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        const { error } = await supabase.from('stock_parts').upsert(item);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: item.ID };
+      }
+      case 'deleteStockPart': {
+        const { error } = await supabase.from('stock_parts').delete().eq('ID', payload.id);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+      case 'stockTransaction': {
+        if (!payload || !payload.data) return { success: true };
+        const { partId, type, quantity } = payload.data;
+        const { data: part } = await supabase.from('stock_parts').select('*').eq('ID', partId).single();
+        if (part) {
+          let newQty = Number(part.Qty) || 0;
+          if (type === 'IN') newQty += Number(quantity);
+          else if (type === 'OUT') newQty = Math.max(0, newQty - Number(quantity));
+          await supabase.from('stock_parts').update({ Qty: newQty }).eq('ID', partId);
+        }
+        return { success: true };
+      }
+
+      // ISSUES
+      case 'getIssues': {
+        const { data, error } = await supabase.from('issues').select('*').order('CreatedAt', { ascending: false });
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data || [] };
+      }
+      case 'saveIssue': {
+        const item = Object.assign({}, payload.data);
+        if (!item.ID) item.ID = _uid();
+        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        const { error } = await supabase.from('issues').upsert(item);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: item.ID };
+      }
+      case 'updateIssueStatus': {
+        const { error } = await supabase.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+      case 'closeIssue': {
+        const item = Object.assign({}, payload.data);
+        const { error } = await supabase.from('issues').update({
+          Status: 'Closed',
+          ClosedAt: item.ClosedAt,
+          ClosedBy: item.ClosedBy,
+          RootCause: item.RootCause,
+          CorrectiveAction: item.CorrectiveAction,
+          PartsUsed: item.PartsUsed,
+          AfterImageIds: item.AfterImageIds
+        }).eq('ID', item.ID);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+      case 'deleteIssue': {
+        const { error } = await supabase.from('issues').delete().eq('ID', payload.id);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+
+      // TPM PLANS
+      case 'getTPMPlans': {
+        let query = supabase.from('tpm_plans').select('*');
+        const yr = (payload && payload.year) || urlParams.year;
+        if (yr) query = query.eq('Year', Number(yr));
+        const { data, error } = await query;
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data || [] };
+      }
+      case 'saveTPMPlan': {
+        const item = Object.assign({}, payload.data);
+        if (!item.ID) item.ID = _uid();
+        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        const { error } = await supabase.from('tpm_plans').upsert(item);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: item.ID };
+      }
+      case 'saveBulkTPMPlans': {
+        const plans = payload.plans.map(p => Object.assign({}, p, {
+          ID: _uid(),
+          CreatedAt: new Date().toISOString()
+        }));
+        const { error } = await supabase.from('tpm_plans').insert(plans);
+        if (error) return { success: false, error: error.message };
+        return { success: true, count: plans.length };
+      }
+      case 'completeTPM':
+      case 'completeTPMPlan': {
+        const item = Object.assign({}, payload.data);
+        const { error } = await supabase.from('tpm_plans').update({
+          Status: 'Done',
+          ActualDate: item.ActualDate,
+          ActualBy: item.ActualBy,
+          ChecklistResult: item.ChecklistResult,
+          Notes: item.Notes,
+          AfterImageIds: item.AfterImageIds
+        }).eq('ID', item.ID);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+      case 'deleteTPMPlan': {
+        const { error } = await supabase.from('tpm_plans').delete().eq('ID', payload.id);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+
+      // USERS
+      case 'getUsers': {
+        return { success: true, data: [] };
+      }
+      case 'saveUser': {
+        return { success: true };
+      }
+      case 'deleteUser': {
+        return { success: true };
+      }
+
+      // CHECKLIST TEMPLATES
+      case 'getChecklistTemplates': {
+        return {
+          success: true,
+          data: [
+            {
+              id: 'mold-standard',
+              name: 'Mold PM Standard',
+              type: 'Mold',
+              items: [
+                { id: 1, th: 'ชิ้นงานสุดท้ายหลังการผลิต', en: 'Last production part inspection', std: 'ต้องไม่เป็นรอยและมีครีบ' },
+                { id: 2, th: 'จุดยึดติดต่างๆ ของแม่พิมพ์', en: 'Mold fastener / Screw points', std: 'SCREW ต้องยึดแน่น, ไม่ขาด ร่องประแจต้องไม่ชำรุด' },
+                { id: 3, th: 'การหล่อลื่น GUIDE POST, EJECTOR PIN และจุด SLIDE ต่างๆ', en: 'Lubricate Guide Post, Ejector Pin & Slides', std: 'แม่พิมพ์ ปิด-เปิดต้องคล่องตัวไม่ติดขัดระหว่างเคลื่อนที่เข้าออก' },
+                { id: 4, th: 'ตรวจเช็ครูน้ำหล่อเย็น', en: 'Check cooling water channels', std: 'รูน้ำไม่อุดตัน และไม่มีรอยรั่ว' },
+                { id: 5, th: 'เช็ค SPRING FOR RETURN PIN & SPRING FOR SLIDE', en: 'Check Return Pin Spring & Slide Spring', std: 'ไม่แตกหัก ไม่คดงอเสียรูป' },
+                { id: 6, th: 'เช็ค EJECTOR PIN', en: 'Check Ejector Pin condition', std: 'ต้องไม่มีรอยไหม้ไม่คดงอและไม่หัก ต้องวิ่งเข้า-ออกได้คล่องตัว' },
+                { id: 7, th: 'เช็ค GUIDE POST & GUIDE BUSH, ANGULAR PIN & BUSH', en: 'Check Guide Post, Guide Bush, Angular Pin & Bush', std: 'ต้องไม่มีรอยไหม้ ไม่สึกหรอ ไม่หลวม ไม่เบียดและต้องมีจาระบีชโลมไว้' },
+                { id: 8, th: 'สภาพสนิมหน้าแม่พิมพ์', en: 'Check mold face for rust', std: 'ต้องไม่มีสนิมที่หน้าแม่พิมพ์ ทั้งด้าน CORE และ CAVITY' },
+                { id: 9, th: 'ความสะอาดของแม่พิมพ์', en: 'Overall mold cleanliness', std: 'สภาพทั่วไปต้องสะอาด' }
+              ]
+            },
+            {
+              id: 'machine-standard',
+              name: 'Machine PM Standard',
+              type: 'Machine',
+              items: [
+                { id: 1, th: 'เช็คระดับน้ำมัน', en: 'Check Oil Level', std: 'ระดับอยู่ในการตรวจสอบปกติ' },
+                { id: 2, th: 'เช็คระดับน้ำหล่อเย็น', en: 'Check Coolant Level', std: 'ระดับอยู่ในการตรวจสอบปกติ' },
+                { id: 3, th: 'เช็คแรงดัน', en: 'Check Pressure', std: 'แรงดันอยู่ในการตรวจสอบปกติ' },
+                { id: 4, th: 'ตรวจสอบ Belt & Chain', en: 'Check Belt & Chain', std: 'ไม่หลวม ไม่สึกหรอ' },
+                { id: 5, th: 'ทำความสะอาด Filter', en: 'Clean Filter', std: 'สะอาดและไม่อุดตัน' },
+                { id: 6, th: 'เช็ค Safety Device', en: 'Check Safety Device', std: 'ทำงานปกติ' },
+                { id: 7, th: 'เช็ค Electrical Panel', en: 'Check Electrical Panel', std: 'ไม่มีสายหลุด ไม่มีความร้อนผิดปกติ' },
+                { id: 8, th: 'ทำความสะอาดเครื่องจักร', en: 'Clean Machine', std: 'สะอาดทั่วไป' },
+                { id: 9, th: 'ทดสอบการทำงาน', en: 'Functional Test', std: 'เครื่องทำงานปกติ' }
+              ]
+            }
+          ]
+        };
+      }
+
+      case 'uploadFile': {
+        return { success: true, fileId: payload.base64Data };
+      }
+
+      default:
+        return { success: false, error: 'Unknown action: ' + action };
+    }
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+// ============================================
+//  SETUP / CONNECT
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+  initSelects();
+  const setupScreen = document.getElementById('setup-screen');
+  if (setupScreen) setupScreen.style.display = 'none';
+  nav('dashboard');
+  loadAllData();
+});
+
+async function connectGAS() {
+  const url = document.getElementById('gas-url-input').value.trim();
+  const errEl = document.getElementById('setup-error');
+  if (!url) { errEl.textContent = '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e43\u0e2a\u0e48 URL'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  showGlobalLoading(true);
+  GAS_URL = url;
+  const r = await api('ping');
+  showGlobalLoading(false);
+  if (r.success) {
+    localStorage.setItem('tpm_gas_url', url);
+    document.getElementById('setup-screen').style.display = 'none';
+    showToast('\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08! \u2705', 'success');
+    nav('dashboard');
+    loadAllData();
+  } else {
+    errEl.textContent = '\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49: ' + r.error + ' \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a URL \u0e41\u0e25\u0e30 Deploy settings';
+    errEl.style.display = 'block';
+    GAS_URL = '';
+  }
+}
+
+function changeGASUrl() {
+  localStorage.removeItem('tpm_gas_url');
+  GAS_URL = '';
+  document.getElementById('gas-url-input').value = DEFAULT_GAS_URL;
+  document.getElementById('setup-error').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+}
+
+function initSelects() {
+  const yr = new Date().getFullYear();
+  const ys = document.getElementById('tpm-year');
+  for (let y = yr-1; y <= yr+2; y++) ys.add(new Option(y, y, y===yr, y===yr));
+  document.getElementById('bulk-year').value = yr;
+  const ms = document.getElementById('tpm-month');
+  for (let m = 1; m <= 12; m++) ms.add(new Option(TH_MONTHS[m-1]+' / '+EN_MONTHS[m-1], m, m===new Date().getMonth()+1, m===new Date().getMonth()+1));
+}
+
+// ============================================
+//  DATA LOADING
+// ============================================
+async function loadAllData() {
+  const [m,mc,s,i,t] = await Promise.all([
+    api('getMolds'), api('getMachines'), api('getStockParts'), api('getIssues'), api('getChecklistTemplates')
+  ]);
+  if (m.success)  STATE.molds = m.data;
+  if (mc.success) STATE.machines = mc.data;
+  if (s.success)  STATE.stockParts = s.data;
+  if (i.success)  STATE.issues = i.data;
+  if (t.success)  STATE.checklistTemplates = t.data;
+  updateBadges();
+  loadTPMPlans();
+}
+
+async function refreshData() {
+  showToast('\u0e01\u0e33\u0e25\u0e31\u0e07 Refresh...','warning');
+  await loadAllData();
+  const page = document.querySelector('.page.active')?.id?.replace('page-','');
+  if (page) nav(page);
+  showToast('Refresh \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');
+}
+
+// ============================================
+//  NAVIGATION
+// ============================================
+const PAGE_INFO = {
+  dashboard:{title:'Dashboard',sub:'\u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e23\u0e30\u0e1a\u0e1a'},
+  molds:{title:'\u0e42\u0e21\u0e25 / Mold',sub:'\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e42\u0e21\u0e25'},
+  machines:{title:'\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 / Machine',sub:'\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23'},
+  tpm:{title:'TPM Plan',sub:'\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e1a\u0e33\u0e23\u0e38\u0e07\u0e23\u0e31\u0e01\u0e29\u0e32'},
+  issues:{title:'Issues / \u0e1b\u0e31\u0e0d\u0e2b\u0e32',sub:'\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e41\u0e25\u0e30\u0e15\u0e34\u0e14\u0e15\u0e32\u0e21\u0e1b\u0e31\u0e0d\u0e2b\u0e32'},
+  stock:{title:'Stock Part',sub:'\u0e04\u0e25\u0e31\u0e07\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48'},
+  reports:{title:'Reports',sub:'\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19'},
+  settings:{title:'\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19',sub:'\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49'},
+};
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-'+page)?.classList.add('active');
+  document.querySelector('[data-page="'+page+'"]')?.classList.add('active');
+  const info = PAGE_INFO[page] || {title:page,sub:''};
+  document.getElementById('page-title').innerHTML = info.title+' <span>'+info.sub+'</span>';
+  if (page==='dashboard') loadDashboard();
+  else if (page==='molds') renderMolds();
+  else if (page==='machines') renderMachines();
+  else if (page==='tpm') renderTPM();
+  else if (page==='issues') renderIssues();
+  else if (page==='stock') renderStock();
+  else if (page==='reports') loadReports();
+  else if (page==='settings') loadUsers();
+}
+function updateBadges() {
+  const open = STATE.issues.filter(i=>i.Status==='Open'||i.Status==='In Progress').length;
+  const bi = document.getElementById('badge-issues'); bi.style.display=open>0?'':'none'; bi.textContent=open;
+  const low = STATE.stockParts.filter(p=>Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0).length;
+  const bs = document.getElementById('badge-stock'); bs.style.display=low>0?'':'none'; bs.textContent=low;
+  const od = STATE.tpmPlans.filter(p=>p.Status==='Overdue').length;
+  const bt = document.getElementById('badge-tpm'); bt.style.display=od>0?'':'none'; bt.textContent=od;
+}
+
+// ============================================
+//  DASHBOARD
+// ============================================
+let tpmCh=null, issCh=null;
+async function loadDashboard() {
+  const r = await api('getDashboard');
+  if (!r.success) { showToast('\u0e42\u0e2b\u0e25\u0e14 Dashboard \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49: '+r.error,'error'); return; }
+  const d = r.data;
+  document.getElementById('dash-stats').innerHTML =
+    '<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">\ud83e\udde9</div><div class="stat-label">\ud83e\udde9 Total Molds</div><div class="stat-value">'+d.totalMolds+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>'+
+    '<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">\ud83c\udfed</div><div class="stat-label">\ud83c\udfed Total Machines</div><div class="stat-value">'+d.totalMachines+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>'+
+    '<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">\ud83d\udea8</div><div class="stat-label">\ud83d\udea8 Open Issues</div><div class="stat-value">'+d.openIssues+'</div><div class="stat-sub">Critical: '+d.criticalIssues+' <span style="color:var(--primary);font-size:10px">\u2192 \u0e04\u0e25\u0e34\u0e01</span></div></div>'+
+    '<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">\ud83d\udd27</div><div class="stat-label">\ud83d\udd27 TPM \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e19\u0e35\u0e49</div><div class="stat-value">'+d.tpmDone+'/'+d.tpmThisMonth+'</div><div class="stat-sub">Overdue: '+d.tpmOverdue+' | Due Soon: '+d.tpmDueSoon+'</div></div>'+
+    '<div class="stat-card '+(d.lowStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">\ud83d\udce6</div><div class="stat-label">\ud83d\udce6 Low Stock</div><div class="stat-value">'+d.lowStock+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>';
+  if(tpmCh){tpmCh.destroy();tpmCh=null;}
+  tpmCh=new Chart(document.getElementById('tpm-chart'),{type:'bar',data:{labels:d.tpmChart.map(x=>x.label),datasets:[{label:'Total',data:d.tpmChart.map(x=>x.total),backgroundColor:'rgba(99,102,241,.3)',borderColor:'#6366f1',borderWidth:1,borderRadius:4},{label:'Done',data:d.tpmChart.map(x=>x.done),backgroundColor:'rgba(16,185,129,.5)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',stepSize:1}}}}});
+  if(issCh){issCh.destroy();issCh=null;}
+  issCh=new Chart(document.getElementById('issue-chart'),{type:'line',data:{labels:d.issueChart.map(x=>x.label),datasets:[{label:'Issues',data:d.issueChart.map(x=>x.count),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',fill:true,tension:.4,pointBackgroundColor:'#ef4444'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',stepSize:1}}}}});
+  document.getElementById('dash-issues').innerHTML = d.recentIssues.length===0 ? emptyState('\u2705','\u0e44\u0e21\u0e48\u0e21\u0e35 Issue \u0e04\u0e49\u0e32\u0e07','') :
+    d.recentIssues.map(i=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+(i.TargetName||'-')+'</div><div style="font-size:11px;color:var(--text-muted)">'+(i.Description||'').substring(0,50)+'</div></div><span class="badge open">'+i.Status+'</span></div>').join('');
+  document.getElementById('dash-tpm-overdue').innerHTML = d.overdueTPM.length===0 ? emptyState('\u2705','\u0e44\u0e21\u0e48\u0e21\u0e35 TPM \u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14','') :
+    d.overdueTPM.map(t=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">'+(t.TargetName||'-')+'</div><div style="font-size:11px;color:var(--text-muted)">'+(t.PlannedDate||'')+'</div></div><span class="badge overdue">Overdue</span></div>').join('');
+  document.getElementById('dash-low-stock').innerHTML = d.lowStockList.length===0 ? emptyState('\u2705','Stock \u0e1b\u0e01\u0e15\u0e34','') :
+    '<div class="table-wrapper"><table><thead><tr><th>Part Name</th><th>Current</th><th>Min</th></tr></thead><tbody>'+d.lowStockList.map(p=>'<tr><td>'+p.PartName+'</td><td style="color:var(--danger)">'+p.CurrentStock+' '+p.Unit+'</td><td>'+p.MinStock+' '+p.Unit+'</td></tr>').join('')+'</tbody></table></div>';
+}
+
+// ============================================
+//  MOLDS
+// ============================================
+function renderMolds() {
+  var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
+  var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
+  if(vf){vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  filterMolds();
+}
+function filterMolds(){
+  var q=(document.querySelector('#page-molds .search-input')||{}).value||''; q=q.toLowerCase();
+  var vendor=(document.getElementById('molds-vendor-filter')||{}).value||'';
+  var status=(document.getElementById('molds-status-filter')||{}).value||'';
+  var data=STATE.molds.filter(function(m){
+    if(vendor&&m.Vendor!==vendor)return false;
+    if(status&&(m.Status||'Active')!==status)return false;
+    if(q&&(m.Name+m.AssetNo+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
+    return true;
+  });
+  var tb=document.getElementById('molds-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83e\udde9','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e42\u0e21\u0e25','\u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e42\u0e21\u0e25"')+'</td></tr>';return;}
+  tb.innerHTML=data.map(function(m){
+    var imgs=tryParse(m.ImageIds);
+    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e39\u0e1b"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Material||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+((m.PurchaseDate||'').substring(0,10)||'-')+'</td><td>'+thumbs+'</td><td><button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e41\u0e1a\u0e1a\u0e1f\u0e2d\u0e23\u0e4c\u0e21 PM" style="margin-right:2px">\ud83d\udda8\ufe0f PM</button><button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">&#128465;&#65039;</button></td></tr>';
+  }).join('');
+}
+function openMoldModal(data) {
+  ['mold-id','mold-name','mold-asset','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
+  document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
+  document.getElementById('mold-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e42\u0e21\u0e25':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e42\u0e21\u0e25';
+  if(data){v_set('mold-id',data.ID);v_set('mold-name',data.Name);v_set('mold-asset',data.AssetNo);v_set('mold-vendor',data.Vendor);v_set('mold-material',data.Material);v_set('mold-cavity',data.Cavity);v_set('mold-location',data.Location);v_set('mold-purchase-date',data.PurchaseDate);v_set('mold-notes',data.Notes);}
+  openModal('mold-modal');
+}
+async function saveMold(){
+  var name=v('mold-name'),asset=v('mold-asset');
+  if(!name||!asset){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e25\u0e30 Asset No.','error');return;}
+  showGlobalLoading(true);
+  var imgIds=await uploadPendingPhotos('mold','Molds');
+  var data={ID:v('mold-id'),Name:name,AssetNo:asset,Vendor:v('mold-vendor'),Material:v('mold-material'),Cavity:v('mold-cavity'),Location:v('mold-location'),PurchaseDate:v('mold-purchase-date'),Notes:v('mold-notes'),Status:'Active',ImageIds:JSON.stringify(imgIds)};
+  var r=await api('saveMold',{data:data});
+  showGlobalLoading(false);
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('mold-modal');var res=await api('getMolds');if(res.success){STATE.molds=res.data;renderMolds();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+async function delMold(id,name){if(!confirm('\u0e25\u0e1a\u0e42\u0e21\u0e25 "'+name+'" ?'))return;var r=await api('deleteMold',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.molds=STATE.molds.filter(function(m){return m.ID!==id;});renderMolds();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+
+// ============================================
+//  MACHINES
+// ============================================
+function renderMachines(){
+  var vendors=[]; STATE.machines.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
+  var vf=document.getElementById('machines-vendor-filter'); var vfVal=vf?vf.value:'';
+  if(vf){vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  filterMachines();
+}
+function filterMachines(){
+  var q=(document.querySelector('#page-machines .search-input')||{}).value||''; q=q.toLowerCase();
+  var vendor=(document.getElementById('machines-vendor-filter')||{}).value||'';
+  var status=(document.getElementById('machines-status-filter')||{}).value||'';
+  var data=STATE.machines.filter(function(m){
+    if(vendor&&m.Vendor!==vendor)return false;
+    if(status&&(m.Status||'Active')!==status)return false;
+    if(q&&(m.Name+m.AssetNo+(m.Vendor||'')+(m.Department||'')).toLowerCase().indexOf(q)===-1)return false;
+    return true;
+  });
+  var tb=document.getElementById('machines-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83c\udfed','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23','')+'</td></tr>';return;}
+  tb.innerHTML=data.map(function(m){
+    var imgs=tryParse(m.ImageIds);
+    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted)">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')">&#128465;&#65039;</button></td></tr>';
+  }).join('');
+}
+function openMachineModal(data){
+  ['machine-id','machine-name','machine-asset','machine-vendor','machine-model','machine-serial','machine-dept','machine-location','machine-purchase-date','machine-notes'].forEach(function(id){v_set(id,'');});
+  document.getElementById('machine-photos-preview').innerHTML='';STATE.pendingPhotos['machine']={files:[]};
+  document.getElementById('machine-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23';
+  if(data){v_set('machine-id',data.ID);v_set('machine-name',data.Name);v_set('machine-asset',data.AssetNo);v_set('machine-vendor',data.Vendor);v_set('machine-model',data.Model);v_set('machine-serial',data.Serial);v_set('machine-dept',data.Department);v_set('machine-location',data.Location);v_set('machine-purchase-date',data.PurchaseDate);v_set('machine-notes',data.Notes);v_set('machine-status',data.Status||'Active');}
+  openModal('machine-modal');
+}
+async function saveMachine(){
+  var name=v('machine-name'),asset=v('machine-asset');
+  if(!name||!asset){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e25\u0e30 Asset No.','error');return;}
+  showGlobalLoading(true);
+  var imgIds=await uploadPendingPhotos('machine','Machines');
+  var data={ID:v('machine-id'),Name:name,AssetNo:asset,Vendor:v('machine-vendor'),Model:v('machine-model'),Serial:v('machine-serial'),Department:v('machine-dept'),Location:v('machine-location'),PurchaseDate:v('machine-purchase-date'),Notes:v('machine-notes'),Status:v('machine-status')||'Active',ImageIds:JSON.stringify(imgIds)};
+  var r=await api('saveMachine',{data:data});
+  showGlobalLoading(false);
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('machine-modal');var res=await api('getMachines');if(res.success){STATE.machines=res.data;renderMachines();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+async function delMachine(id,name){if(!confirm('\u0e25\u0e1a\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 "'+name+'" ?'))return;var r=await api('deleteMachine',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.machines=STATE.machines.filter(function(m){return m.ID!==id;});renderMachines();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+
+// ============================================
+//  TPM
+// ============================================
+async function loadTPMPlans(){var yr=v('tpm-year')||new Date().getFullYear();var r=await api('getTPMPlans&year='+yr);if(r.success){STATE.tpmPlans=r.data;updateBadges();renderTPM();}}
+function renderTPM(){var view=v('tpm-view')||'calendar';var container=document.getElementById('tpm-container');view==='calendar'?renderTPMCalendar(container):renderTPMList(container);}
+function renderTPMCalendar(container){
+  var yr=parseInt(v('tpm-year'))||new Date().getFullYear();
+  var mo=parseInt(v('tpm-month'))||new Date().getMonth()+1;
+  var status=v('tpm-filter-status')||'';
+  var today=new Date();var firstDay=new Date(yr,mo-1,1);var lastDay=new Date(yr,mo,0);
+  var plans=STATE.tpmPlans.filter(function(p){return p.PlannedDate&&new Date(p.PlannedDate).getFullYear()===yr&&new Date(p.PlannedDate).getMonth()===mo-1;});
+  if(status)plans=plans.filter(function(p){return p.Status===status;});
+  var dayHdrs=['\u0e2d\u0e32','\u0e08','\u0e2d','\u0e1e','\u0e1e\u0e24','\u0e28','\u0e2a'].map(function(d){return '<div class="cal-header-cell">'+d+'</div>';}).join('');
+  var cells='';
+  for(var i=0;i<firstDay.getDay();i++)cells+='<div class="cal-day other-month"></div>';
+  for(var d=1;d<=lastDay.getDate();d++){
+    var isToday=today.getDate()===d&&today.getMonth()===mo-1&&today.getFullYear()===yr;
+    var dp=plans.filter(function(p){return new Date(p.PlannedDate).getDate()===d;});
+    var evs=dp.map(function(p){var cls=p.Status==='Done'?'done':p.Status==='Overdue'?'overdue':(function(){var diff=(new Date(p.PlannedDate)-new Date())/86400000;return diff<=7&&diff>=0?'due-soon':'planned';})();return '<div class="cal-event '+cls+'" onclick="openTPMCompleteModal(\''+p.ID+'\')">'+p.TargetName+'</div>';}).join('');
+    cells+='<div class="cal-day'+(isToday?' today':'')+'"><div class="cal-day-num">'+d+'</div>'+evs+'</div>';
+  }
+  var rem=(7-(firstDay.getDay()+lastDay.getDate())%7)%7;
+  for(var i=0;i<rem;i++)cells+='<div class="cal-day other-month"></div>';
+  container.innerHTML='<div class="card"><div class="calendar-nav"><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">\u25c0</button><h3>'+TH_MONTHS[mo-1]+' / '+EN_MONTHS[mo-1]+' '+yr+'</h3><button class="btn btn-outline btn-sm" onclick="changeMonth(1)">\u25b6</button></div><div class="calendar-grid">'+dayHdrs+cells+'</div><div style="display:flex;gap:16px;margin-top:12px;font-size:11px;flex-wrap:wrap"><span style="color:#34d399">\ud83d\udfe2 Done</span><span style="color:#a5b4fc">\ud83d\udd35 Planned</span><span style="color:#fbbf24">\ud83d\udfe1 Due Soon</span><span style="color:#f87171">\ud83d\udd34 Overdue</span></div></div>';
+}
+function changeMonth(dir){var ms=document.getElementById('tpm-month');var ys=document.getElementById('tpm-year');var mo=parseInt(ms.value)||new Date().getMonth()+1;var yr=parseInt(ys.value)||new Date().getFullYear();mo+=dir;if(mo>12){mo=1;yr++;}if(mo<1){mo=12;yr--;}ms.value=mo;ys.value=yr;loadTPMPlans();}
+function renderTPMList(container){
+  var status=v('tpm-filter-status');var plans=STATE.tpmPlans.slice();
+  if(status)plans=plans.filter(function(p){return p.Status===status;});
+  plans.sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
+  if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
+  container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td><span class="badge '+(p.Status||'planned').toLowerCase().replace(' ','-')+'">'+p.Status+'</span></td><td>'+(p.Status!=='Done'?'<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25</button>':'<span style="color:var(--success);font-size:12px">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08</span>')+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')">\ud83d\uddd1\ufe0f</button></td></tr>';}).join('')+'</tbody></table></div></div>';
+}
+function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
+function openTPMModal(){['tpm-id','tpm-planned-date','tpm-assigned'].forEach(function(i){v_set(i,'');});v_set('tpm-plan-year',new Date().getFullYear());loadTPMTargets();openModal('tpm-modal');}
+async function saveTPMPlan(){var targetId=v('tpm-target-id'),date=v('tpm-planned-date');if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}var type=v('tpm-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});var data={ID:v('tpm-id'),TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',Year:v('tpm-plan-year'),PlannedDate:date,AssignedTo:v('tpm-assigned'),ChecklistTemplate:v('tpm-checklist-template'),Status:'Planned'};var r=await api('saveTPMPlan',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('tpm-modal');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function delTPMPlan(id){if(!confirm('\u0e25\u0e1a\u0e41\u0e1c\u0e19 TPM?'))return;var r=await api('deleteTPMPlan',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+function loadBulkTargets(){var type=v('bulk-target-type');var s=document.getElementById('bulk-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
+function openBulkTPMModal(){loadBulkTargets();v_set('bulk-year',new Date().getFullYear());generateBulkDates();openModal('tpm-bulk-modal');}
+function generateBulkDates(){
+  var freq=parseInt(v('bulk-freq'))||12,yr=parseInt(v('bulk-year'))||new Date().getFullYear(),day=parseInt(v('bulk-day'))||15;
+  var months=[];
+  if(freq===12)for(var m=1;m<=12;m++)months.push(m);
+  else if(freq===6)for(var m=1;m<=12;m+=2)months.push(m);
+  else if(freq===4)for(var m=1;m<=12;m+=3)months.push(m);
+  else if(freq===2)for(var m=1;m<=12;m+=6)months.push(m);
+  else months=[1];
+  document.getElementById('bulk-dates-container').innerHTML='<label style="display:block;margin-bottom:8px">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e01\u0e33\u0e2b\u0e19\u0e14</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">'+months.map(function(m,i){var d=new Date(yr,m-1,Math.min(day,28));return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">\u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 '+(i+1)+' \u2014 '+TH_MONTHS[m-1]+'</div><input type="date" value="'+d.toISOString().substring(0,10)+'" id="bulk-date-'+i+'" style="font-size:12px"/></div>';}).join('')+'</div>';
+}
+async function saveBulkTPM(){
+  var targetId=v('bulk-target-id'),yr=v('bulk-year'),type=v('bulk-target-type');
+  if(!yr){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e1b\u0e35','error');return;}
+  var list=type==='Mold'?STATE.molds:STATE.machines;
+  var targets=targetId?list.filter(function(x){return x.ID===targetId;}):list.filter(function(x){return x.Status==='Active';});
+  if(!targets.length){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a Target','error');return;}
+  var dateInputs=Array.from(document.querySelectorAll('[id^="bulk-date-"]'));
+  var plans=[];
+  targets.forEach(function(target){dateInputs.forEach(function(inp){if(!inp.value)return;plans.push({TargetType:type,TargetID:target.ID,TargetName:target.Name,Year:yr,PlannedDate:inp.value,AssignedTo:v('bulk-assigned'),ChecklistTemplate:v('bulk-checklist'),Status:'Planned'});});});
+  if(!plans.length){showToast('\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}
+  showGlobalLoading(true);var r=await api('saveBulkTPMPlans',{plans:plans});showGlobalLoading(false);
+  if(r.success){showToast('\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e41\u0e1c\u0e19 '+r.count+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 \u2705','success');closeModal('tpm-bulk-modal');await loadTPMPlans();}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+function openTPMCompleteModal(planId){
+  var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
+  v_set('tpm-complete-id',planId);v_set('tpm-actual-date',new Date().toISOString().substring(0,10));v_set('tpm-actual-by','');v_set('tpm-complete-notes','');
+  document.getElementById('tpm-complete-photos-preview').innerHTML='';STATE.pendingPhotos['tpm-complete']={files:[]};
+  document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; \u0e01\u0e33\u0e2b\u0e19\u0e14: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
+  var tmpl=STATE.checklistTemplates.find(function(t){return t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
+  var prev={};try{if(plan.ChecklistResult)prev=JSON.parse(plan.ChecklistResult);}catch(e){}
+  if(tmpl && tmpl.items){
+    var rows=tmpl.items.map(function(item){
+      var p=prev[item.id]||{};
+      var isOK=p.result==='OK';var isNG=p.result==='NG';
+      return '<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">'+item.id+'</td>'+
+        '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+'</div><div style="font-size:11px;color:var(--text-faint)">'+item.en+'</div></td>'+
+        '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
+        '<td style="padding:10px 8px;text-align:center;white-space:nowrap">'+
+          '<label style="cursor:pointer;margin-right:12px"><input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:var(--success);margin-right:3px"/> <span style="color:var(--success);font-weight:600;font-size:12px">OK</span></label>'+
+          '<label style="cursor:pointer"><input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:var(--danger);margin-right:3px"/> <span style="color:var(--danger);font-weight:600;font-size:12px">NG</span></label>'+
+        '</td>'+
+        '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="\u0e23\u0e30\u0e1a\u0e38\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38 (\u0e16\u0e49\u0e32 NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
+      '</tr>';
+    }).join('');
+    document.getElementById('tpm-checklist-items').innerHTML=
+      '<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'+
+      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>'+
+      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e2b\u0e31\u0e27\u0e02\u0e49\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
+      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19</th>'+
+      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted)">\u0e1c\u0e25</th>'+
+      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
+      '</tr></thead><tbody>'+rows+'</tbody></table></div>';
+  } else {
+    document.getElementById('tpm-checklist-items').innerHTML='<div style="color:var(--text-muted);padding:12px">\u0e44\u0e21\u0e48\u0e1e\u0e1a Checklist Template</div>';
+  }
+  openModal('tpm-complete-modal');
+}
+function toggleRemark(itemId){
+  var sel=document.querySelector('input[name="chk-'+itemId+'"]:checked');
+  var remark=document.getElementById('remark-'+itemId);
+  if(sel && sel.value==='NG'){remark.style.borderColor='var(--danger)';remark.focus();}
+  else{remark.style.borderColor='';}
+}
+async function completeTPM(){
+  var planId=v('tpm-complete-id'),actualDate=v('tpm-actual-date'),actualBy=v('tpm-actual-by');
+  if(!actualDate||!actualBy){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e41\u0e25\u0e30\u0e1c\u0e39\u0e49\u0e17\u0e33','error');return;}
+  var checks={};
+  document.querySelectorAll('[name^="chk-"]').forEach(function(radio){
+    if(!radio.checked)return;
+    var id=radio.name.replace('chk-','');
+    var remark=v('remark-'+id);
+    checks[id]={result:radio.value,remark:remark};
+  });
+  // Validate: all items must be checked
+  var tmpl=STATE.checklistTemplates.find(function(t){var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});return plan && t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
+  if(tmpl){
+    var unchecked=tmpl.items.filter(function(item){return !checks[item.id];});
+    if(unchecked.length>0){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e34\u0e4a\u0e01 OK/NG \u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a\u0e17\u0e38\u0e01\u0e02\u0e49\u0e2d ('+unchecked.length+' \u0e02\u0e49\u0e2d\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e34\u0e4a\u0e01)','warning');return;}
+    // Validate: NG items must have remark
+    var ngNoRemark=tmpl.items.filter(function(item){return checks[item.id] && checks[item.id].result==='NG' && !checks[item.id].remark;});
+    if(ngNoRemark.length>0){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Remark \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e02\u0e49\u0e2d\u0e17\u0e35\u0e48 NG','error');return;}
+  }
+  showGlobalLoading(true);var imgIds=await uploadPendingPhotos('tpm-complete','TPM_Records');
+  var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
+  var r=await api('completeTPMPlan',{data:data});showGlobalLoading(false);
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25 TPM \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');closeModal('tpm-complete-modal');await loadTPMPlans();}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+
+// ============================================
+//  ISSUES
+// ============================================
+function renderIssues(){
+  var tb=document.getElementById('issues-tbody');
+  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="8">'+emptyState('\ud83d\udea8','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1b\u0e31\u0e0d\u0e2b\u0e32','\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"')+'</td></tr>';return;}
+  tb.innerHTML=STATE.issues.slice().reverse().map(function(i){return '<tr><td><strong>'+i.ID+'</strong></td><td>'+(i.TargetName||'-')+'</td><td>'+(i.IssueType||'-')+'</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(i.Description||'-')+'</td><td><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span></td><td><span class="badge '+(i.Status||'open').toLowerCase().replace(' ','-')+'">'+(i.Status||'Open')+'</span></td><td>'+((i.OccurredAt||'').substring(0,10)||'-')+'</td><td style="white-space:nowrap">'+(i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button><button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')">\u25b6\ufe0f</button>':'')+'<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')">\ud83d\uddd1\ufe0f</button></td></tr>';}).join('');
+}
+function loadIssueTargets(){var type=v('issue-target-type');var s=document.getElementById('issue-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
+function openIssueModal(){['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});document.getElementById('issue-photos-preview').innerHTML='';STATE.pendingPhotos['issue']={files:[]};v_set('issue-occurred',new Date().toISOString().slice(0,16));loadIssueTargets();openModal('issue-modal');}
+async function saveIssue(){
+  var targetId=v('issue-target-id'),desc=v('issue-description');
+  if(!targetId||!desc){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14','error');return;}
+  var type=v('issue-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});
+  showGlobalLoading(true);var imgIds=await uploadPendingPhotos('issue','Issues/Before');
+  var data={TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',IssueType:v('issue-type'),Description:desc,OccurredAt:v('issue-occurred'),ReportedBy:v('issue-reporter'),Severity:v('issue-severity'),BeforeImageIds:JSON.stringify(imgIds),Status:'Open'};
+  var r=await api('saveIssue',{data:data});showGlobalLoading(false);
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('issue-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('\u0e2a\u0e16\u0e32\u0e19\u0e30: '+status,'success');}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+function openCloseIssueModal(id){
+  var iss=STATE.issues.find(function(i){return i.ID===id;});if(!iss)return;
+  v_set('close-issue-id',id);['close-root-cause','close-corrective','close-by','close-parts-used'].forEach(function(i){v_set(i,'');});
+  v_set('close-date',new Date().toISOString().slice(0,16));
+  document.getElementById('close-photos-preview').innerHTML='';STATE.pendingPhotos['close']={files:[]};
+  document.getElementById('close-issue-info').innerHTML='<strong>'+iss.ID+'</strong> \u2014 '+(iss.TargetName||'-')+'<br><span style="color:var(--text-muted)">'+(iss.Description||'')+'</span>';
+  openModal('issue-close-modal');
+}
+async function closeIssue(){
+  var id=v('close-issue-id'),rootCause=v('close-root-cause'),corrective=v('close-corrective');
+  if(!rootCause||!corrective){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Root Cause \u0e41\u0e25\u0e30\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02','error');return;}
+  showGlobalLoading(true);var imgIds=await uploadPendingPhotos('close','Issues/After');
+  var data={ID:id,RootCause:rootCause,CorrectiveAction:corrective,ClosedAt:v('close-date'),ClosedBy:v('close-by'),PartsUsed:v('close-parts-used'),AfterImageIds:JSON.stringify(imgIds)};
+  var r=await api('closeIssue',{data:data});showGlobalLoading(false);
+  if(r.success){showToast('\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');closeModal('issue-close-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+async function delIssue(id){if(!confirm('\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49?'))return;var r=await api('deleteIssue',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.issues=STATE.issues.filter(function(i){return i.ID!==id;});renderIssues();updateBadges();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+
+// ============================================
+//  STOCK
+// ============================================
+function renderStock(){
+  var vendors=[]; STATE.stockParts.forEach(function(p){if(p.Vendor && vendors.indexOf(p.Vendor)===-1) vendors.push(p.Vendor);});
+  var vf=document.getElementById('stock-vendor-filter');
+  if(vf){var cur=vf.value;vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
+  var allTargets=STATE.molds.map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat(STATE.machines.map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  var lf=document.getElementById('stock-link-filter');
+  if(lf){var cur2=lf.value;lf.innerHTML='<option value="">\ud83d\udd17 \u0e17\u0e38\u0e01 Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
+  filterStock();
+}
+function filterStock(){
+  var q=(document.querySelector('#page-stock .search-input')||{}).value||''; q=q.toLowerCase();
+  var vendor=(document.getElementById('stock-vendor-filter')||{}).value||'';
+  var link=(document.getElementById('stock-link-filter')||{}).value||'';
+  var level=(document.getElementById('stock-level-filter')||{}).value||'';
+  var data=STATE.stockParts.filter(function(p){
+    if(vendor&&p.Vendor!==vendor)return false;
+    if(link&&p.LinkedID!==link)return false;
+    if(level==='low'&&!(Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0))return false;
+    if(level==='ok'&&(Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0))return false;
+    if(q&&(p.PartName+(p.PartNo||'')+(p.Vendor||'')).toLowerCase().indexOf(q)===-1)return false;
+    return true;
+  });
+  var tb=document.getElementById('stock-tbody');
+  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83d\udce6','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','')+'</td></tr>';return;}
+  var allTargets=STATE.molds.map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat(STATE.machines.map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  tb.innerHTML=data.map(function(p){
+    var cur=Number(p.CurrentStock)||0,min=Number(p.MinStock)||0;
+    var pct=min>0?Math.min((cur/min)*100,100):100;
+    var color=cur<=min?'var(--danger)':cur<=min*1.5?'var(--warning)':'var(--success)';
+    var linked=allTargets.find(function(t){return t.id===p.LinkedID;});
+    return '<tr><td><strong>'+p.PartName+'</strong></td><td>'+(p.PartNo||'-')+'</td><td>'+(p.Vendor||'-')+'</td><td>'+(p.Unit||'-')+'</td><td>'+p.MinStock+'</td><td><div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+p.CurrentStock+'</div><div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+(cur<=min?'<span class="badge overdue" style="font-size:9px;padding:1px 6px">Low</span>':'')+'</td><td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td><td>'+(p.Location||'-')+'</td><td style="white-space:nowrap"><button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">\ud83d\udce6 \u0e23\u0e31\u0e1a/\u0e40\u0e1a\u0e34\u0e01</button> <button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')">&#128465;&#65039;</button></td></tr>';
+  }).join('');
+}
+function loadStockLinkTargets(){
+  var type=v('stock-link-type');var s=document.getElementById('stock-link-id');
+  if(!type){s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';return;}
+  var list=type==='Mold'?STATE.molds:STATE.machines;
+  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+}
+function openStockPartModal(data){
+  ['stock-id','stock-name','stock-partno','stock-vendor','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});v_set('stock-min','0');v_set('stock-current','0');
+  v_set('stock-link-type','');v_set('stock-link-id','');
+  document.getElementById('stock-link-id').innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';
+  document.getElementById('stock-photos-preview').innerHTML='';STATE.pendingPhotos['stock-part']={files:[]};
+  document.getElementById('stock-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48';
+  if(data){
+    v_set('stock-id',data.ID);v_set('stock-name',data.PartName);v_set('stock-partno',data.PartNo);
+    v_set('stock-vendor',data.Vendor);v_set('stock-unit',data.Unit);v_set('stock-min',data.MinStock);
+    v_set('stock-current',data.CurrentStock);v_set('stock-location',data.Location);v_set('stock-notes',data.Notes);
+    if(data.LinkedType){v_set('stock-link-type',data.LinkedType);loadStockLinkTargets();setTimeout(function(){v_set('stock-link-id',data.LinkedID||'');},50);}
+  }
+  openModal('stock-part-modal');
+}
+async function saveStockPart(){
+  var name=v('stock-name');if(!name){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','error');return;}
+  showGlobalLoading(true);
+  var imgIds=await uploadPendingPhotos('stock-part','StockParts');
+  var linkType=v('stock-link-type'),linkId=v('stock-link-id');
+  var allT=STATE.molds.concat(STATE.machines);var linkedItem=allT.find(function(t){return t.ID===linkId;});
+  var data={ID:v('stock-id'),PartName:name,PartNo:v('stock-partno'),Vendor:v('stock-vendor'),Unit:v('stock-unit'),MinStock:v('stock-min')||0,CurrentStock:v('stock-current')||0,Location:v('stock-location'),Notes:v('stock-notes'),LinkedType:linkType,LinkedID:linkId,LinkedTo:linkedItem?linkedItem.Name:'',ImageIds:JSON.stringify(imgIds)};
+  var r=await api('saveStockPart',{data:data});
+  showGlobalLoading(false);
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('stock-part-modal');var res=await api('getStockParts');if(res.success){STATE.stockParts=res.data;renderStock();updateBadges();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+async function delStockPart(id,name){if(!confirm('\u0e25\u0e1a "'+name+'" ?'))return;var r=await api('deleteStockPart',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.stockParts=STATE.stockParts.filter(function(p){return p.ID!==id;});renderStock();updateBadges();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+function openStockTxModal(preSelectId){
+  var s=document.getElementById('tx-part-id');
+  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+STATE.stockParts.map(function(p){return '<option value="'+p.ID+'"'+(p.ID===preSelectId?' selected':'')+'>'+p.PartName+'</option>';}).join('');
+  v_set('tx-qty','');v_set('tx-reason','');v_set('tx-by','');
+  setTxType('IN');
+  if(preSelectId)showTxStockInfo();
+  openModal('stock-tx-modal');
+}
+function setTxType(type){
+  v_set('tx-type',type);
+  document.getElementById('tx-btn-in').className='btn '+(type==='IN'?'btn-success':'btn-outline');
+  document.getElementById('tx-btn-out').className='btn '+(type==='OUT'?'btn-danger':'btn-outline');
+}
+function showTxStockInfo(){
+  var partId=v('tx-part-id');var info=document.getElementById('tx-stock-info');
+  var part=STATE.stockParts.find(function(p){return p.ID===partId;});
+  if(!part){info.style.display='none';v_set('tx-unit','');return;}
+  var cur=Number(part.CurrentStock)||0,min=Number(part.MinStock)||0;
+  var color=cur<=min?'var(--danger)':cur<=min*1.5?'var(--warning)':'var(--success)';
+  info.style.display='block';
+  info.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between"><div><strong>'+part.PartName+'</strong>'+(part.LinkedTo?' <span style="font-size:10px;color:var(--text-muted)">/ '+part.LinkedTo+'</span>':'')+'</div><div style="text-align:right"><div style="font-size:20px;font-weight:700;color:'+color+'">'+cur+' <span style="font-size:12px;font-weight:400">'+(part.Unit||'')+'</span></div><div style="font-size:10px;color:var(--text-muted)">Min: '+min+' '+(part.Unit||'')+'</div></div></div>';
+  v_set('tx-unit',part.Unit||'');
+}
+async function doTransaction(){
+  var partId=v('tx-part-id'),type=v('tx-type'),qty=v('tx-qty'),reason=v('tx-reason'),by=v('tx-by')||'\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38';
+  if(!partId||!qty){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e41\u0e25\u0e30\u0e08\u0e33\u0e19\u0e27\u0e19','error');return;}
+  var r=await api('stockTransaction',{data:{partId:partId,type:type,quantity:qty,reason:reason,by:by}});
+  if(r.success){showToast((type==='IN'?'\u0e23\u0e31\u0e1a\u0e40\u0e02\u0e49\u0e32':'\u0e40\u0e1a\u0e34\u0e01\u0e2d\u0e2d\u0e01')+' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 (\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: '+r.newBalance+')','success');closeModal('stock-tx-modal');var res=await api('getStockParts');if(res.success){STATE.stockParts=res.data;renderStock();updateBadges();}}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
+
+// ============================================
+//  REPORTS
+// ============================================
+function loadReports(){
+  var total=STATE.tpmPlans.length,done=STATE.tpmPlans.filter(function(p){return p.Status==='Done';}).length,overdue=STATE.tpmPlans.filter(function(p){return p.Status==='Overdue';}).length;
+  var ti=STATE.issues.length,ci=STATE.issues.filter(function(i){return i.Status==='Closed';}).length;
+  document.getElementById('kpi-summary').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px"><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Completion Rate</div><div style="font-size:28px;font-weight:700;color:var(--success)">'+(total?Math.round(done/total*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Issue Close Rate</div><div style="font-size:28px;font-weight:700;color:var(--primary)">'+(ti?Math.round(ci/ti*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total TPM Plans</div><div style="font-size:28px;font-weight:700">'+total+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total Issues</div><div style="font-size:28px;font-weight:700">'+ti+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Overdue</div><div style="font-size:28px;font-weight:700;color:var(--danger)">'+overdue+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Low Stock</div><div style="font-size:28px;font-weight:700;color:var(--warning)">'+STATE.stockParts.filter(function(p){return Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0;}).length+'</div></div></div>';
+}
+async function openGoogleSheet(){var r=await api('getSheetUrl');if(r.success)window.open(r.url,'_blank');else showToast('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e1b\u0e34\u0e14\u0e44\u0e14\u0e49','error');}
+function exportCSV(type){
+  var data=[],headers=[],filename='';
+  if(type==='tpm'){data=STATE.tpmPlans;headers=['TargetType','TargetName','Year','PlannedDate','Status','ActualDate','ActualBy','AssignedTo','Notes'];filename='tpm_plans.csv';}
+  else if(type==='issues'){data=STATE.issues;headers=['ID','TargetType','TargetName','IssueType','Description','Severity','Status','OccurredAt','ReportedBy','ClosedAt','ClosedBy','RootCause','CorrectiveAction'];filename='issues.csv';}
+  else if(type==='stock'){data=STATE.stockParts;headers=['PartName','PartNo','Vendor','Unit','MinStock','CurrentStock','Location'];filename='stock.csv';}
+  var csv=[headers.join(',')].concat(data.map(function(r){return headers.map(function(h){return '"'+((r[h]||'')+'').replace(/"/g,'""')+'"';}).join(',');})).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=filename;a.click();
+}
+
+// ============================================
+//  USERS
+// ============================================
+async function loadUsers(){
+  var r=await api('getUsers');if(!r.success)return;
+  document.getElementById('users-tbody').innerHTML=r.data.map(function(u){return '<tr><td>'+u.Email+'</td><td>'+u.Name+'</td><td><span class="badge planned">'+u.Role+'</span></td><td>'+(u.Department||'-')+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openUserModal('+JSON.stringify(u)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delUser(\''+u.ID+'\')">&#128465;&#65039;</button></td></tr>';}).join('');
+}
+function openUserModal(data){['user-id','user-email','user-name-input','user-dept'].forEach(function(i){v_set(i,'');});document.getElementById('user-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49';if(data){v_set('user-id',data.ID);v_set('user-email',data.Email);v_set('user-name-input',data.Name);v_set('user-role-select',data.Role);v_set('user-dept',data.Department);}openModal('user-modal');}
+async function saveUser(){var email=v('user-email');if(!email){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Email','error');return;}var data={ID:v('user-id'),Email:email,Name:v('user-name-input')||email.split('@')[0],Role:v('user-role-select')||'Viewer',Department:v('user-dept')};var r=await api('saveUser',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('user-modal');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function delUser(id){if(!confirm('\u0e25\u0e1a\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e19\u0e35\u0e49?'))return;var r=await api('deleteUser',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+
+// ============================================
+//  PHOTO UPLOAD
+// ============================================
+function triggerUpload(id){document.getElementById(id).click();}
+function previewPhotos(input,previewId,key){
+  if(!STATE.pendingPhotos[key])STATE.pendingPhotos[key]={files:[]};
+  Array.from(input.files).forEach(function(file){
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var idx=STATE.pendingPhotos[key].files.length;
+      STATE.pendingPhotos[key].files.push({file:file,dataUrl:e.target.result});
+      var grid=document.getElementById(previewId);
+      var item=document.createElement('div');item.className='photo-preview-item';item.id='pi-'+key+'-'+idx;
+      item.innerHTML='<img src="'+e.target.result+'" onclick="openLightbox(\''+e.target.result.replace(/'/g,"\\'")+"','')\" /><button class=\"photo-remove\" onclick=\"event.stopPropagation();rmPhoto('"+key+"',"+idx+",'"+previewId+"')\">\u2715</button>";
+      grid.appendChild(item);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value='';
+}
+function rmPhoto(key,idx,previewId){if(STATE.pendingPhotos[key]&&STATE.pendingPhotos[key].files[idx])STATE.pendingPhotos[key].files[idx]=null;var el=document.getElementById('pi-'+key+'-'+idx);if(el)el.remove();}
+async function uploadPendingPhotos(key,folder){
+  var state=STATE.pendingPhotos[key];
+  if(!state||!state.files.length)return[];
+  var toUpload=state.files.filter(function(f){return f!==null;});
+  if(!toUpload.length)return[];
+  var results=await Promise.all(toUpload.map(function(f,i){
+    var fname=key+'_'+Date.now()+'_'+i+'.'+f.file.name.split('.').pop();
+    return api('uploadFile',{base64Data:f.dataUrl,filename:fname,subFolder:folder});
+  }));
+  return results.filter(function(r){return r.success;}).map(function(r){return r.fileId;});
+}
+
+// ============================================
+//  HELPERS
+// ============================================
+function filterTable(input,tableId){var q=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().indexOf(q)>=0?'':'none';});}
+function filterTableByCol(sel,tableId,colIdx){var q=sel.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){var cell=tr.cells[colIdx];tr.style.display=(!q||(cell&&cell.textContent.toLowerCase().indexOf(q)>=0))?'':'none';});}
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
+function v(id){var el=document.getElementById(id);return el?el.value:'';}
+function v_set(id,val){var el=document.getElementById(id);if(el)el.value=val;}
+function showToast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast '+type;var icon={success:'\u2705',error:'\u274c',warning:'\u26a0\ufe0f'}[type]||'\u2139\ufe0f';t.innerHTML='<span style="font-size:16px">'+icon+'</span><span>'+msg+'</span>';document.getElementById('toast-container').appendChild(t);setTimeout(function(){t.remove();},3500);}
+function showGlobalLoading(show){var el=document.getElementById('global-loading');if(show)el.classList.add('show');else el.classList.remove('show');}
+function emptyState(icon,title,sub){return '<div class="empty-state"><div class="empty-icon">'+icon+'</div><h3>'+title+'</h3><p>'+sub+'</p></div>';}
+function tryParse(str){try{return JSON.parse(str)||[];}catch(e){return [];}}
+
+// LIGHTBOX
+function openLightbox(thumbUrl,viewUrl){
+  document.getElementById('lightbox-img').src=thumbUrl;
+  document.getElementById('lightbox-drive-link').href=viewUrl||thumbUrl;
+  document.getElementById('lightbox-drive-link').style.display=viewUrl?'flex':'none';
+  document.getElementById('lightbox-overlay').classList.add('open');
+}
+function closeLightbox(){
+  document.getElementById('lightbox-overlay').classList.remove('open');
+  document.getElementById('lightbox-img').src='';
+}
+
+// ============================================
+//  PM PRINT FORM
+// ============================================
+async function openPMPrintForm(moldId) {
+  var mold = STATE.molds.find(function(m){return m.ID===moldId;});
+  if(!mold){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25','error');return;}
+
+  showGlobalLoading(true);
+  // Fetch all TPM plans for this mold
+  var yr = new Date().getFullYear();
+  var r = await api('getTPMPlans&year='+yr);
+  showGlobalLoading(false);
+  var allPlans = (r.success ? r.data : STATE.tpmPlans) || [];
+  var moldPlans = allPlans.filter(function(p){return p.TargetID===moldId && p.TargetType==='Mold';}).sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
+
+  // Get checklist template (mold-standard)
+  var tmpl = (STATE.checklistTemplates||[]).find(function(t){return t.id==='mold-standard';}) || {items:[]};
+  var checkItems = tmpl.items || [];
+
+  // Get last 4 done plans for actual results
+  var donePlans = moldPlans.filter(function(p){return p.Status==='Done';}).slice(-4);
+
+  // Build plan/actual month grid (current year, find which months have planned/done)
+  var monthlyPlan = {};
+  var monthlyActual = {};
+  moldPlans.forEach(function(p){
+    if(!p.PlannedDate) return;
+    var mo = new Date(p.PlannedDate).getMonth()+1;
+    if(!monthlyPlan[mo]) monthlyPlan[mo]=[];
+    monthlyPlan[mo].push(p);
+    if(p.Status==='Done'){
+      if(!monthlyActual[mo]) monthlyActual[mo]=[];
+      monthlyActual[mo].push(p);
+    }
+  });
+
+  // Months that have plans — up to 4 columns
+  var planMonths = Object.keys(monthlyPlan).map(Number).sort(function(a,b){return a-b;}).slice(0,4);
+  var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
+  var enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function buildMonthCols(months) {
+    return months.map(function(mo){
+      return '<th colspan="4" style="text-align:center;border:1px solid #333;padding:3px;font-size:9pt">\u0e40\u0e14\u0e37\u0e2d\u0e19 '+thMonths[mo-1]+' '+yr+'<br><small>'+enMonths[mo-1]+' '+yr+'</small></th>';
+    }).join('');
+  }
+  function buildWeekCols(months) {
+    return months.map(function(){
+      return '<th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">1</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">2</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">3</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">4</th>';
+    }).join('');
+  }
+  function buildPlanRow(months, type) {
+    return months.map(function(mo){
+      var plans = type==='PLAN' ? monthlyPlan[mo] : monthlyActual[mo];
+      var dot = (plans && plans.length)>0 ? '<span style="font-size:16px">&#9679;</span>' : '';
+      return '<td style="border:1px solid #333;text-align:center">'+dot+'</td><td style="border:1px solid #333"></td><td style="border:1px solid #333"></td><td style="border:1px solid #333"></td>';
+    }).join('');
+  }
+
+  // Build checklist rows
+  function buildChecklistRows() {
+    return checkItems.map(function(item){
+      var cols = donePlans.map(function(plan){
+        var res = {};
+        try{res=JSON.parse(plan.ChecklistResult||'{}');}catch(e){}
+        var r = res[item.id] || {};
+        var result = r.result || '';
+        var remark = r.remark || '';
+        var sym = result==='OK' ? '<span style="font-size:14px;color:green">&#10003;</span>' : (result==='NG' ? '<span style="font-size:14px;color:red">&#10005;</span>' : '');
+        return '<td style="border:1px solid #333;text-align:center;width:40px">'+sym+'</td><td style="border:1px solid #333;font-size:8pt;width:60px">'+remark+'</td>';
+      }).join('');
+      // Pad if fewer than 4 done plans
+      for(var i=donePlans.length;i<4;i++){
+        cols+='<td style="border:1px solid #333;width:40px"></td><td style="border:1px solid #333;width:60px"></td>';
+      }
+      return '<tr><td style="border:1px solid #333;text-align:center;font-size:9pt">'+item.id+'</td>'+
+             '<td style="border:1px solid #333;font-size:9pt;padding:3px 6px">'+item.th+'</td>'+
+             '<td style="border:1px solid #333;font-size:9pt;padding:3px 6px">'+item.std+'</td>'+
+             cols+'</tr>';
+    }).join('');
+  }
+
+  // Build actual date headers (last 4 done)
+  function buildActualHeaders() {
+    var hdrs = donePlans.map(function(p){
+      var d = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'}) : (p.PlannedDate||'').substring(0,10);
+      return '<th colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt">'+
+             'ACTUAL '+d+'<br><small>'+(p.ActualBy||'-')+'</small></th>';
+    }).join('');
+    for(var i=donePlans.length;i<4;i++){
+      hdrs+='<th colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt">ACTUAL '+i+'<br><small>&nbsp;</small></th>';
+    }
+    return hdrs;
+  }
+
+  var printDate = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
+    '<title>PM Form - '+mold.Name+'</title>'+
+    '<style>'+
+      '@page{size:A4 portrait;margin:10mm 8mm;}'+
+      'body{font-family:"TH SarabunPSK","Sarabun",Arial,sans-serif;font-size:10pt;color:#000;margin:0;padding:0;}'+
+      'table{border-collapse:collapse;width:100%;}'+
+      'th,td{padding:2px 4px;vertical-align:middle;}'+
+      '.header-title{font-size:14pt;font-weight:bold;margin-bottom:4px;}'+
+      '.section-label{font-size:9pt;font-weight:bold;}'+
+      '.sign-box{border:1px solid #333;min-height:40px;width:100%;display:block;}'+
+      '@media print{.no-print{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
+    '</style></head><body>'+
+
+    // Print button
+    '<div class="no-print" style="text-align:center;padding:8px;background:#f0f0f0;margin-bottom:8px">'+
+      '<button onclick="window.print()" style="padding:8px 24px;font-size:12pt;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:8px">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print</button>'+
+      '<button onclick="window.close()" style="padding:8px 24px;font-size:12pt;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer">\u2715 \u0e1b\u0e34\u0e14</button>'+
+    '</div>'+
+
+    // ====== HEADER ======
+    '<table style="margin-bottom:6px"><tr>'+
+      '<td style="width:65%;vertical-align:top">'+
+        '<div class="header-title">\u0e41\u0e1c\u0e19\u0e41\u0e25\u0e30\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a SPECIAL TOOLS \u0e15\u0e32\u0e21\u0e04\u0e32\u0e1a\u0e40\u0e27\u0e25\u0e32 (PM.)</div>'+
+        '<div style="font-size:10pt">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e02\u0e2d\u0e07 SPECIAL TOOLS : \u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e09\u0e35\u0e14\u0e1e\u0e25\u0e32\u0e2a\u0e15\u0e34\u0e01 ( PLASTIC INJECTION )</div>'+
+        '<table style="margin-top:6px;font-size:9pt"><tr>'+
+          '<td style="width:80px">\u0e2b\u0e19\u0e48\u0e27\u0e22\u0e07\u0e32\u0e19 WEN/WP</td>'+
+          '<td style="border-bottom:1px solid #333;width:120px">&nbsp;</td>'+
+          '<td style="width:100px">\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e25\u0e02\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</td>'+
+          '<td style="border-bottom:1px solid #333;width:120px">&nbsp;</td>'+
+        '</tr></table>'+
+      '</td>'+
+      '<td style="width:35%;vertical-align:top">'+
+        '<table style="border:1px solid #333;font-size:9pt;width:100%">'+
+          '<tr>'+
+            '<th style="border:1px solid #333;padding:3px;background:#e8e8e8">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR</th>'+
+            '<th style="border:1px solid #333;padding:3px;background:#e8e8e8">\u0e01\u0e32\u0e23\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07</th>'+
+          '</tr>'+
+          '<tr>'+
+            '<td style="border:1px solid #333;padding:4px;text-align:center">'+( mold.Vendor||'-')+'</td>'+
+            '<td style="border:1px solid #333;padding:4px;text-align:center">WEN / WP</td>'+
+          '</tr>'+
+          '<tr>'+
+            '<td style="border:1px solid #333;padding:4px;text-align:center;background:#fff3cd">WEN-OSM</td>'+
+            '<td style="border:1px solid #333;padding:4px;text-align:center">SV &nbsp;&nbsp;&nbsp; ST/SV</td>'+
+          '</tr>'+
+          '<tr>'+
+            '<td style="border:1px solid #333;height:32px;font-size:8pt;text-align:center">&nbsp;</td>'+
+            '<td style="border:1px solid #333;height:32px">&nbsp;</td>'+
+          '</tr>'+
+        '</table>'+
+      '</td>'+
+    '</tr></table>'+
+
+    // ====== ACTION PLAN TABLE ======
+    '<div style="text-align:center;font-weight:bold;font-size:11pt;background:#d9d9d9;border:1px solid #333;padding:4px;margin-top:4px">ACTION PLAN PM. CHECK SPECIAL TOOLS</div>'+
+    '<table style="font-size:9pt;margin-bottom:6px">'+
+      '<thead>'+
+        '<tr>'+
+          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:60px">PRODUCT</th>'+
+          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:30px">NO.</th>'+
+          '<th rowspan="3" style="border:1px solid #333;padding:3px">SPECIAL TOOLS NAME</th>'+
+          '<th colspan="2" style="border:1px solid #333;text-align:center;padding:3px">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th>'+
+          buildMonthCols(planMonths.length?planMonths:[1,2,3,4])+
+          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:70px">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a PIONEER</th>'+
+          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:70px">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a WEN / WP</th>'+
+        '</tr>'+
+        '<tr>'+
+          '<th style="border:1px solid #333;padding:2px;text-align:center;font-size:8pt">MOLD</th>'+
+          '<th style="border:1px solid #333;padding:2px;text-align:center;font-size:8pt">DIE<br>CAST</th>'+
+          buildWeekCols(planMonths.length?planMonths:[1,2,3,4])+
+        '</tr>'+
+        '<tr>'+
+          '<th style="border:1px solid #333;text-align:center">&#10003;</th>'+
+          '<th style="border:1px solid #333;text-align:center"></th>'+
+          buildWeekCols(planMonths.length?planMonths:[1,2,3,4]).replace(/<th/g,'<td').replace(/<\/th>/g,'</td>')+
+        '</tr>'+
+      '</thead>'+
+      '<tbody>'+
+        '<tr>'+
+          '<td rowspan="2" style="border:1px solid #333;text-align:center;font-weight:bold;font-size:9pt">WP.</td>'+
+          '<td style="border:1px solid #333;text-align:center">1</td>'+
+          '<td style="border:1px solid #333;padding:3px;font-size:9pt">'+
+            'MOLD &nbsp;: '+mold.Name+'<br>'+
+            'DWG.NO. : '+(mold.AssetNo||'-')+'<br>'+
+            'MODEL &nbsp;: '+(mold.Material||'-')+'<br>'+
+            'ASSET &nbsp;&nbsp;: '+(mold.AssetNo||'-')+
+          '</td>'+
+          '<td style="border:1px solid #333;text-align:center">&#10003;</td>'+
+          '<td style="border:1px solid #333;text-align:center"></td>'+
+          '<td style="border:1px solid #333;text-align:center;font-weight:bold;font-size:11pt" colspan="1">PLAN</td>'+
+          buildPlanRow(planMonths.length?planMonths:[1,2,3,4],'PLAN')+
+          '<td rowspan="2" style="border:1px solid #333;text-align:center"></td>'+
+          '<td rowspan="2" style="border:1px solid #333;text-align:center"></td>'+
+        '</tr>'+
+        '<tr>'+
+          '<td style="border:1px solid #333;text-align:center;font-weight:bold;font-size:11pt" colspan="3">ACTUAL</td>'+
+          buildPlanRow(planMonths.length?planMonths:[1,2,3,4],'ACTUAL')+
+        '</tr>'+
+      '</tbody>'+
+    '</table>'+
+
+    // ====== CHECK SHEET TABLE ======
+    '<div style="text-align:center;font-weight:bold;font-size:11pt;background:#d9d9d9;border:1px solid #333;padding:4px">CHECK SHEET PM. SPECIAL TOOLS</div>'+
+    '<table style="font-size:9pt">'+
+      '<thead>'+
+        '<tr>'+
+          '<th colspan="3" style="border:1px solid #333;text-align:center;padding:4px;background:#f0f0f0">\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
+          '<th colspan="'+(donePlans.length*2 + (4-donePlans.length)*2)+'" style="border:1px solid #333;text-align:center;padding:4px;background:#f0f0f0">\u0e23\u0e2d\u0e1a\u0e41\u0e25\u0e30\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
+        '</tr>'+
+        '<tr>'+
+          '<th style="border:1px solid #333;text-align:center;width:28px">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>'+
+          '<th style="border:1px solid #333;padding:4px">\u0e2b\u0e31\u0e27\u0e02\u0e49\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
+          '<th style="border:1px solid #333;padding:4px">\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
+          buildActualHeaders()+
+        '</tr>'+
+      '</thead>'+
+      '<tbody>'+buildChecklistRows()+'</tbody>'+
+    '</table>'+
+
+    // ====== FOOTER ======
+    '<table style="margin-top:6px;font-size:9pt"><tr>'+
+      '<td style="width:50%;vertical-align:top">'+
+        '<table style="font-size:9pt"><tr>'+
+          '<td style="padding-right:16px">\u0e2a\u0e31\u0e0d\u0e25\u0e31\u0e01\u0e29\u0e13\u0e4c\u0e43\u0e19\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</td>'+
+          '<td>\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02</td>'+
+        '</tr><tr>'+
+          '<td><span style="font-size:13pt">&#10003;</span> = \u0e1b\u0e01\u0e15\u0e34 &nbsp;&nbsp; <span style="font-size:13pt">&#10005;</span> = \u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</td>'+
+          '<td><div style="border:1px solid #333;min-height:48px;width:180px;padding:3px;font-size:9pt"></div></td>'+
+        '</tr></table>'+
+      '</td>'+
+      '<td style="width:50%;vertical-align:top">'+
+        '<table style="font-size:9pt;width:100%">'+
+          '<tr><td>\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (WEN/WP)</td><td style="border-bottom:1px solid #333;min-width:120px">&nbsp;</td></tr>'+
+          '<tr><td>\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e48\u0e27\u0e21 &nbsp; PIONEER</td><td style="border-bottom:1px solid #333">&nbsp;</td></tr>'+
+          '<tr><td>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</td><td style="border-bottom:1px solid #333">&nbsp;</td></tr>'+
+        '</table>'+
+      '</td>'+
+    '</tr></table>'+
+
+    '<div style="text-align:right;font-size:8pt;margin-top:6px;color:#555">MA 8543-07 EFF. 03/24 &nbsp;&nbsp; \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: '+printDate+' &nbsp;|\u0e42\u0e21\u0e25: '+mold.Name+'</div>'+
+    '<div style="text-align:center;font-size:8pt;margin-top:2px;color:#555">1/1</div>'+
+
+  '</body></html>';
+
+  var w = window.open('','_blank','width=900,height=1100,scrollbars=yes');
+  w.document.write(html);
+  w.document.close();
+}
+</script>
+</body>
+</html>
