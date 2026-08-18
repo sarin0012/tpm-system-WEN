@@ -588,16 +588,16 @@ window.addEventListener('unhandledrejection', function(e) {
 // ============================================
 const SUPABASE_URL = 'https://kkghaqgdlxomoskrycgp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y';
-var supabase = null;
-try {
-  if (window.supabase && typeof window.supabase.createClient === 'function') {
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('Supabase client initialized OK');
-  } else {
-    console.warn('Supabase CDN not loaded - window.supabase:', typeof window.supabase);
+
+let _sbClient = null;
+function getSupabase() {
+  if (!_sbClient) {
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      console.log('✅ Supabase initialized successfully');
+    }
   }
-} catch (e) {
-  console.error('Supabase init error:', e);
+  return _sbClient;
 }
 
 const STATE = {
@@ -621,7 +621,8 @@ function _uid() {
 // High-Speed Supabase API Helper with timeout protection
 async function _apiInternal(actionStr, payload = null) {
   try {
-    if (!supabase) return { success: false, error: 'Supabase not ready (CDN may be loading)' };
+    const sb = getSupabase();
+    if (!sb) return { success: false, error: 'Supabase CDN กำลังโหลด หรือยังไม่พร้อม' };
     
     let action = actionStr;
     let urlParams = {};
@@ -641,11 +642,11 @@ async function _apiInternal(actionStr, payload = null) {
       // DASHBOARD
       case 'getDashboard': {
         const [mRes, mcRes, sRes, iRes, tRes] = await Promise.all([
-          supabase.from('molds').select('*'),
-          supabase.from('machines').select('*'),
-          supabase.from('stock_parts').select('*'),
-          supabase.from('issues').select('*'),
-          supabase.from('tpm_plans').select('*')
+          sb.from('molds').select('*'),
+          sb.from('machines').select('*'),
+          sb.from('stock_parts').select('*'),
+          sb.from('issues').select('*'),
+          sb.from('tpm_plans').select('*')
         ]);
 
         const molds = mRes.data || [];
@@ -735,7 +736,7 @@ async function _apiInternal(actionStr, payload = null) {
 
       // MOLDS
       case 'getMolds': {
-        const { data, error } = await supabase.from('molds').select('*').order('CreatedAt', { ascending: false });
+        const { data, error } = await sb.from('molds').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         return { success: true, data: data || [] };
       }
@@ -743,21 +744,21 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await supabase.from('molds').upsert(item);
+        const { error } = await sb.from('molds').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
       case 'deleteMold': {
         const id = payload.id;
-        const { error } = await supabase.from('molds').delete().eq('ID', id);
+        const { error } = await sb.from('molds').delete().eq('ID', id);
         if (error) return { success: false, error: error.message };
-        await supabase.from('tpm_plans').delete().eq('TargetID', id);
+        await sb.from('tpm_plans').delete().eq('TargetID', id);
         return { success: true };
       }
 
       // MACHINES
       case 'getMachines': {
-        const { data, error } = await supabase.from('machines').select('*').order('CreatedAt', { ascending: false });
+        const { data, error } = await sb.from('machines').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         return { success: true, data: data || [] };
       }
@@ -765,21 +766,21 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await supabase.from('machines').upsert(item);
+        const { error } = await sb.from('machines').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
       case 'deleteMachine': {
         const id = payload.id;
-        const { error } = await supabase.from('machines').delete().eq('ID', id);
+        const { error } = await sb.from('machines').delete().eq('ID', id);
         if (error) return { success: false, error: error.message };
-        await supabase.from('tpm_plans').delete().eq('TargetID', id);
+        await sb.from('tpm_plans').delete().eq('TargetID', id);
         return { success: true };
       }
 
       // STOCK PARTS
       case 'getStockParts': {
-        const { data, error } = await supabase.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
+        const { data, error } = await sb.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         return { success: true, data: data || [] };
       }
@@ -787,31 +788,31 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await supabase.from('stock_parts').upsert(item);
+        const { error } = await sb.from('stock_parts').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
       case 'deleteStockPart': {
-        const { error } = await supabase.from('stock_parts').delete().eq('ID', payload.id);
+        const { error } = await sb.from('stock_parts').delete().eq('ID', payload.id);
         if (error) return { success: false, error: error.message };
         return { success: true };
       }
       case 'stockTransaction': {
         if (!payload || !payload.data) return { success: true };
         const { partId, type, quantity } = payload.data;
-        const { data: part } = await supabase.from('stock_parts').select('*').eq('ID', partId).single();
+        const { data: part } = await sb.from('stock_parts').select('*').eq('ID', partId).single();
         if (part) {
           let newQty = Number(part.Qty) || 0;
           if (type === 'IN') newQty += Number(quantity);
           else if (type === 'OUT') newQty = Math.max(0, newQty - Number(quantity));
-          await supabase.from('stock_parts').update({ Qty: newQty }).eq('ID', partId);
+          await sb.from('stock_parts').update({ Qty: newQty }).eq('ID', partId);
         }
         return { success: true };
       }
 
       // ISSUES
       case 'getIssues': {
-        const { data, error } = await supabase.from('issues').select('*').order('CreatedAt', { ascending: false });
+        const { data, error } = await sb.from('issues').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         return { success: true, data: data || [] };
       }
@@ -819,18 +820,18 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await supabase.from('issues').upsert(item);
+        const { error } = await sb.from('issues').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
       case 'updateIssueStatus': {
-        const { error } = await supabase.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
+        const { error } = await sb.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
         if (error) return { success: false, error: error.message };
         return { success: true };
       }
       case 'closeIssue': {
         const item = Object.assign({}, payload.data);
-        const { error } = await supabase.from('issues').update({
+        const { error } = await sb.from('issues').update({
           Status: 'Closed',
           ClosedAt: item.ClosedAt,
           ClosedBy: item.ClosedBy,
@@ -843,14 +844,14 @@ async function _apiInternal(actionStr, payload = null) {
         return { success: true };
       }
       case 'deleteIssue': {
-        const { error } = await supabase.from('issues').delete().eq('ID', payload.id);
+        const { error } = await sb.from('issues').delete().eq('ID', payload.id);
         if (error) return { success: false, error: error.message };
         return { success: true };
       }
 
       // TPM PLANS
       case 'getTPMPlans': {
-        let query = supabase.from('tpm_plans').select('*');
+        let query = sb.from('tpm_plans').select('*');
         const yr = (payload && payload.year) || urlParams.year;
         if (yr) query = query.eq('Year', Number(yr));
         const { data, error } = await query;
@@ -861,7 +862,7 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await supabase.from('tpm_plans').upsert(item);
+        const { error } = await sb.from('tpm_plans').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
@@ -870,14 +871,14 @@ async function _apiInternal(actionStr, payload = null) {
           ID: _uid(),
           CreatedAt: new Date().toISOString()
         }));
-        const { error } = await supabase.from('tpm_plans').insert(plans);
+        const { error } = await sb.from('tpm_plans').insert(plans);
         if (error) return { success: false, error: error.message };
         return { success: true, count: plans.length };
       }
       case 'completeTPM':
       case 'completeTPMPlan': {
         const item = Object.assign({}, payload.data);
-        const { error } = await supabase.from('tpm_plans').update({
+        const { error } = await sb.from('tpm_plans').update({
           Status: 'Done',
           ActualDate: item.ActualDate,
           ActualBy: item.ActualBy,
@@ -889,7 +890,7 @@ async function _apiInternal(actionStr, payload = null) {
         return { success: true };
       }
       case 'deleteTPMPlan': {
-        const { error } = await supabase.from('tpm_plans').delete().eq('ID', payload.id);
+        const { error } = await sb.from('tpm_plans').delete().eq('ID', payload.id);
         if (error) return { success: false, error: error.message };
         return { success: true };
       }
@@ -982,14 +983,6 @@ document.addEventListener('DOMContentLoaded', function() {
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
     
-    // Show connection status on dashboard
-    var dashStats = document.getElementById('dash-stats');
-    if (dashStats) {
-      dashStats.innerHTML = '<div style="color:var(--text-muted);padding:20px">' +
-        (supabase ? '🔌 เชื่อมต่อ Supabase แล้ว กำลังโหลดข้อมูล...' : '❌ Supabase CDN ไม่พร้อม - ลอง Refresh (Ctrl+Shift+R)') +
-        '</div>';
-    }
-    
     // Navigate immediately so UI is responsive
     nav('dashboard');
     
@@ -998,12 +991,11 @@ document.addEventListener('DOMContentLoaded', function() {
       var page = document.querySelector('.page.active');
       if (page) {
         var pageName = page.id.replace('page-','');
-        if (pageName === 'dashboard') loadDashboard();
+        nav(pageName);
       }
     }).catch(function(err) { console.error('Initial data load error:', err); });
   } catch (err) {
     console.error('DOMContentLoaded error:', err);
-    alert('System init error: ' + err.message);
   }
 });
 
@@ -1116,8 +1108,16 @@ let tpmCh=null, issCh=null;
 async function loadDashboard() {
   try {
     const r = await api('getDashboard');
-    if (!r.success) { showToast('โหลด Dashboard ไม่ได้: '+r.error,'error'); return; }
-    const d = r.data || {};
+    const d = (r && r.success) ? (r.data || {}) : {
+      totalMolds: (STATE.molds||[]).length,
+      totalMachines: (STATE.machines||[]).length,
+      openIssues: (STATE.issues||[]).filter(i=>i.Status!=='Closed').length,
+      criticalIssues: (STATE.issues||[]).filter(i=>i.Status!=='Closed'&&i.Severity==='Critical').length,
+      tpmThisMonth: 0, tpmDone: 0, tpmOverdue: 0, tpmDueSoon: 0,
+      lowStock: (STATE.stockParts||[]).filter(p=>Number(p.CurrentStock||p.Qty||0)<=Number(p.MinStock||p.MinQty||0)&&Number(p.MinStock||p.MinQty||0)>0).length,
+      tpmChart: [], issueChart: [], recentIssues: (STATE.issues||[]).slice(0,5), overdueTPM: [], lowStockList: []
+    };
+    
     const dashStats = document.getElementById('dash-stats');
     if (dashStats) {
       dashStats.innerHTML =
