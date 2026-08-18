@@ -557,11 +557,48 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <script>
 // ============================================
+//  ERROR HANDLER (must be first!)
+// ============================================
+window.onerror = function(msg, url, line, col, err) {
+  console.error('JS Error:', msg, 'at line', line);
+  var d = document.getElementById('debug-errors');
+  if (!d) {
+    d = document.createElement('div');
+    d.id = 'debug-errors';
+    d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a0505;border-top:2px solid #ef4444;color:#fca5a5;padding:10px 16px;z-index:99999;font-size:12px;font-family:monospace;max-height:120px;overflow-y:auto;';
+    document.body.appendChild(d);
+  }
+  d.innerHTML += '<div>❌ ' + msg + ' (line ' + line + ')</div>';
+  return false;
+};
+window.addEventListener('unhandledrejection', function(e) {
+  console.error('Unhandled Promise:', e.reason);
+  var d = document.getElementById('debug-errors');
+  if (!d) {
+    d = document.createElement('div');
+    d.id = 'debug-errors';
+    d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#1a0505;border-top:2px solid #ef4444;color:#fca5a5;padding:10px 16px;z-index:99999;font-size:12px;font-family:monospace;max-height:120px;overflow-y:auto;';
+    document.body.appendChild(d);
+  }
+  d.innerHTML += '<div>⚠️ Promise: ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason)) + '</div>';
+});
+
+// ============================================
 //  SUPABASE CONFIG & API LAYER
 // ============================================
 const SUPABASE_URL = 'https://kkghaqgdlxomoskrycgp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y';
-const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+var supabase = null;
+try {
+  if (window.supabase && typeof window.supabase.createClient === 'function') {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('Supabase client initialized OK');
+  } else {
+    console.warn('Supabase CDN not loaded - window.supabase:', typeof window.supabase);
+  }
+} catch (e) {
+  console.error('Supabase init error:', e);
+}
 
 const STATE = {
   molds:[], machines:[], tpmPlans:[], issues:[], stockParts:[],
@@ -581,10 +618,10 @@ function _uid() {
   return 'idx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 }
 
-// High-Speed Supabase API Helper
-async function api(actionStr, payload = null) {
+// High-Speed Supabase API Helper with timeout protection
+async function _apiInternal(actionStr, payload = null) {
   try {
-    if (!supabase) return { success: false, error: 'Supabase client failed to initialize' };
+    if (!supabase) return { success: false, error: 'Supabase not ready (CDN may be loading)' };
     
     let action = actionStr;
     let urlParams = {};
@@ -921,24 +958,53 @@ async function api(actionStr, payload = null) {
   }
 }
 
+// Timeout-protected API wrapper (10 seconds max)
+async function api(actionStr, payload = null) {
+  try {
+    return await Promise.race([
+      _apiInternal(actionStr, payload),
+      new Promise(function(_, reject) {
+        setTimeout(function() { reject(new Error('API timeout (10s) for: ' + (actionStr || '').split('&')[0])); }, 10000);
+      })
+    ]);
+  } catch (err) {
+    console.error('API error:', err.message);
+    return { success: false, error: err.message };
+  }
+}
+
 // ============================================
 //  SETUP / CONNECT
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
-  initSelects();
-  const setupScreen = document.getElementById('setup-screen');
-  if (setupScreen) setupScreen.style.display = 'none';
-  // Navigate immediately so UI is responsive
-  nav('dashboard');
-  // Load data in background (don't block navigation)
-  loadAllData().then(() => {
-    // Re-render current page after data loads
-    const page = document.querySelector('.page.active');
-    if (page) {
-      const pageName = page.id.replace('page-','');
-      if (pageName === 'dashboard') loadDashboard();
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    initSelects();
+    var setupScreen = document.getElementById('setup-screen');
+    if (setupScreen) setupScreen.style.display = 'none';
+    
+    // Show connection status on dashboard
+    var dashStats = document.getElementById('dash-stats');
+    if (dashStats) {
+      dashStats.innerHTML = '<div style="color:var(--text-muted);padding:20px">' +
+        (supabase ? '🔌 เชื่อมต่อ Supabase แล้ว กำลังโหลดข้อมูล...' : '❌ Supabase CDN ไม่พร้อม - ลอง Refresh (Ctrl+Shift+R)') +
+        '</div>';
     }
-  }).catch(err => console.error('Initial data load error:', err));
+    
+    // Navigate immediately so UI is responsive
+    nav('dashboard');
+    
+    // Load data in background (don't block navigation)
+    loadAllData().then(function() {
+      var page = document.querySelector('.page.active');
+      if (page) {
+        var pageName = page.id.replace('page-','');
+        if (pageName === 'dashboard') loadDashboard();
+      }
+    }).catch(function(err) { console.error('Initial data load error:', err); });
+  } catch (err) {
+    console.error('DOMContentLoaded error:', err);
+    alert('System init error: ' + err.message);
+  }
 });
 
 function initSelects() {
