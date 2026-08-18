@@ -231,14 +231,13 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="nav-item" onclick="nav('issues')" data-page="issues"><div class="icon">&#128680;</div>&#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634; / Issues<span class="nav-badge" id="badge-issues" style="display:none">0</span></div>
     <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">&#128230;</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
     <div class="nav-section">System</div>
-    <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">&#128200;</div>&#3619;&#3634;&#3618;&#3591;&#3634;&#3609; / Reports</div>
-    <div class="nav-item" onclick="nav('settings')" data-page="settings"><div class="icon">&#128101;</div>&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609; / Users</div>
-    <div class="nav-item" onclick="changeGASUrl()" data-page=""><div class="icon">&#128279;</div>&#3648;&#3611;&#3621;&#3637;&#3656;&#3618;&#3609; GAS URL</div>
+    <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">📈</div>รายงาน / Reports</div>
+    <div class="nav-item" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
-      <div class="user-avatar">T</div>
-      <div class="user-info"><div class="user-name">TPM System</div><div class="user-role">Connected</div></div>
+      <div class="user-avatar" style="background:var(--success-g)">⚡</div>
+      <div class="user-info"><div class="user-name">TPM System</div><div class="user-role" style="color:#34d399">☁️ Supabase Cloud</div></div>
     </div>
   </div>
 </nav>
@@ -620,7 +619,12 @@ async function api(actionStr, payload = null) {
 
         const openIssues = issues.filter(x => x.Status !== 'Closed');
         const criticalIssues = openIssues.filter(x => x.Severity === 'Critical').length;
-        const lowStock = stock.filter(x => (Number(x.Qty) || 0) <= (Number(x.MinQty) || 0)).length;
+        const lowStockItems = stock.filter(x => {
+          const cur = Number(x.CurrentStock ?? x.Qty ?? 0);
+          const min = Number(x.MinStock ?? x.MinQty ?? 0);
+          return min > 0 && cur <= min;
+        });
+        const lowStock = lowStockItems.length;
 
         const now = new Date();
         const curMo = now.getMonth();
@@ -640,7 +644,7 @@ async function api(actionStr, payload = null) {
           return diff >= 0 && diff <= 7;
         }).length;
 
-        const thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
+        const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
         const tpmChart = [];
         const issueChart = [];
         for (let offset = 5; offset >= 0; offset--) {
@@ -686,7 +690,8 @@ async function api(actionStr, payload = null) {
             tpmChart: tpmChart,
             issueChart: issueChart,
             recentIssues: recentIssues,
-            overdueTPM: overdueTPM
+            overdueTPM: overdueTPM,
+            lowStockList: lowStockItems
           }
         };
       }
@@ -919,113 +924,114 @@ async function api(actionStr, payload = null) {
 // ============================================
 //  SETUP / CONNECT
 // ============================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initSelects();
   const setupScreen = document.getElementById('setup-screen');
   if (setupScreen) setupScreen.style.display = 'none';
+  await loadAllData();
   nav('dashboard');
-  loadAllData();
 });
-
-async function connectGAS() {
-  const url = document.getElementById('gas-url-input').value.trim();
-  const errEl = document.getElementById('setup-error');
-  if (!url) { errEl.textContent = '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e43\u0e2a\u0e48 URL'; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
-  showGlobalLoading(true);
-  GAS_URL = url;
-  const r = await api('ping');
-  showGlobalLoading(false);
-  if (r.success) {
-    localStorage.setItem('tpm_gas_url', url);
-    document.getElementById('setup-screen').style.display = 'none';
-    showToast('\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08! \u2705', 'success');
-    nav('dashboard');
-    loadAllData();
-  } else {
-    errEl.textContent = '\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49: ' + r.error + ' \u2014 \u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a URL \u0e41\u0e25\u0e30 Deploy settings';
-    errEl.style.display = 'block';
-    GAS_URL = '';
-  }
-}
-
-function changeGASUrl() {
-  localStorage.removeItem('tpm_gas_url');
-  GAS_URL = '';
-  document.getElementById('gas-url-input').value = DEFAULT_GAS_URL;
-  document.getElementById('setup-error').style.display = 'none';
-  document.getElementById('setup-screen').style.display = 'flex';
-}
 
 function initSelects() {
   const yr = new Date().getFullYear();
   const ys = document.getElementById('tpm-year');
-  for (let y = yr-1; y <= yr+2; y++) ys.add(new Option(y, y, y===yr, y===yr));
-  document.getElementById('bulk-year').value = yr;
+  if (ys) {
+    ys.innerHTML = '';
+    for (let y = yr-1; y <= yr+2; y++) ys.add(new Option(y, y, y===yr, y===yr));
+  }
+  const by = document.getElementById('bulk-year');
+  if (by) by.value = yr;
   const ms = document.getElementById('tpm-month');
-  for (let m = 1; m <= 12; m++) ms.add(new Option(TH_MONTHS[m-1]+' / '+EN_MONTHS[m-1], m, m===new Date().getMonth()+1, m===new Date().getMonth()+1));
+  if (ms) {
+    ms.innerHTML = '<option value="">ทุกเดือน</option>';
+    for (let m = 1; m <= 12; m++) ms.add(new Option(TH_MONTHS[m-1]+' / '+EN_MONTHS[m-1], m, m===new Date().getMonth()+1, m===new Date().getMonth()+1));
+  }
 }
 
 // ============================================
 //  DATA LOADING
 // ============================================
 async function loadAllData() {
-  const [m,mc,s,i,t] = await Promise.all([
-    api('getMolds'), api('getMachines'), api('getStockParts'), api('getIssues'), api('getChecklistTemplates')
-  ]);
-  if (m.success)  STATE.molds = m.data;
-  if (mc.success) STATE.machines = mc.data;
-  if (s.success)  STATE.stockParts = s.data;
-  if (i.success)  STATE.issues = i.data;
-  if (t.success)  STATE.checklistTemplates = t.data;
-  updateBadges();
-  loadTPMPlans();
+  try {
+    const [m, mc, s, i, t] = await Promise.all([
+      api('getMolds'), api('getMachines'), api('getStockParts'), api('getIssues'), api('getChecklistTemplates')
+    ]);
+    if (m && m.success)  STATE.molds = m.data || [];
+    if (mc && mc.success) STATE.machines = mc.data || [];
+    if (s && s.success)  STATE.stockParts = s.data || [];
+    if (i && i.success)  STATE.issues = i.data || [];
+    if (t && t.success)  STATE.checklistTemplates = t.data || [];
+    updateBadges();
+    await loadTPMPlans();
+  } catch (err) {
+    console.error('Error in loadAllData:', err);
+  }
 }
 
 async function refreshData() {
-  showToast('\u0e01\u0e33\u0e25\u0e31\u0e07 Refresh...','warning');
+  showToast('กำลัง Refresh...','warning');
   await loadAllData();
   const page = document.querySelector('.page.active')?.id?.replace('page-','');
   if (page) nav(page);
-  showToast('Refresh \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');
+  showToast('Refresh สำเร็จ','success');
 }
 
 // ============================================
 //  NAVIGATION
 // ============================================
 const PAGE_INFO = {
-  dashboard:{title:'Dashboard',sub:'\u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e23\u0e30\u0e1a\u0e1a'},
-  molds:{title:'\u0e42\u0e21\u0e25 / Mold',sub:'\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e42\u0e21\u0e25'},
-  machines:{title:'\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 / Machine',sub:'\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23'},
-  tpm:{title:'TPM Plan',sub:'\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e1a\u0e33\u0e23\u0e38\u0e07\u0e23\u0e31\u0e01\u0e29\u0e32'},
-  issues:{title:'Issues / \u0e1b\u0e31\u0e0d\u0e2b\u0e32',sub:'\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e41\u0e25\u0e30\u0e15\u0e34\u0e14\u0e15\u0e32\u0e21\u0e1b\u0e31\u0e0d\u0e2b\u0e32'},
-  stock:{title:'Stock Part',sub:'\u0e04\u0e25\u0e31\u0e07\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48'},
-  reports:{title:'Reports',sub:'\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19'},
-  settings:{title:'\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e07\u0e32\u0e19',sub:'\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e4c\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49'},
+  dashboard:{title:'Dashboard',sub:'ภาพรวมระบบ'},
+  molds:{title:'โมล / Mold',sub:'ลงทะเบียนโมล'},
+  machines:{title:'เครื่องจักร / Machine',sub:'ลงทะเบียนเครื่องจักร'},
+  tpm:{title:'TPM Plan',sub:'แผนการบำรุงรักษา'},
+  issues:{title:'Issues / ปัญหา',sub:'บันทึกและติดตามปัญหา'},
+  stock:{title:'Stock Part',sub:'คลังอะไหล่'},
+  reports:{title:'Reports',sub:'รายงาน'},
+  settings:{title:'ผู้ใช้งาน',sub:'จัดการสิทธิ์ผู้ใช้'},
 };
+
 function nav(page) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
-  document.getElementById('page-'+page)?.classList.add('active');
-  document.querySelector('[data-page="'+page+'"]')?.classList.add('active');
-  const info = PAGE_INFO[page] || {title:page,sub:''};
-  document.getElementById('page-title').innerHTML = info.title+' <span>'+info.sub+'</span>';
-  if (page==='dashboard') loadDashboard();
-  else if (page==='molds') renderMolds();
-  else if (page==='machines') renderMachines();
-  else if (page==='tpm') renderTPM();
-  else if (page==='issues') renderIssues();
-  else if (page==='stock') renderStock();
-  else if (page==='reports') loadReports();
-  else if (page==='settings') loadUsers();
+  try {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
+    const targetPage = document.getElementById('page-' + page);
+    if (targetPage) targetPage.classList.add('active');
+    const targetNav = document.querySelector('.nav-item[data-page="' + page + '"]');
+    if (targetNav) targetNav.classList.add('active');
+    
+    const info = PAGE_INFO[page] || {title:page, sub:''};
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.innerHTML = info.title + ' <span>' + info.sub + '</span>';
+    
+    if (page==='dashboard') loadDashboard();
+    else if (page==='molds') renderMolds();
+    else if (page==='machines') renderMachines();
+    else if (page==='tpm') renderTPM();
+    else if (page==='issues') renderIssues();
+    else if (page==='stock') renderStock();
+    else if (page==='reports') loadReports();
+    else if (page==='settings') loadUsers();
+  } catch (err) {
+    console.error('Navigation error for page ' + page + ':', err);
+  }
 }
+
 function updateBadges() {
-  const open = STATE.issues.filter(i=>i.Status==='Open'||i.Status==='In Progress').length;
-  const bi = document.getElementById('badge-issues'); bi.style.display=open>0?'':'none'; bi.textContent=open;
-  const low = STATE.stockParts.filter(p=>Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0).length;
-  const bs = document.getElementById('badge-stock'); bs.style.display=low>0?'':'none'; bs.textContent=low;
-  const od = STATE.tpmPlans.filter(p=>p.Status==='Overdue').length;
-  const bt = document.getElementById('badge-tpm'); bt.style.display=od>0?'':'none'; bt.textContent=od;
+  try {
+    const open = (STATE.issues || []).filter(i=>i.Status==='Open'||i.Status==='In Progress').length;
+    const bi = document.getElementById('badge-issues');
+    if (bi) { bi.style.display = open>0?'':'none'; bi.textContent = open; }
+    
+    const low = (STATE.stockParts || []).filter(p=>Number(p.CurrentStock||p.Qty||0)<=Number(p.MinStock||p.MinQty||0)&&Number(p.MinStock||p.MinQty||0)>0).length;
+    const bs = document.getElementById('badge-stock');
+    if (bs) { bs.style.display = low>0?'':'none'; bs.textContent = low; }
+    
+    const od = (STATE.tpmPlans || []).filter(p=>p.Status==='Overdue').length;
+    const bt = document.getElementById('badge-tpm');
+    if (bt) { bt.style.display = od>0?'':'none'; bt.textContent = od; }
+  } catch (err) {
+    console.error('Badge update error:', err);
+  }
 }
 
 // ============================================
@@ -1033,25 +1039,88 @@ function updateBadges() {
 // ============================================
 let tpmCh=null, issCh=null;
 async function loadDashboard() {
-  const r = await api('getDashboard');
-  if (!r.success) { showToast('\u0e42\u0e2b\u0e25\u0e14 Dashboard \u0e44\u0e21\u0e48\u0e44\u0e14\u0e49: '+r.error,'error'); return; }
-  const d = r.data;
-  document.getElementById('dash-stats').innerHTML =
-    '<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">\ud83e\udde9</div><div class="stat-label">\ud83e\udde9 Total Molds</div><div class="stat-value">'+d.totalMolds+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>'+
-    '<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">\ud83c\udfed</div><div class="stat-label">\ud83c\udfed Total Machines</div><div class="stat-value">'+d.totalMachines+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>'+
-    '<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">\ud83d\udea8</div><div class="stat-label">\ud83d\udea8 Open Issues</div><div class="stat-value">'+d.openIssues+'</div><div class="stat-sub">Critical: '+d.criticalIssues+' <span style="color:var(--primary);font-size:10px">\u2192 \u0e04\u0e25\u0e34\u0e01</span></div></div>'+
-    '<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">\ud83d\udd27</div><div class="stat-label">\ud83d\udd27 TPM \u0e40\u0e14\u0e37\u0e2d\u0e19\u0e19\u0e35\u0e49</div><div class="stat-value">'+d.tpmDone+'/'+d.tpmThisMonth+'</div><div class="stat-sub">Overdue: '+d.tpmOverdue+' | Due Soon: '+d.tpmDueSoon+'</div></div>'+
-    '<div class="stat-card '+(d.lowStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">\ud83d\udce6</div><div class="stat-label">\ud83d\udce6 Low Stock</div><div class="stat-value">'+d.lowStock+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">\u2192 \u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e14\u0e39</div></div>';
-  if(tpmCh){tpmCh.destroy();tpmCh=null;}
-  tpmCh=new Chart(document.getElementById('tpm-chart'),{type:'bar',data:{labels:d.tpmChart.map(x=>x.label),datasets:[{label:'Total',data:d.tpmChart.map(x=>x.total),backgroundColor:'rgba(99,102,241,.3)',borderColor:'#6366f1',borderWidth:1,borderRadius:4},{label:'Done',data:d.tpmChart.map(x=>x.done),backgroundColor:'rgba(16,185,129,.5)',borderColor:'#10b981',borderWidth:1,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',stepSize:1}}}}});
-  if(issCh){issCh.destroy();issCh=null;}
-  issCh=new Chart(document.getElementById('issue-chart'),{type:'line',data:{labels:d.issueChart.map(x=>x.label),datasets:[{label:'Issues',data:d.issueChart.map(x=>x.count),borderColor:'#ef4444',backgroundColor:'rgba(239,68,68,.1)',fill:true,tension:.4,pointBackgroundColor:'#ef4444'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8'}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#94a3b8',stepSize:1}}}}});
-  document.getElementById('dash-issues').innerHTML = d.recentIssues.length===0 ? emptyState('\u2705','\u0e44\u0e21\u0e48\u0e21\u0e35 Issue \u0e04\u0e49\u0e32\u0e07','') :
-    d.recentIssues.map(i=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">'+(i.TargetName||'-')+'</div><div style="font-size:11px;color:var(--text-muted)">'+(i.Description||'').substring(0,50)+'</div></div><span class="badge open">'+i.Status+'</span></div>').join('');
-  document.getElementById('dash-tpm-overdue').innerHTML = d.overdueTPM.length===0 ? emptyState('\u2705','\u0e44\u0e21\u0e48\u0e21\u0e35 TPM \u0e40\u0e01\u0e34\u0e19\u0e01\u0e33\u0e2b\u0e19\u0e14','') :
-    d.overdueTPM.map(t=>'<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">'+(t.TargetName||'-')+'</div><div style="font-size:11px;color:var(--text-muted)">'+(t.PlannedDate||'')+'</div></div><span class="badge overdue">Overdue</span></div>').join('');
-  document.getElementById('dash-low-stock').innerHTML = d.lowStockList.length===0 ? emptyState('\u2705','Stock \u0e1b\u0e01\u0e15\u0e34','') :
-    '<div class="table-wrapper"><table><thead><tr><th>Part Name</th><th>Current</th><th>Min</th></tr></thead><tbody>'+d.lowStockList.map(p=>'<tr><td>'+p.PartName+'</td><td style="color:var(--danger)">'+p.CurrentStock+' '+p.Unit+'</td><td>'+p.MinStock+' '+p.Unit+'</td></tr>').join('')+'</tbody></table></div>';
+  try {
+    const r = await api('getDashboard');
+    if (!r.success) { showToast('โหลด Dashboard ไม่ได้: '+r.error,'error'); return; }
+    const d = r.data || {};
+    const dashStats = document.getElementById('dash-stats');
+    if (dashStats) {
+      dashStats.innerHTML =
+        '<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+(d.totalMolds||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>'+
+        '<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+(d.totalMachines||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>'+
+        '<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+(d.openIssues||0)+'</div><div class="stat-sub">Critical: '+(d.criticalIssues||0)+' <span style="color:var(--primary);font-size:10px">→ คลิก</span></div></div>'+
+        '<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+(d.tpmDone||0)+'/'+(d.tpmThisMonth||0)+'</div><div class="stat-sub">Overdue: '+(d.tpmOverdue||0)+' | Due Soon: '+(d.tpmDueSoon||0)+'</div></div>'+
+        '<div class="stat-card '+(d.lowStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+(d.lowStock||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>';
+    }
+
+    if (tpmCh) { tpmCh.destroy(); tpmCh=null; }
+    const tpmCanvas = document.getElementById('tpm-chart');
+    if (tpmCanvas && d.tpmChart) {
+      tpmCh = new Chart(tpmCanvas, {
+        type: 'bar',
+        data: {
+          labels: d.tpmChart.map(x=>x.label),
+          datasets: [
+            { label: 'Total', data: d.tpmChart.map(x=>x.total), backgroundColor: 'rgba(99,102,241,.3)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 4 },
+            { label: 'Done', data: d.tpmChart.map(x=>x.done), backgroundColor: 'rgba(16,185,129,.5)', borderColor: '#10b981', borderWidth: 1, borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    if (issCh) { issCh.destroy(); issCh=null; }
+    const issCanvas = document.getElementById('issue-chart');
+    if (issCanvas && d.issueChart) {
+      issCh = new Chart(issCanvas, {
+        type: 'line',
+        data: {
+          labels: d.issueChart.map(x=>x.label),
+          datasets: [{ label: 'Issues', data: d.issueChart.map(x=>x.count), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)', fill: true, tension: .4, pointBackgroundColor: '#ef4444' }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8' } },
+            y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    const issuesEl = document.getElementById('dash-issues');
+    const recentIssues = d.recentIssues || [];
+    if (issuesEl) {
+      issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มี Issue ค้าง', '') :
+        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">' + (i.TargetName||'-') + '</div><div style="font-size:11px;color:var(--text-muted)">' + (i.Description||'').substring(0,50) + '</div></div><span class="badge open">' + (i.Status||'Open') + '</span></div>').join('');
+    }
+
+    const overdueEl = document.getElementById('dash-tpm-overdue');
+    const overdueTPM = d.overdueTPM || [];
+    if (overdueEl) {
+      overdueEl.innerHTML = overdueTPM.length === 0 ? emptyState('✅', 'ไม่มี TPM เกินกำหนด', '') :
+        overdueTPM.map(t => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">' + (t.TargetName||'-') + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.PlannedDate||'') + '</div></div><span class="badge overdue">Overdue</span></div>').join('');
+    }
+
+    const stockEl = document.getElementById('dash-low-stock');
+    const lowStockList = d.lowStockList || [];
+    if (stockEl) {
+      stockEl.innerHTML = lowStockList.length === 0 ? emptyState('✅', 'Stock ปกติ', '') :
+        '<div class="table-wrapper"><table><thead><tr><th>Part Name</th><th>Current</th><th>Min</th></tr></thead><tbody>' + lowStockList.map(p => '<tr><td>' + (p.PartName||p.Name||'-') + '</td><td style="color:var(--danger)">' + (p.CurrentStock||p.Qty||0) + ' ' + (p.Unit||'') + '</td><td>' + (p.MinStock||p.MinQty||0) + ' ' + (p.Unit||'') + '</td></tr>').join('') + '</tbody></table></div>';
+    }
+  } catch (err) {
+    console.error('loadDashboard error:', err);
+  }
 }
 
 // ============================================
