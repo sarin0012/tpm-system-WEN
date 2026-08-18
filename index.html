@@ -924,12 +924,21 @@ async function api(actionStr, payload = null) {
 // ============================================
 //  SETUP / CONNECT
 // ============================================
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', () => {
   initSelects();
   const setupScreen = document.getElementById('setup-screen');
   if (setupScreen) setupScreen.style.display = 'none';
-  await loadAllData();
+  // Navigate immediately so UI is responsive
   nav('dashboard');
+  // Load data in background (don't block navigation)
+  loadAllData().then(() => {
+    // Re-render current page after data loads
+    const page = document.querySelector('.page.active');
+    if (page) {
+      const pageName = page.id.replace('page-','');
+      if (pageName === 'dashboard') loadDashboard();
+    }
+  }).catch(err => console.error('Initial data load error:', err));
 });
 
 function initSelects() {
