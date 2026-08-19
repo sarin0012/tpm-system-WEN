@@ -427,14 +427,68 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- TPM BULK -->
 <div class="modal-overlay" id="tpm-bulk-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</div><button class="modal-close" onclick="closeModal('tpm-bulk-modal')">&#10005;</button></div>
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">📋 สร้างแผน TPM ประจำปี</div><button class="modal-close" onclick="closeModal('tpm-bulk-modal')">✕</button></div>
   <div class="modal-body">
-    <div class="form-row col-3"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- &#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; --</option></select></div><div class="form-group"><label>&#3611;&#3637;</label><input id="bulk-year" type="number"/></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>&#3592;&#3635;&#3609;&#3623;&#3609;&#3588;&#3619;&#3633;&#3657;&#3591;/&#3611;&#3637;</label><select id="bulk-freq" onchange="generateBulkDates()"><option value="12">12 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3648;&#3604;&#3639;&#3629;&#3609;)</option><option value="6">6 &#3588;&#3619;&#3633;&#3657;&#3591;</option><option value="4">4 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3652;&#3605;&#3619;&#3617;&#3634;&#3626;)</option><option value="2">2 &#3588;&#3619;&#3633;&#3657;&#3591;</option><option value="1">1 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3611;&#3637;)</option></select></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3651;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;</label><input id="bulk-day" type="number" value="15" min="1" max="28" onchange="generateBulkDates()"/></div><div class="form-group"><label>Checklist</label><select id="bulk-checklist"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div></div>
-    <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610;</label><input id="bulk-assigned"/></div>
+    <div class="form-row col-3">
+      <div class="form-group"><label>ประเภท</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div>
+      <div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- ทั้งหมด (ที่ Active) --</option></select></div>
+      <div class="form-group"><label>ปี (พ.ศ. / ค.ศ.)</label><input id="bulk-year" type="number" onchange="onBulkYearOrDayChange()"/></div>
+    </div>
+    
+    <div class="form-row col-3">
+      <div class="form-group">
+        <label>จำนวนครั้งต่อปี / รูปแบบ</label>
+        <select id="bulk-freq" onchange="onBulkFreqChange()">
+          <option value="12">12 ครั้ง (ทุกเดือน)</option>
+          <option value="6" selected>6 ครั้ง (ทุก 2 เดือน)</option>
+          <option value="4">4 ครั้ง (รายไตรมาส)</option>
+          <option value="3">3 ครั้ง (ทุก 4 เดือน)</option>
+          <option value="2">2 ครั้ง (ทุก 6 เดือน)</option>
+          <option value="1">1 ครั้ง (รายปี)</option>
+          <option value="custom">⚙️ กำหนดเอง (ระบุจำนวน / เลือกเดือน)</option>
+        </select>
+      </div>
+      <div class="form-group" id="bulk-custom-count-wrap" style="display:none">
+        <label>ระบุจำนวนครั้ง (ครั้ง/ปี)</label>
+        <input id="bulk-custom-count" type="number" min="1" max="52" value="6" oninput="onCustomCountChange()"/>
+      </div>
+      <div class="form-group">
+        <label>วันที่เริ่มต้นในเดือน</label>
+        <input id="bulk-day" type="number" value="15" min="1" max="31" onchange="onBulkYearOrDayChange()"/>
+      </div>
+      <div class="form-group">
+        <label>Checklist Template</label>
+        <select id="bulk-checklist"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select>
+      </div>
+    </div>
+
+    <!-- Quick Month Selector Chips -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">📅 เลือกเดือนที่ต้องการทำ TPM (คลิกเพื่อเลือก/ยกเลิก):</div>
+        <div style="display:flex;gap:6px">
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,2,3,4,5,6,7,8,9,10,11,12])">เลือกทุกเดือน</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,3,5,7,9,11])">เว้นเดือน (6 ครั้ง)</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,4,7,10])">4 ครั้ง</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([])">ล้าง</button>
+        </div>
+      </div>
+      <div id="bulk-month-chips" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px"></div>
+    </div>
+
+    <div class="form-group"><label>ผู้รับผิดชอบ</label><input id="bulk-assigned" placeholder="ระบุชื่อผู้รับผิดชอบ (ถ้ามี)"/></div>
+    
+    <!-- Dates list header + Add Date button -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0">
+      <label style="font-weight:600;font-size:13px;color:var(--text);margin:0">🗓️ รายการวันและเดือนที่กำหนด (เลือกวัน/เดือนได้อิสระทุกช่อง):</label>
+      <button type="button" class="btn btn-outline btn-sm" onclick="addBulkDateRow()">+ เพิ่มรอบ / วันที่</button>
+    </div>
     <div id="bulk-dates-container"></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-bulk-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveBulkTPM()">&#9989; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609;</button></div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('tpm-bulk-modal')">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="saveBulkTPM()">✅ สร้างแผน TPM</button>
+  </div>
   </div>
 </div>
 
@@ -1421,31 +1475,261 @@ function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElemen
 function openTPMModal(){['tpm-id','tpm-planned-date','tpm-assigned'].forEach(function(i){v_set(i,'');});v_set('tpm-plan-year',new Date().getFullYear());loadTPMTargets();openModal('tpm-modal');}
 async function saveTPMPlan(){var targetId=v('tpm-target-id'),date=v('tpm-planned-date');if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}var type=v('tpm-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});var data={ID:v('tpm-id'),TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',Year:v('tpm-plan-year'),PlannedDate:date,AssignedTo:v('tpm-assigned'),ChecklistTemplate:v('tpm-checklist-template'),Status:'Planned'};var r=await api('saveTPMPlan',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('tpm-modal');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
 async function delTPMPlan(id){if(!confirm('\u0e25\u0e1a\u0e41\u0e1c\u0e19 TPM?'))return;var r=await api('deleteTPMPlan',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
-function loadBulkTargets(){var type=v('bulk-target-type');var s=document.getElementById('bulk-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
-function openBulkTPMModal(){loadBulkTargets();v_set('bulk-year',new Date().getFullYear());generateBulkDates();openModal('tpm-bulk-modal');}
-function generateBulkDates(){
-  var freq=parseInt(v('bulk-freq'))||12,yr=parseInt(v('bulk-year'))||new Date().getFullYear(),day=parseInt(v('bulk-day'))||15;
-  var months=[];
-  if(freq===12)for(var m=1;m<=12;m++)months.push(m);
-  else if(freq===6)for(var m=1;m<=12;m+=2)months.push(m);
-  else if(freq===4)for(var m=1;m<=12;m+=3)months.push(m);
-  else if(freq===2)for(var m=1;m<=12;m+=6)months.push(m);
-  else months=[1];
-  document.getElementById('bulk-dates-container').innerHTML='<label style="display:block;margin-bottom:8px">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e01\u0e33\u0e2b\u0e19\u0e14</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">'+months.map(function(m,i){var d=new Date(yr,m-1,Math.min(day,28));return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px"><div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">\u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 '+(i+1)+' \u2014 '+TH_MONTHS[m-1]+'</div><input type="date" value="'+d.toISOString().substring(0,10)+'" id="bulk-date-'+i+'" style="font-size:12px"/></div>';}).join('')+'</div>';
-}
-async function saveBulkTPM(){
-  var targetId=v('bulk-target-id'),yr=v('bulk-year'),type=v('bulk-target-type');
-  if(!yr){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e1b\u0e35','error');return;}
+let BULK_DATES = [];
+
+function loadBulkTargets(){
+  var type=v('bulk-target-type');
+  var s=document.getElementById('bulk-target-id');
   var list=type==='Mold'?STATE.molds:STATE.machines;
-  var targets=targetId?list.filter(function(x){return x.ID===targetId;}):list.filter(function(x){return x.Status==='Active';});
-  if(!targets.length){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a Target','error');return;}
-  var dateInputs=Array.from(document.querySelectorAll('[id^="bulk-date-"]'));
-  var plans=[];
-  targets.forEach(function(target){dateInputs.forEach(function(inp){if(!inp.value)return;plans.push({TargetType:type,TargetID:target.ID,TargetName:target.Name,Year:yr,PlannedDate:inp.value,AssignedTo:v('bulk-assigned'),ChecklistTemplate:v('bulk-checklist'),Status:'Planned'});});});
-  if(!plans.length){showToast('\u0e44\u0e21\u0e48\u0e21\u0e35\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}
-  showGlobalLoading(true);var r=await api('saveBulkTPMPlans',{plans:plans});showGlobalLoading(false);
-  if(r.success){showToast('\u0e2a\u0e23\u0e49\u0e32\u0e07\u0e41\u0e1c\u0e19 '+r.count+' \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23 \u2705','success');closeModal('tpm-bulk-modal');await loadTPMPlans();}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  s.innerHTML='<option value="">-- ทั้งหมด (ที่ Active) --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+}
+
+function openBulkTPMModal(){
+  loadBulkTargets();
+  const yr = new Date().getFullYear();
+  v_set('bulk-year', yr);
+  v_set('bulk-day', 15);
+  v_set('bulk-freq', '6');
+  const customWrap = document.getElementById('bulk-custom-count-wrap');
+  if (customWrap) customWrap.style.display = 'none';
+  renderMonthChips([1, 3, 5, 7, 9, 11]);
+  generateBulkDatesFromMonths([1, 3, 5, 7, 9, 11]);
+  openModal('tpm-bulk-modal');
+}
+
+function renderMonthChips(selectedMonths) {
+  const container = document.getElementById('bulk-month-chips');
+  if (!container) return;
+  const selSet = new Set(selectedMonths);
+  container.innerHTML = TH_MONTHS.map((mName, idx) => {
+    const mNum = idx + 1;
+    const isSel = selSet.has(mNum);
+    const bg = isSel ? 'var(--primary)' : 'var(--surface)';
+    const color = isSel ? '#fff' : 'var(--text-muted)';
+    const border = isSel ? 'var(--primary)' : 'var(--border)';
+    return `<button type="button" onclick="toggleBulkMonth(${mNum})" style="background:${bg};color:${color};border:1px solid ${border};border-radius:6px;padding:6px 2px;font-size:12px;font-weight:${isSel?'600':'400'};cursor:pointer;text-align:center;transition:all .15s">
+      ${mName} ${isSel ? '✓' : ''}
+    </button>`;
+  }).join('');
+}
+
+function toggleBulkMonth(monthNum) {
+  const currentMonths = getSelectedMonthsFromChips();
+  const idx = currentMonths.indexOf(monthNum);
+  if (idx !== -1) {
+    currentMonths.splice(idx, 1);
+  } else {
+    currentMonths.push(monthNum);
+    currentMonths.sort((a,b)=>a-b);
+  }
+  v_set('bulk-freq', 'custom');
+  const customWrap = document.getElementById('bulk-custom-count-wrap');
+  if (customWrap) customWrap.style.display = '';
+  v_set('bulk-custom-count', currentMonths.length);
+  renderMonthChips(currentMonths);
+  generateBulkDatesFromMonths(currentMonths);
+}
+
+function setQuickMonths(months) {
+  v_set('bulk-freq', months.length === 12 ? '12' : (months.length === 6 ? '6' : 'custom'));
+  const customWrap = document.getElementById('bulk-custom-count-wrap');
+  if (customWrap) {
+    if (months.length !== 12 && months.length !== 6 && months.length !== 4 && months.length !== 2 && months.length !== 1) {
+      customWrap.style.display = '';
+      v_set('bulk-custom-count', months.length);
+    } else {
+      customWrap.style.display = 'none';
+    }
+  }
+  renderMonthChips(months);
+  generateBulkDatesFromMonths(months);
+}
+
+function getSelectedMonthsFromChips() {
+  const chips = document.querySelectorAll('#bulk-month-chips button');
+  const selected = [];
+  chips.forEach((btn, idx) => {
+    if (btn.innerText.indexOf('✓') !== -1) {
+      selected.push(idx + 1);
+    }
+  });
+  return selected;
+}
+
+function onBulkFreqChange() {
+  const freqVal = v('bulk-freq');
+  const customWrap = document.getElementById('bulk-custom-count-wrap');
+  let months = [];
+  if (freqVal === '12') {
+    months = [1,2,3,4,5,6,7,8,9,10,11,12];
+    if (customWrap) customWrap.style.display = 'none';
+  } else if (freqVal === '6') {
+    months = [1,3,5,7,9,11];
+    if (customWrap) customWrap.style.display = 'none';
+  } else if (freqVal === '4') {
+    months = [1,4,7,10];
+    if (customWrap) customWrap.style.display = 'none';
+  } else if (freqVal === '3') {
+    months = [1,5,9];
+    if (customWrap) customWrap.style.display = 'none';
+  } else if (freqVal === '2') {
+    months = [1,7];
+    if (customWrap) customWrap.style.display = 'none';
+  } else if (freqVal === '1') {
+    months = [1];
+    if (customWrap) customWrap.style.display = 'none';
+  } else {
+    if (customWrap) customWrap.style.display = '';
+    onCustomCountChange();
+    return;
+  }
+  renderMonthChips(months);
+  generateBulkDatesFromMonths(months);
+}
+
+function onCustomCountChange() {
+  const count = Math.max(1, Math.min(52, parseInt(v('bulk-custom-count')) || 1));
+  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
+  
+  BULK_DATES = [];
+  const selectedMonths = [];
+  for (let i = 0; i < count; i++) {
+    const month = Math.min(12, Math.floor((i * 12) / count) + 1);
+    selectedMonths.push(month);
+    const d = new Date(yr, month - 1, day);
+    BULK_DATES.push(d.toISOString().substring(0, 10));
+  }
+  renderMonthChips([...new Set(selectedMonths)]);
+  renderBulkDatesList();
+}
+
+function onBulkYearOrDayChange() {
+  const selected = getSelectedMonthsFromChips();
+  if (selected.length) {
+    generateBulkDatesFromMonths(selected);
+  } else {
+    onBulkFreqChange();
+  }
+}
+
+function generateBulkDatesFromMonths(months) {
+  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
+  BULK_DATES = months.map(m => {
+    const d = new Date(yr, m - 1, day);
+    return d.toISOString().substring(0, 10);
+  });
+  renderBulkDatesList();
+}
+
+function renderBulkDatesList() {
+  const container = document.getElementById('bulk-dates-container');
+  if (!container) return;
+  if (!BULK_DATES.length) {
+    container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px;background:var(--surface2);border-radius:var(--r-sm)">ยังไม่มีการเลือกวันที่ คลิก "+ เพิ่มรอบ / วันที่" หรือเลือกเดือนด้านบน</div>';
+    return;
+  }
+  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-height:260px;overflow-y:auto;padding-right:4px">' +
+    BULK_DATES.map((dateStr, i) => {
+      let monthLabel = '';
+      if (dateStr) {
+        const parts = dateStr.split('-');
+        if (parts.length >= 2) {
+          const mIdx = parseInt(parts[1]) - 1;
+          if (mIdx >= 0 && mIdx < 12) monthLabel = ' (' + TH_MONTHS[mIdx] + ')';
+        }
+      }
+      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;display:flex;flex-direction:column;gap:4px" id="bulk-card-${i}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;font-weight:600;color:var(--primary)">รอบที่ ${i + 1}${monthLabel}</span>
+          <button type="button" onclick="removeBulkDateRow(${i})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 4px" title="ลบรอบนี้">🗑️</button>
+        </div>
+        <input type="date" value="${dateStr}" onchange="updateBulkDate(${i}, this.value)" style="font-size:12px;padding:4px 8px"/>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function updateBulkDate(idx, val) {
+  BULK_DATES[idx] = val;
+  const months = BULK_DATES.map(d => {
+    const p = (d||'').split('-');
+    return p.length >= 2 ? parseInt(p[1]) : 0;
+  }).filter(m => m >= 1 && m <= 12);
+  renderMonthChips([...new Set(months)]);
+}
+
+function addBulkDateRow() {
+  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
+  let nextMonth = 1;
+  if (BULK_DATES.length) {
+    const lastDate = BULK_DATES[BULK_DATES.length - 1];
+    const parts = (lastDate||'').split('-');
+    if (parts.length >= 2) {
+      nextMonth = (parseInt(parts[1]) % 12) + 1;
+    }
+  }
+  const d = new Date(yr, nextMonth - 1, day);
+  BULK_DATES.push(d.toISOString().substring(0, 10));
+  renderBulkDatesList();
+  
+  const months = BULK_DATES.map(ds => {
+    const p = (ds||'').split('-');
+    return p.length >= 2 ? parseInt(p[1]) : 0;
+  }).filter(m => m >= 1 && m <= 12);
+  renderMonthChips([...new Set(months)]);
+}
+
+function removeBulkDateRow(idx) {
+  BULK_DATES.splice(idx, 1);
+  renderBulkDatesList();
+  const months = BULK_DATES.map(ds => {
+    const p = (ds||'').split('-');
+    return p.length >= 2 ? parseInt(p[1]) : 0;
+  }).filter(m => m >= 1 && m <= 12);
+  renderMonthChips([...new Set(months)]);
+}
+
+async function saveBulkTPM(){
+  const targetId = v('bulk-target-id');
+  const yr = v('bulk-year');
+  const type = v('bulk-target-type');
+  if(!yr){ showToast('กรุณาระบุปี','error'); return; }
+  
+  const list = type === 'Mold' ? STATE.molds : STATE.machines;
+  const targets = targetId ? list.filter(x => x.ID === targetId) : list.filter(x => x.Status === 'Active');
+  if(!targets.length){ showToast('ไม่พบ Mold / Machine เป้าหมาย','error'); return; }
+  
+  const validDates = BULK_DATES.filter(d => !!d);
+  if(!validDates.length){ showToast('กรุณาระบุวันที่อย่างน้อย 1 วัน','error'); return; }
+  
+  const plans = [];
+  targets.forEach(target => {
+    validDates.forEach(dateStr => {
+      plans.push({
+        TargetType: type,
+        TargetID: target.ID,
+        TargetName: target.Name,
+        Year: parseInt(yr) || new Date().getFullYear(),
+        PlannedDate: dateStr,
+        AssignedTo: v('bulk-assigned'),
+        ChecklistTemplate: v('bulk-checklist'),
+        Status: 'Planned'
+      });
+    });
+  });
+  
+  showGlobalLoading(true);
+  const r = await api('saveBulkTPMPlans', { plans: plans });
+  showGlobalLoading(false);
+  if(r.success){
+    showToast(`สร้างแผนสำเร็จทั้งหมด ${r.count} รายการ ✅`, 'success');
+    closeModal('tpm-bulk-modal');
+    await loadTPMPlans();
+  } else {
+    showToast('ผิดพลาด: ' + r.error, 'error');
+  }
 }
 function openTPMCompleteModal(planId){
   var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
