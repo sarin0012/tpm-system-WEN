@@ -2422,6 +2422,17 @@ async function openPMPrintForm(moldId) {
     return '&nbsp;';
   }
 
+    var respPerson = '';
+  var assignedPlan = moldPlans.find(function(p){ return !!p.AssignedTo; });
+  if(assignedPlan && assignedPlan.AssignedTo) {
+    respPerson = assignedPlan.AssignedTo;
+  } else {
+    var doneWithActualBy = moldPlans.find(function(p){ return !!p.ActualBy; });
+    if(doneWithActualBy && doneWithActualBy.ActualBy) {
+      respPerson = doneWithActualBy.ActualBy;
+    }
+  }
+
   var vendorSigHtml = getSigHtml('vendor', mold.Vendor);
   var smSigHtml = getSigHtml('sm', 'SM');
   var svSigHtml = getSigHtml('sv', 'SV');
@@ -2499,7 +2510,7 @@ async function openPMPrintForm(moldId) {
           '<th colspan="2" style="border: 1px solid #333; text-align: center; padding: 2px; width: 60px;">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th>' +
           '<th rowspan="3" style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</th>' +
           monthHeadersHtml +
-          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a<br>(\u0e0a\u0e37\u0e48\u0e2d VENDOR)</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">VENDOR</th>' +
           '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a<br>WEN / WP</th>' +
         '</tr>' +
         '<tr>' +
@@ -2528,7 +2539,7 @@ async function openPMPrintForm(moldId) {
           '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">PLAN</td>' +
           planWeekCells +
           '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (mold.Vendor || '-') + '</td>' +
-          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">WEN / WP</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (respPerson || 'WEN / WP') + '</td>' +
         '</tr>' +
         '<tr>' +
           '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">ACTUAL</td>' +
