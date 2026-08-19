@@ -2107,6 +2107,134 @@ function closeLightbox(){
 // ============================================
 //  PM PRINT FORM (Master PDF Spec)
 // ============================================
+// ============================================
+//  SIGNATURE MANAGER (OPTION 4 HYBRID)
+// ============================================
+var MAIN_SIG_STORE = {};
+try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+var mainCurRole = 'sm';
+var mainCurTab = 'draw';
+var mainUploadedImage = '';
+var mainCanvas, mainCtx, mainIsDrawing = false;
+
+function initMainCanvas() {
+  mainCanvas = document.getElementById('main-sig-canvas');
+  if(!mainCanvas) return;
+  mainCtx = mainCanvas.getContext('2d');
+  mainCtx.strokeStyle = '#000080';
+  mainCtx.lineWidth = 2.5;
+  mainCtx.lineCap = 'round';
+  mainCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var r = mainCanvas.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - r.left) * (mainCanvas.width / r.width),
+      y: (clientY - r.top) * (mainCanvas.height / r.height)
+    };
+  }
+  function start(e) { mainIsDrawing = true; var p = getPos(e); mainCtx.beginPath(); mainCtx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }
+  function move(e) { if(!mainIsDrawing) return; var p = getPos(e); mainCtx.lineTo(p.x, p.y); mainCtx.stroke(); if(e.touches) e.preventDefault(); }
+  function end(e) { mainIsDrawing = false; }
+
+  mainCanvas.addEventListener('mousedown', start);
+  mainCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  mainCanvas.addEventListener('touchstart', start, {passive:false});
+  mainCanvas.addEventListener('touchmove', move, {passive:false});
+  mainCanvas.addEventListener('touchend', end);
+}
+
+function clearMainCanvas() {
+  if(mainCtx && mainCanvas) mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+}
+
+function switchMainSigTab(tab) {
+  mainCurTab = tab;
+  ['draw','image','stamp','none'].forEach(function(t){
+    var btn = document.getElementById('main-tab-' + t);
+    var pane = document.getElementById('main-sig-pane-' + t);
+    if(t === tab){
+      btn.className = 'btn btn-primary btn-sm';
+      pane.style.display = 'block';
+    } else {
+      btn.className = 'btn btn-outline btn-sm';
+      pane.style.display = 'none';
+    }
+  });
+}
+
+function openSignatureManagerModal(role) {
+  try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  mainCurRole = role || 'sm';
+  document.getElementById('main-sig-role').value = mainCurRole;
+  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || mainCurRole.toUpperCase();
+  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
+  clearMainCanvas();
+  mainUploadedImage = '';
+  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">เธ•เธฑเธงเธญเธขเนเธฒเธเธฃเธนเธเธ เธฒเธเธฅเธฒเธขเน€เธเนเธ (PNG/JPG เธเธทเนเธเธซเธฅเธฑเธเนเธชเธซเธฃเธทเธญเธเธฒเธง)</span>';
+  
+  var existing = MAIN_SIG_STORE[mainCurRole];
+  if(existing && existing.type){
+    switchMainSigTab(existing.type);
+    if(existing.type === 'draw' && existing.data){
+      var img = new Image();
+      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
+      img.src = existing.data;
+    } else if(existing.type === 'image' && existing.data){
+      mainUploadedImage = existing.data;
+      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+    }
+  } else {
+    switchMainSigTab('draw');
+  }
+
+  openModal('signature-manager-modal');
+  setTimeout(initMainCanvas, 100);
+}
+
+function onMainSigRoleChange() {
+  var sel = document.getElementById('main-sig-role').value;
+  openSignatureManagerModal(sel);
+}
+
+function handleMainImageUpload(e) {
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    mainUploadedImage = evt.target.result;
+    document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + mainUploadedImage + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveMainSignature() {
+  var role = document.getElementById('main-sig-role').value;
+  if(mainCurTab === 'draw') {
+    var dataUrl = mainCanvas.toDataURL('image/png');
+    MAIN_SIG_STORE[role] = { type: 'draw', data: dataUrl };
+  } else if(mainCurTab === 'image') {
+    if(!mainUploadedImage){ showToast('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเนเธเธฅเนเธฃเธนเธเธ เธฒเธเธเนเธญเธเธเธฃเธฑเธ','warning'); return; }
+    MAIN_SIG_STORE[role] = { type: 'image', data: mainUploadedImage };
+  } else if(mainCurTab === 'stamp') {
+    var stName = document.getElementById('main-stamp-name').value.trim() || role.toUpperCase();
+    var stDate = document.getElementById('main-stamp-date').value || '';
+    MAIN_SIG_STORE[role] = { type: 'stamp', name: stName, date: stDate };
+  } else if(mainCurTab === 'none') {
+    delete MAIN_SIG_STORE[role];
+  }
+
+  try {
+    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE));
+  } catch(e){}
+
+  showToast('เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธ ' + role.toUpperCase() + ' เธชเธณเน€เธฃเนเธเนเธฅเนเธง โ…', 'success');
+  closeModal('signature-manager-modal');
+}
+
 async function openPMPrintForm(moldId) {
   var mold = STATE.molds.find(function(m){return m.ID===moldId;});
   if(!mold){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25','error');return;}
