@@ -498,7 +498,11 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="modal-body">
     <input type="hidden" id="tpm-complete-id"/>
     <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3607;&#3635;&#3592;&#3619;&#3636;&#3591; *</label><input id="tpm-actual-date" type="date"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3607;&#3635; *</label><input id="tpm-actual-by"/></div></div>
+    <div class="form-row col-3">
+      <div class="form-group"><label>วันที่ทำจริง *</label><input id="tpm-actual-date" type="date"/></div>
+      <div class="form-group"><label>ผู้ตรวจสอบ (WEN/WP) *</label><input id="tpm-actual-by" placeholder="ระบุชื่อผู้ตรวจสอบ WEN/WP"/></div>
+      <div class="form-group"><label>ผู้ตรวจสอบร่วม (Vendor)</label><input id="tpm-co-inspector" placeholder="ระบุชื่อตัวแทน Vendor"/></div>
+    </div>
     <div class="form-group"><label>Checklist</label><div id="tpm-checklist-items"></div></div>
     <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="tpm-complete-notes"></textarea></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3627;&#3621;&#3633;&#3591; TPM</label>
@@ -957,6 +961,12 @@ async function _apiInternal(actionStr, payload = null) {
         if (yr) query = query.eq('Year', Number(yr));
         const { data, error } = await query;
         if (error) return { success: false, error: error.message };
+        (data || []).forEach(p => {
+          if (!p.CoInspector && p.Notes && p.Notes.indexOf('[CO_INSPECTOR:') !== -1) {
+            const m = p.Notes.match(/\[CO_INSPECTOR:([^\]]+)\]/);
+            if (m) p.CoInspector = m[1];
+          }
+        });
         return { success: true, data: data || [] };
       }
       case 'saveTPMPlan': {
@@ -979,14 +989,24 @@ async function _apiInternal(actionStr, payload = null) {
       case 'completeTPM':
       case 'completeTPMPlan': {
         const item = Object.assign({}, payload.data);
-        const { error } = await sb.from('tpm_plans').update({
+        const updateData = {
           Status: 'Done',
           ActualDate: item.ActualDate,
           ActualBy: item.ActualBy,
           ChecklistResult: item.ChecklistResult,
           Notes: item.Notes,
           AfterImageIds: item.AfterImageIds
-        }).eq('ID', item.ID);
+        };
+        if (item.CoInspector) {
+          updateData.CoInspector = item.CoInspector;
+        }
+        let { error } = await sb.from('tpm_plans').update(updateData).eq('ID', item.ID);
+        if (error && error.message && error.message.indexOf('CoInspector') !== -1) {
+          delete updateData.CoInspector;
+          updateData.Notes = (updateData.Notes || '') + (item.CoInspector ? ' [CO_INSPECTOR:' + item.CoInspector + ']' : '');
+          const res2 = await sb.from('tpm_plans').update(updateData).eq('ID', item.ID);
+          error = res2.error;
+        }
         if (error) return { success: false, error: error.message };
         return { success: true };
       }
@@ -1733,7 +1753,13 @@ async function saveBulkTPM(){
 }
 function openTPMCompleteModal(planId){
   var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
-  v_set('tpm-complete-id',planId);v_set('tpm-actual-date',new Date().toISOString().substring(0,10));v_set('tpm-actual-by','');v_set('tpm-complete-notes','');
+  var target = (plan.TargetType==='Mold' ? STATE.molds : STATE.machines).find(function(x){return x.ID===plan.TargetID;});
+  var defaultVendor = target ? (target.Vendor || '') : '';
+  v_set('tpm-complete-id',planId);
+  v_set('tpm-actual-date',new Date().toISOString().substring(0,10));
+  v_set('tpm-actual-by',plan.ActualBy || '');
+  v_set('tpm-co-inspector',plan.CoInspector || defaultVendor);
+  v_set('tpm-complete-notes',plan.Notes || '');
   document.getElementById('tpm-complete-photos-preview').innerHTML='';STATE.pendingPhotos['tpm-complete']={files:[]};
   document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; \u0e01\u0e33\u0e2b\u0e19\u0e14: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
   var tmpl=STATE.checklistTemplates.find(function(t){return t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
@@ -1773,8 +1799,8 @@ function toggleRemark(itemId){
   else{remark.style.borderColor='';}
 }
 async function completeTPM(){
-  var planId=v('tpm-complete-id'),actualDate=v('tpm-actual-date'),actualBy=v('tpm-actual-by');
-  if(!actualDate||!actualBy){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e41\u0e25\u0e30\u0e1c\u0e39\u0e49\u0e17\u0e33','error');return;}
+  var planId=v('tpm-complete-id'),actualDate=v('tpm-actual-date'),actualBy=v('tpm-actual-by'),coInspector=v('tpm-co-inspector');
+  if(!actualDate||!actualBy){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e41\u0e25\u0e30\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a','error');return;}
   var checks={};
   document.querySelectorAll('[name^="chk-"]').forEach(function(radio){
     if(!radio.checked)return;
@@ -1792,7 +1818,7 @@ async function completeTPM(){
     if(ngNoRemark.length>0){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Remark \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e02\u0e49\u0e2d\u0e17\u0e35\u0e48 NG','error');return;}
   }
   showGlobalLoading(true);var imgIds=await uploadPendingPhotos('tpm-complete','TPM_Records');
-  var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
+  var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,CoInspector:coInspector,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
   var r=await api('completeTPMPlan',{data:data});showGlobalLoading(false);
   if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25 TPM \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');closeModal('tpm-complete-modal');await loadTPMPlans();}
   else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
@@ -2044,7 +2070,7 @@ async function openPMPrintForm(moldId) {
   // Checklist 9 items from Master
   var masterCheckItems = [
     { id: 1, th: 'ชิ้นงานสุดท้ายหลังการผลิต', std: 'ต้องไม่เป็นรอยและมีครีบ' },
-    { id: 2, th: 'จุดยึดติดต่างๆ ของแม่พิมพ์', std: 'SCREW ต้องยึดแน่น, ไม่ขาด ร่องประแจต้องไม่ชำรุด' },
+    { id: 2, th: 'จุดยึดติดต่างๆ ของแม่พิมพ์', std: 'SCREW ต้องยึดแน่น, ไม่ขาด R่องประแจต้องไม่ชำรุด' },
     { id: 3, th: 'การหล่อลื่น GUIDE POST, EJECTOR PIN และจุด SLIDE ต่างๆ', std: 'แม่พิมพ์ ปิด-เปิดต้องคล่องตัวไม่ติดขัดระหว่างเคลื่อนที่เข้าออก' },
     { id: 4, th: 'ตรวจเช็ครูน้ำหล่อเย็น', std: 'รูน้ำไม่อุดตัน และไม่มีรอยรั่ว' },
     { id: 5, th: 'เช็ค SPRING FOR RETURN PIN & SPRING FOR SLIDE', std: 'ไม่แตกหัก ไม่คดงอเสียรูป' },
@@ -2125,22 +2151,29 @@ async function openPMPrintForm(moldId) {
     var roundCols = '';
     for(var rIdx=0; rIdx<4; rIdx++){
       var p = donePlans[rIdx];
-      var actDateStr = '';
+      var actFindingStr = '';
       var resultSym = '';
       if(p){
-        actDateStr = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit'}) : '';
         try {
           var resObj = JSON.parse(p.ChecklistResult || '{}');
           var resItem = resObj[item.id] || {};
-          if(resItem.result === 'OK') resultSym = '✓';
-          else if(resItem.result === 'NG') resultSym = '✕';
-          else resultSym = '✓'; // default normal if plan is done
+          if(resItem.result === 'OK') {
+            resultSym = '✓';
+            actFindingStr = '';
+          } else if(resItem.result === 'NG') {
+            resultSym = '✕';
+            actFindingStr = resItem.remark || 'NG';
+          } else {
+            resultSym = '✓';
+            actFindingStr = '';
+          }
         } catch(e){
           resultSym = '✓';
+          actFindingStr = '';
         }
       }
-      roundCols += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;width:55px;">' + actDateStr + '</td>' +
-                   '<td style="border:1px solid #333;text-align:center;font-size:9pt;font-weight:bold;padding:2px;width:40px;">' + resultSym + '</td>';
+      roundCols += '<td style="border:1px solid #333;text-align:center;font-size:7.5pt;padding:2px;width:55px;color:'+(resultSym==='✕'?'#b91c1c':'#000')+'">' + actFindingStr + '</td>' +
+                   '<td style="border:1px solid #333;text-align:center;font-size:9pt;font-weight:bold;padding:2px;width:40px;color:'+(resultSym==='✕'?'#b91c1c':'#000')+'">' + resultSym + '</td>';
     }
     return '<tr>' +
       '<td style="border:1px solid #333;text-align:center;font-size:8.5pt;padding:2px;">' + item.id + '</td>' +
@@ -2149,6 +2182,22 @@ async function openPMPrintForm(moldId) {
       roundCols +
     '</tr>';
   }).join('');
+
+  // Generate 4 round signature cells for footer
+  var inspectorCells = '';
+  var coInspectorCells = '';
+  var inspectDateCells = '';
+
+  for (var rIdx = 0; rIdx < 4; rIdx++) {
+    var p = donePlans[rIdx];
+    var insp = p ? (p.ActualBy || '') : '';
+    var coInsp = p ? (p.CoInspector || mold.Vendor || '') : '';
+    var dtStr = p && p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH', {day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    
+    inspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + insp + '</td>';
+    coInspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + coInsp + '</td>';
+    inspectDateCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:22px;width:95px;">' + dtStr + '</td>';
+  }
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>PM Form - ' + mold.Name + '</title>' +
@@ -2285,42 +2334,41 @@ async function openPMPrintForm(moldId) {
     '</table>' +
 
     // ====== FOOTER ======
-    '<table style="margin-top: 3px; font-size: 8pt; border: none;">' +
-      '<tr style="border: none;">' +
-        '<td style="width: 52%; vertical-align: top; border: none; padding: 0 4px 0 0;">' +
-          '<table style="font-size: 8pt; width: 100%; border: 1px solid #333;">' +
+    '<table style="margin-top: 3px; font-size: 8pt; width: 100%; border-collapse: collapse;">' +
+      '<tr>' +
+        '<td style="width: calc(100% - 380px); vertical-align: top; border: 1px solid #333; padding: 0;">' +
+          '<table style="font-size: 8pt; width: 100%; height: 100%; border: none; border-collapse: collapse;">' +
             '<tr>' +
-              '<th style="width: 45%; border: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">สัญลักษณ์ในการตรวจสอบ</th>' +
-              '<th style="border: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">บันทึกการแก้ไข</th>' +
+              '<th style="width: 45%; border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">\u0e2a\u0e31\u0e0d\u0e25\u0e31\u0e01\u0e29\u0e13\u0e4c\u0e43\u0e19\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>' +
+              '<th style="border-bottom: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02</th>' +
             '</tr>' +
             '<tr>' +
-              '<td style="border: 1px solid #333; padding: 4px; vertical-align: top;">' +
-                '<span style="font-size: 11pt; font-weight: bold;">✓</span> = ปกติ &nbsp;&nbsp;&nbsp;&nbsp; ' +
-                '<span style="font-size: 11pt; font-weight: bold;">✕</span> = ต้องแก้ไข' +
+              '<td style="border-right: 1px solid #333; padding: 4px; vertical-align: top;">' +
+                '<span style="font-size: 11pt; font-weight: bold;">&#10003;</span> = \u0e1b\u0e01\u0e15\u0e34 &nbsp;&nbsp;&nbsp;&nbsp; ' +
+                '<span style="font-size: 11pt; font-weight: bold;">&#10005;</span> = \u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02' +
               '</td>' +
-              '<td style="border: 1px solid #333; height: 38px; vertical-align: top; padding: 2px 4px;">&nbsp;</td>' +
+              '<td style="height: 52px; vertical-align: top; padding: 2px 4px;">&nbsp;</td>' +
             '</tr>' +
           '</table>' +
         '</td>' +
-        '<td style="width: 48%; vertical-align: top; border: none; padding: 0 0 0 4px;">' +
-          '<table style="font-size: 8pt; width: 100%; border: 1px solid #333;">' +
+        '<td style="width: 380px; vertical-align: top; border: 1px solid #333; padding: 0;">' +
+          '<table style="font-size: 8pt; width: 100%; border: none; border-collapse: collapse;">' +
             '<tr>' +
-              '<td style="width: 140px; border: 1px solid #333; padding: 3px 5px; font-weight: 500;">ผู้ตรวจสอบ (WEN/WP)</td>' +
-              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+              '<td style="width: 120px; border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 3px 5px; font-weight: 500;">\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (WEN/WP)</td>' +
+              inspectorCells +
             '</tr>' +
             '<tr>' +
-              '<td style="border: 1px solid #333; padding: 3px 5px; font-weight: 500;">ผู้ตรวจสอบร่วม</td>' +
-              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+              '<td style="width: 120px; border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 3px 5px; font-weight: 500;">\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e48\u0e27\u0e21</td>' +
+              coInspectorCells +
             '</tr>' +
             '<tr>' +
-              '<td style="border: 1px solid #333; padding: 3px 5px; font-weight: 500;">วันที่ตรวจสอบ</td>' +
-              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+              '<td style="width: 120px; border-right: 1px solid #333; border-bottom: 1px solid #333; padding: 3px 5px; font-weight: 500;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</td>' +
+              inspectDateCells +
             '</tr>' +
           '</table>' +
         '</td>' +
       '</tr>' +
     '</table>' +
-
     // Form code footer
     '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 7.5pt; color: #333;">' +
       '<div style="width: 30%;"></div>' +
