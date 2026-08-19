@@ -414,47 +414,47 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- TPM SINGLE -->
 <div class="modal-overlay" id="tpm-modal">
-  <div class="modal"><div class="modal-header"><div class="modal-title">โ• เน€เธเธดเนเธกเนเธเธ TPM</div><button class="modal-close" onclick="closeModal('tpm-modal')">โ•</button></div>
+  <div class="modal"><div class="modal-header"><div class="modal-title">&#128197; &#3648;&#3614;&#3636;&#3656;&#3617;&#3649;&#3612;&#3609; TPM</div><button class="modal-close" onclick="closeModal('tpm-modal')">&#10005;</button></div>
   <div class="modal-body">
     <input type="hidden" id="tpm-id"/>
-    <div class="form-row col-2"><div class="form-group"><label>เธเธฃเธฐเน€เธ เธ—</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- เน€เธฅเธทเธญเธ --</option></select></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>เธเธต</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>เธงเธฑเธเธ—เธตเนเธเธณเธซเธเธ” *</label><input id="tpm-planned-date" type="date"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN / WP</label><input id="tpm-assigned" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN/WP (เน€เธเนเธ Sarin T.)"/></div><div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ (VENDOR)</label><input id="tpm-vendor-resp" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธ•เธฑเธงเนเธ—เธ/เธเธฃเธดเธฉเธฑเธ— Vendor (เน€เธเนเธ SPP)"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input id="tpm-planned-date" type="date"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP</label><input id="tpm-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR)</label><input id="tpm-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div></div>
     <div class="form-group"><label>Checklist Template</label><select id="tpm-checklist-template"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-modal')">เธขเธเน€เธฅเธดเธ</button><button class="btn btn-primary" onclick="saveTPMPlan()">๐’พ เธเธฑเธเธ—เธถเธ</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveTPMPlan()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
   </div>
 </div>
 
 <!-- TPM BULK -->
 <div class="modal-overlay" id="tpm-bulk-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">๐“ เธชเธฃเนเธฒเธเนเธเธ TPM เธเธฃเธฐเธเธณเธเธต</div><button class="modal-close" onclick="closeModal('tpm-bulk-modal')">โ•</button></div>
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#128203; &#3648;&#3614;&#3636;&#3656;&#3617;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</div><button class="modal-close" onclick="closeModal('tpm-bulk-modal')">&#10005;</button></div>
   <div class="modal-body">
     <div class="form-row col-3">
-      <div class="form-group"><label>เธเธฃเธฐเน€เธ เธ—</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div>
-      <div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- เธ—เธฑเนเธเธซเธกเธ” (เธ—เธตเน Active) --</option></select></div>
-      <div class="form-group"><label>เธเธต (เธ.เธจ. / เธ.เธจ.)</label><input id="bulk-year" type="number" onchange="onBulkYearOrDayChange()"/></div>
+      <div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div>
+      <div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- &#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; (&#3607;&#3637;&#3656; Active) --</option></select></div>
+      <div class="form-group"><label>&#3611;&#3637; (&#3614;.&#3624;. / &#3588;.&#3624;.)</label><input id="bulk-year" type="number" onchange="onBulkYearOrDayChange()"/></div>
     </div>
     
     <div class="form-row col-3">
       <div class="form-group">
-        <label>เธเธณเธเธงเธเธเธฃเธฑเนเธเธ•เนเธญเธเธต / เธฃเธนเธเนเธเธ</label>
+        <label>&#3592;&#3635;&#3609;&#3623;&#3609;&#3588;&#3619;&#3633;&#3657;&#3591;&#3605;&#3656;&#3629;&#3611;&#3637; / &#3619;&#3641;&#3611;&#3649;&#3610;&#3610;</label>
         <select id="bulk-freq" onchange="onBulkFreqChange()">
-          <option value="12">12 เธเธฃเธฑเนเธ (เธ—เธธเธเน€เธ”เธทเธญเธ)</option>
-          <option value="6" selected>6 เธเธฃเธฑเนเธ (เธ—เธธเธ 2 เน€เธ”เธทเธญเธ)</option>
-          <option value="4">4 เธเธฃเธฑเนเธ (เธฃเธฒเธขเนเธ•เธฃเธกเธฒเธช)</option>
-          <option value="3">3 เธเธฃเธฑเนเธ (เธ—เธธเธ 4 เน€เธ”เธทเธญเธ)</option>
-          <option value="2">2 เธเธฃเธฑเนเธ (เธ—เธธเธ 6 เน€เธ”เธทเธญเธ)</option>
-          <option value="1">1 เธเธฃเธฑเนเธ (เธฃเธฒเธขเธเธต)</option>
-          <option value="custom">โ๏ธ เธเธณเธซเธเธ”เน€เธญเธ (เธฃเธฐเธเธธเธเธณเธเธงเธ / เน€เธฅเธทเธญเธเน€เธ”เธทเธญเธ)</option>
+          <option value="12">12 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3607;&#3644;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;)</option>
+          <option value="6" selected>6 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3607;&#3644;&#3585; 2 &#3648;&#3604;&#3639;&#3629;&#3609;)</option>
+          <option value="4">4 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3652;&#3605;&#3619;&#3617;&#3634;&#3626;)</option>
+          <option value="3">3 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3607;&#3644;&#3585; 4 &#3648;&#3604;&#3639;&#3629;&#3609;)</option>
+          <option value="2">2 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3607;&#3644;&#3585; 6 &#3648;&#3604;&#3639;&#3629;&#3609;)</option>
+          <option value="1">1 &#3588;&#3619;&#3633;&#3657;&#3591; (&#3619;&#3634;&#3618;&#3611;&#3637;)</option>
+          <option value="custom">&#9881;&#65039; &#3585;&#3635;&#3627;&#3609;&#3604;&#3648;&#3629;&#3591; (&#3619;&#3632;&#3610;&#3640;&#3592;&#3635;&#3609;&#3623;&#3609; / &#3648;&#3621;&#3639;&#3629;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;)</option>
         </select>
       </div>
       <div class="form-group" id="bulk-custom-count-wrap" style="display:none">
-        <label>เธฃเธฐเธเธธเธเธณเธเธงเธเธเธฃเธฑเนเธ (เธเธฃเธฑเนเธ/เธเธต)</label>
+        <label>&#3619;&#3632;&#3610;&#3640;&#3592;&#3635;&#3609;&#3623;&#3609;&#3588;&#3619;&#3633;&#3657;&#3591; (&#3588;&#3619;&#3633;&#3657;&#3591;/&#3611;&#3637;)</label>
         <input id="bulk-custom-count" type="number" min="1" max="52" value="6" oninput="onCustomCountChange()"/>
       </div>
       <div class="form-group">
-        <label>เธงเธฑเธเธ—เธตเนเน€เธฃเธดเนเธกเธ•เนเธเนเธเน€เธ”เธทเธญเธ</label>
+        <label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3619;&#3636;&#3656;&#3617;&#3605;&#3657;&#3609;&#3651;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609;</label>
         <input id="bulk-day" type="number" value="15" min="1" max="31" onchange="onBulkYearOrDayChange()"/>
       </div>
       <div class="form-group">
@@ -466,36 +466,35 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <!-- Quick Month Selector Chips -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:12px;font-weight:600;color:var(--text)">๐“… เน€เธฅเธทเธญเธเน€เธ”เธทเธญเธเธ—เธตเนเธ•เนเธญเธเธเธฒเธฃเธ—เธณ TPM (เธเธฅเธดเธเน€เธเธทเนเธญเน€เธฅเธทเธญเธ/เธขเธเน€เธฅเธดเธ):</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text)">&#128197; &#3648;&#3621;&#3639;&#3629;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;&#3607;&#3637;&#3656;&#3605;&#3657;&#3629;&#3591;&#3585;&#3634;&#3619;&#3607;&#3635; TPM (&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;/&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;):</div>
         <div style="display:flex;gap:6px">
-          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,2,3,4,5,6,7,8,9,10,11,12])">เน€เธฅเธทเธญเธเธ—เธธเธเน€เธ”เธทเธญเธ</button>
-          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,3,5,7,9,11])">เน€เธงเนเธเน€เธ”เธทเธญเธ (6 เธเธฃเธฑเนเธ)</button>
-          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,4,7,10])">4 เธเธฃเธฑเนเธ</button>
-          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([])">เธฅเนเธฒเธ</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,2,3,4,5,6,7,8,9,10,11,12])">&#3648;&#3621;&#3639;&#3629;&#3585;&#3607;&#3644;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,3,5,7,9,11])">&#3648;&#3623;&#3593;&#3609;&#3648;&#3604;&#3639;&#3629;&#3609; (6 &#3588;&#3619;&#3633;&#3657;&#3591;)</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([1,4,7,10])">4 &#3588;&#3619;&#3633;&#3657;&#3591;</button>
+          <button type="button" class="btn btn-ghost btn-sm" style="font-size:11px;padding:2px 8px" onclick="setQuickMonths([])">&#3621;&#3657;&#3634;&#3591;</button>
         </div>
       </div>
       <div id="bulk-month-chips" style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px"></div>
     </div>
 
     <div class="form-row col-2">
-      <div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN / WP</label><input id="bulk-assigned" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN/WP (เน€เธเนเธ Sarin T.)"/></div>
-      <div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ (VENDOR)</label><input id="bulk-vendor-resp" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธ•เธฑเธงเนเธ—เธ/เธเธฃเธดเธฉเธฑเธ— Vendor (เน€เธเนเธ SPP)"/></div>
+      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP</label><input id="bulk-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div>
+      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR)</label><input id="bulk-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div>
     </div>
     
     <!-- Dates list header + Add Date button -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px 0">
-      <label style="font-weight:600;font-size:13px;color:var(--text);margin:0">๐—“๏ธ เธฃเธฒเธขเธเธฒเธฃเธงเธฑเธเนเธฅเธฐเน€เธ”เธทเธญเธเธ—เธตเนเธเธณเธซเธเธ” (เน€เธฅเธทเธญเธเธงเธฑเธ/เน€เธ”เธทเธญเธเนเธ”เนเธญเธดเธชเธฃเธฐเธ—เธธเธเธเนเธญเธ):</label>
-      <button type="button" class="btn btn-outline btn-sm" onclick="addBulkDateRow()">+ เน€เธเธดเนเธกเธฃเธญเธ / เธงเธฑเธเธ—เธตเน</button>
+      <label style="font-weight:600;font-size:13px;color:var(--text);margin:0">&#128197; &#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3623;&#3633;&#3609;&#3649;&#3621;&#3632;&#3648;&#3604;&#3639;&#3629;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; (&#3648;&#3621;&#3639;&#3629;&#3585;&#3623;&#3633;&#3609;/&#3648;&#3604;&#3639;&#3629;&#3609;&#3652;&#3604;&#3657;&#3629;&#3636;&#3626;&#3619;&#3632;&#3607;&#3644;&#3585;&#3585;&#3656;&#3629;&#3591;):</label>
+      <button type="button" class="btn btn-outline btn-sm" onclick="addBulkDateRow()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3619;&#3629;&#3610; / &#3623;&#3633;&#3609;&#3607;&#3637;&#3656;</button>
     </div>
     <div id="bulk-dates-container"></div>
   </div>
   <div class="modal-footer">
-    <button class="btn btn-outline" onclick="closeModal('tpm-bulk-modal')">เธขเธเน€เธฅเธดเธ</button>
-    <button class="btn btn-primary" onclick="saveBulkTPM()">โ… เธชเธฃเนเธฒเธเนเธเธ TPM</button>
+    <button class="btn btn-outline" onclick="closeModal('tpm-bulk-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
+    <button class="btn btn-primary" onclick="saveBulkTPM()">&#9989; &#3648;&#3614;&#3636;&#3656;&#3617;&#3649;&#3612;&#3609; TPM</button>
   </div>
   </div>
 </div>
-
 <!-- TPM COMPLETE -->
 <div class="modal-overlay" id="tpm-complete-modal">
   <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#9989; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3612;&#3621; TPM</div><button class="modal-close" onclick="closeModal('tpm-complete-modal')">&#10005;</button></div>
