@@ -418,7 +418,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="modal-body">
     <input type="hidden" id="tpm-id"/>
     <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input id="tpm-planned-date" type="date"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610;</label><input id="tpm-assigned"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>เธเธต</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>เธงเธฑเธเธ—เธตเนเธเธณเธซเธเธ” *</label><input id="tpm-planned-date" type="date"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN / WP</label><input id="tpm-assigned" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ WEN/WP"/></div><div class="form-group"><label>เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ (VENDOR)</label><input id="tpm-vendor-resp" placeholder="เธฃเธฐเธเธธเธเธทเนเธญเธ•เธฑเธงเนเธ—เธ/เธเธฃเธดเธฉเธฑเธ— Vendor"/></div></div>
     <div class="form-group"><label>Checklist Template</label><select id="tpm-checklist-template"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveTPMPlan()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
@@ -976,6 +977,10 @@ async function _apiInternal(actionStr, payload = null) {
           if (!p.CoInspector && p.Notes && p.Notes.indexOf('[CO_INSPECTOR:') !== -1) {
             const m = p.Notes.match(/\[CO_INSPECTOR:([^\]]+)\]/);
             if (m) p.CoInspector = m[1];
+          }
+          if (!p.VendorResp && p.Notes && p.Notes.indexOf('[VENDOR_RESP:') !== -1) {
+            const vm = p.Notes.match(/\[VENDOR_RESP:([^\]]+)\]/);
+            if (vm) p.VendorResp = vm[1];
           }
         });
         return { success: true, data: data || [] };
@@ -1776,7 +1781,10 @@ async function saveBulkTPM(){
   if(!validDates.length){ showToast('กรุณาระบุวันที่อย่างน้อย 1 วัน','error'); return; }
   
   const plans = [];
+  const wenResp = v('bulk-assigned');
+  const vendorResp = v('bulk-vendor-resp');
   targets.forEach(target => {
+    const vName = vendorResp || target.Vendor || '';
     validDates.forEach(dateStr => {
       plans.push({
         TargetType: type,
@@ -1784,7 +1792,9 @@ async function saveBulkTPM(){
         TargetName: target.Name,
         Year: parseInt(yr) || new Date().getFullYear(),
         PlannedDate: dateStr,
-        AssignedTo: v('bulk-assigned'),
+        AssignedTo: wenResp,
+        VendorResp: vName,
+        Notes: vName ? `[VENDOR_RESP:${vName}]` : '',
         ChecklistTemplate: v('bulk-checklist'),
         Status: 'Planned'
       });
@@ -2423,6 +2433,7 @@ async function openPMPrintForm(moldId) {
   }
 
     var respPerson = '';
+  var vendorResp = '';
   var assignedPlan = moldPlans.find(function(p){ return !!p.AssignedTo; });
   if(assignedPlan && assignedPlan.AssignedTo) {
     respPerson = assignedPlan.AssignedTo;
@@ -2432,6 +2443,16 @@ async function openPMPrintForm(moldId) {
       respPerson = doneWithActualBy.ActualBy;
     }
   }
+  var vPlan = moldPlans.find(function(p){ return !!p.VendorResp || (p.Notes && p.Notes.indexOf('[VENDOR_RESP:') !== -1); });
+  if(vPlan) {
+    if(vPlan.VendorResp) {
+      vendorResp = vPlan.VendorResp;
+    } else {
+      var vm = vPlan.Notes.match(/\[VENDOR_RESP:([^\]]+)\]/);
+      if(vm) vendorResp = vm[1];
+    }
+  }
+  if(!vendorResp) vendorResp = mold.Vendor || '-';
 
   var vendorSigHtml = getSigHtml('vendor', mold.Vendor);
   var smSigHtml = getSigHtml('sm', 'SM');
@@ -2510,7 +2531,7 @@ async function openPMPrintForm(moldId) {
           '<th colspan="2" style="border: 1px solid #333; text-align: center; padding: 2px; width: 60px;">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th>' +
           '<th rowspan="3" style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23</th>' +
           monthHeadersHtml +
-          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">VENDOR</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a<br>(VENDOR)</th>' +
           '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a<br>WEN / WP</th>' +
         '</tr>' +
         '<tr>' +
@@ -2538,7 +2559,7 @@ async function openPMPrintForm(moldId) {
           '<td rowspan="2" style="border: 1px solid #333; text-align: center;"></td>' +
           '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">PLAN</td>' +
           planWeekCells +
-          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (mold.Vendor || '-') + '</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + vendorResp + '</td>' +
           '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (respPerson || 'WEN / WP') + '</td>' +
         '</tr>' +
         '<tr>' +
