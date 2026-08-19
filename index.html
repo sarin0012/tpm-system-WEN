@@ -857,7 +857,18 @@ async function _apiInternal(actionStr, payload = null) {
         const id = payload.id;
         const { error } = await sb.from('molds').delete().eq('ID', id);
         if (error) return { success: false, error: error.message };
-        await sb.from('tpm_plans').delete().eq('TargetID', id);
+        return { success: true };
+      }
+      case 'resetTPMPlan': {
+        const { error } = await sb.from('tpm_plans').update({
+          Status: 'Planned',
+          ActualDate: null,
+          ActualBy: null,
+          ChecklistResult: '{}',
+          Notes: '',
+          AfterImageIds: '[]'
+        }).eq('ID', payload.id);
+        if (error) return { success: false, error: error.message };
         return { success: true };
       }
 
@@ -1409,7 +1420,19 @@ async function saveMold(){
     showToast('ผิดพลาด: '+r.error,'error');
   }
 }
-async function delMold(id,name){if(!confirm('ลบโมล "'+name+'" ?'))return;var r=await api('deleteMold',{id:id});if(r.success){showToast('ลบสำเร็จ','success');STATE.molds=STATE.molds.filter(function(m){return m.ID!==id;});renderMolds();}else showToast('ผิดพลาด: '+r.error,'error');}
+async function delMold(id,name){
+  if(!confirm('⚠️ ยืนยันการลบแม่พิมพ์ "'+name+'" ออกจากระบบทะเบียนแม่พิมพ์ใช่หรือไม่?\n\n(คำเตือน: หากต้องการลบเฉพาะแผนงานหรือประวัติ PM ให้ไปลบที่หน้า "แผน TPM")')) return;
+  showGlobalLoading(true);
+  var r=await api('deleteMold',{id:id});
+  showGlobalLoading(false);
+  if(r.success){
+    showToast('ลบแม่พิมพ์ออกจากทะเบียนสำเร็จ','success');
+    STATE.molds=STATE.molds.filter(function(m){return m.ID!==id;});
+    renderMolds();
+  } else {
+    showToast('ผิดพลาด: '+r.error,'error');
+  }
+}
 
 // ============================================
 //  MACHINES
@@ -1489,12 +1512,40 @@ function renderTPMList(container){
   if(status)plans=plans.filter(function(p){return p.Status===status;});
   plans.sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
-  container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td><span class="badge '+(p.Status||'planned').toLowerCase().replace(' ','-')+'">'+p.Status+'</span></td><td>'+(p.Status!=='Done'?'<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25</button>':'<span style="color:var(--success);font-size:12px">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08</span>')+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')">\ud83d\uddd1\ufe0f</button></td></tr>';}).join('')+'</tbody></table></div></div>';
+  container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
+    var actionBtns = p.Status!=='Done'
+      ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25</button>'
+      : '<span style="color:var(--success);font-size:12px">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08</span> <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="\u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15</button>';
+    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td><span class="badge '+(p.Status||'planned').toLowerCase().replace(' ','-')+'">'+p.Status+'</span></td><td>'+actionBtns+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="\u0e25\u0e1a\u0e41\u0e1c\u0e19\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button></td></tr>';
+  }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
 function openTPMModal(){['tpm-id','tpm-planned-date','tpm-assigned'].forEach(function(i){v_set(i,'');});v_set('tpm-plan-year',new Date().getFullYear());loadTPMTargets();openModal('tpm-modal');}
 async function saveTPMPlan(){var targetId=v('tpm-target-id'),date=v('tpm-planned-date');if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}var type=v('tpm-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});var data={ID:v('tpm-id'),TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',Year:v('tpm-plan-year'),PlannedDate:date,AssignedTo:v('tpm-assigned'),ChecklistTemplate:v('tpm-checklist-template'),Status:'Planned'};var r=await api('saveTPMPlan',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('tpm-modal');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
-async function delTPMPlan(id){if(!confirm('\u0e25\u0e1a\u0e41\u0e1c\u0e19 TPM?'))return;var r=await api('deleteTPMPlan',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function delTPMPlan(id){
+  if(!confirm('\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e41\u0e1c\u0e19 TPM \u0e19\u0e35\u0e49\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e47\u0e21\u0e48? (\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e08\u0e30\u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e25\u0e1a)')) return;
+  showGlobalLoading(true);
+  var r=await api('deleteTPMPlan',{id:id});
+  showGlobalLoading(false);
+  if(r.success){
+    showToast('\u0e25\u0e1a\u0e41\u0e1c\u0e19 TPM \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');
+    await loadTPMPlans();
+  } else {
+    showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  }
+}
+async function resetTPMPlan(id){
+  if(!confirm('\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e17\u0e33 TPM \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 Planned \u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e44\u0e21\u0e48?')) return;
+  showGlobalLoading(true);
+  var r=await api('resetTPMPlan',{id:id});
+  showGlobalLoading(false);
+  if(r.success){
+    showToast('\u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15\u0e2a\u0e16\u0e32\u0e19\u0e30\u0e40\u0e1b\u0e47\u0e19 Planned \u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22','success');
+    await loadTPMPlans();
+  } else {
+    showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  }
+}
 let BULK_DATES = [];
 
 function loadBulkTargets(){
