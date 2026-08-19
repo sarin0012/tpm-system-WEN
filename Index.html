@@ -991,15 +991,26 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        if (item.VendorResp) {
+          item.Notes = ((item.Notes || '') + ' [VENDOR_RESP:' + item.VendorResp + ']').trim();
+          delete item.VendorResp;
+        }
         const { error } = await sb.from('tpm_plans').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
       case 'saveBulkTPMPlans': {
-        const plans = payload.plans.map(p => Object.assign({}, p, {
-          ID: _uid(),
-          CreatedAt: new Date().toISOString()
-        }));
+        const plans = payload.plans.map(p => {
+          const item = Object.assign({}, p, {
+            ID: _uid(),
+            CreatedAt: new Date().toISOString()
+          });
+          if (item.VendorResp) {
+            item.Notes = ((item.Notes || '') + ' [VENDOR_RESP:' + item.VendorResp + ']').trim();
+            delete item.VendorResp;
+          }
+          return item;
+        });
         const { error } = await sb.from('tpm_plans').insert(plans);
         if (error) return { success: false, error: error.message };
         return { success: true, count: plans.length };
@@ -1798,7 +1809,6 @@ async function saveBulkTPM(){
         PlannedDate: dateStr,
         AssignedTo: wenResp,
         VendorResp: vName,
-        Notes: vName ? `[VENDOR_RESP:${vName}]` : '',
         ChecklistTemplate: v('bulk-checklist'),
         Status: 'Planned'
       });
