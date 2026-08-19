@@ -276,8 +276,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
-    <thead><tr><th>&#3594;&#3639;&#3656;&#3629;&#3650;&#3617;&#3621;</th><th>Asset No.</th><th>Vendor</th><th>Material</th><th>Location</th><th>Status</th><th>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3595;&#3639;&#3657;&#3629;</th><th>&#3619;&#3641;&#3611;</th><th>Actions</th></tr></thead>
-    <tbody id="molds-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</td></tr></tbody>
+    <thead><tr><th>ชื่อโมล</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
@@ -376,10 +376,12 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="modal"><div class="modal-header"><div class="modal-title" id="mold-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</div><button class="modal-close" onclick="closeModal('mold-modal')">&#10005;</button></div>
   <div class="modal-body">
     <input type="hidden" id="mold-id"/>
-    <div class="form-row col-2"><div class="form-group"><label>Mold Name *</label><input id="mold-name" placeholder="&#3594;&#3639;&#3656;&#3629;&#3650;&#3617;&#3621;"/></div><div class="form-group"><label>Asset No. *</label><input id="mold-asset" placeholder="ASS-0001"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor"/></div><div class="form-group"><label>Material</label><input id="mold-material"/></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number"/></div><div class="form-group"><label>Location</label><input id="mold-location"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
-    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="mold-notes"></textarea></div>
+    <div class="form-row col-2"><div class="form-group"><label>Mold Name *</label><input id="mold-name" placeholder="ชื่อโมล"/></div><div class="form-group"><label>Asset No. *</label><input id="mold-asset" placeholder="ASS-0001"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>เลข Drawing (DWG. No.)</label><input id="mold-drawing" placeholder="เช่น DWG-2026-001"/></div><div class="form-group"><label>Size Mold (ขนาดแม่พิมพ์)</label><input id="mold-size" placeholder="เช่น 450 x 500 x 400 mm"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>น้ำหนัก Mold</label><input id="mold-weight" placeholder="เช่น 1,200 kg"/></div><div class="form-group"><label>น้ำหนักชิ้นงาน (Part)</label><input id="mold-part-weight" placeholder="เช่น 45.5 g"/></div><div class="form-group"><label>น้ำหนัก Runner</label><input id="mold-runner-weight" placeholder="เช่น 12.3 g"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor" placeholder="ผู้ผลิต / ผู้ขาย"/></div><div class="form-group"><label>Material</label><input id="mold-material" placeholder="ชนิดพลาสติก / วัตถุดิบ"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
+    <div class="form-group"><label>หมายเหตุ</label><textarea id="mold-notes" placeholder="ข้อมูลเพิ่มเติม..."></textarea></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
       <div class="photo-upload-area" onclick="triggerUpload('mold-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:13px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
       <input type="file" id="mold-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'mold-photos-preview','mold')"/>
@@ -738,13 +740,58 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getMolds': {
         const { data, error } = await sb.from('molds').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
-        return { success: true, data: data || [] };
+        const molds = (data || []).map(m => {
+          if (m.Notes && m.Notes.indexOf('[SPECS:') !== -1) {
+            try {
+              const match = m.Notes.match(/\[SPECS:(.*?)\]/);
+              if (match && match[1]) {
+                const specs = JSON.parse(match[1]);
+                if (!m.DrawingNo && specs.DrawingNo) m.DrawingNo = specs.DrawingNo;
+                if (!m.MoldSize && specs.MoldSize) m.MoldSize = specs.MoldSize;
+                if (!m.MoldWeight && specs.MoldWeight) m.MoldWeight = specs.MoldWeight;
+                if (!m.PartWeight && specs.PartWeight) m.PartWeight = specs.PartWeight;
+                if (!m.RunnerWeight && specs.RunnerWeight) m.RunnerWeight = specs.RunnerWeight;
+              }
+            } catch(e){}
+          }
+          return m;
+        });
+        return { success: true, data: molds };
       }
       case 'saveMold': {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
         if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await sb.from('molds').upsert(item);
+        
+        let { error } = await sb.from('molds').upsert(item);
+        
+        // Fallback: If DB columns don't exist yet in Supabase, pack specs into Notes
+        if (error && (error.message.indexOf('column') !== -1 || error.code === 'PGRST204' || error.message.indexOf('DrawingNo') !== -1)) {
+          const specs = {
+            DrawingNo: item.DrawingNo || '',
+            MoldSize: item.MoldSize || '',
+            MoldWeight: item.MoldWeight || '',
+            PartWeight: item.PartWeight || '',
+            RunnerWeight: item.RunnerWeight || ''
+          };
+          let rawNotes = (item.Notes || '').replace(/\[SPECS:.*?\]/g, '').trim();
+          const cleanItem = {
+            ID: item.ID,
+            Name: item.Name,
+            AssetNo: item.AssetNo,
+            Vendor: item.Vendor,
+            Material: item.Material,
+            Cavity: item.Cavity,
+            Location: item.Location,
+            PurchaseDate: item.PurchaseDate,
+            Notes: (rawNotes ? rawNotes + '\n' : '') + '[SPECS:' + JSON.stringify(specs) + ']',
+            Status: item.Status || 'Active',
+            ImageIds: item.ImageIds || '[]',
+            CreatedAt: item.CreatedAt
+          };
+          const fallbackRes = await sb.from('molds').upsert(cleanItem);
+          error = fallbackRes.error;
+        }
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
       }
@@ -1204,7 +1251,7 @@ async function loadDashboard() {
 function renderMolds() {
   var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
-  if(vf){vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  if(vf){vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
   filterMolds();
 }
 function filterMolds(){
@@ -1214,36 +1261,81 @@ function filterMolds(){
   var data=STATE.molds.filter(function(m){
     if(vendor&&m.Vendor!==vendor)return false;
     if(status&&(m.Status||'Active')!==status)return false;
-    if(q&&(m.Name+m.AssetNo+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
+    if(q&&(m.Name+(m.AssetNo||'')+(m.DrawingNo||'')+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
     return true;
   });
   var tb=document.getElementById('molds-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83e\udde9','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e42\u0e21\u0e25','\u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e42\u0e21\u0e25"')+'</td></tr>';return;}
+  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m){
     var imgs=tryParse(m.ImageIds);
-    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e39\u0e1b"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
-    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Material||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+((m.PurchaseDate||'').substring(0,10)||'-')+'</td><td>'+thumbs+'</td><td><button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e41\u0e1a\u0e1a\u0e1f\u0e2d\u0e23\u0e4c\u0e21 PM" style="margin-right:2px">\ud83d\udda8\ufe0f PM</button><button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">&#128465;&#65039;</button></td></tr>';
+    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="คลิกดูรูป"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var specs=[];
+    if(m.MoldSize) specs.push('📐 '+m.MoldSize);
+    if(m.MoldWeight) specs.push('⚖️ '+m.MoldWeight);
+    if(m.PartWeight) specs.push('📦 Part: '+m.PartWeight);
+    if(m.RunnerWeight) specs.push('⚡ Runner: '+m.RunnerWeight);
+    var specStr = specs.length ? '<div style="font-size:11px;color:var(--text-muted);line-height:1.3">'+specs.join('<br>')+'</div>' : '<span style="color:var(--text-faint);font-size:11px">-</span>';
+    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+(m.AssetNo||'-')+'</td><td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Material||'-')+'</td><td>'+specStr+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td><button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button><button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>✏️</button><button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">🗑️</button></td></tr>';
   }).join('');
 }
 function openMoldModal(data) {
-  ['mold-id','mold-name','mold-asset','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
+  ['mold-id','mold-name','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
   document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
-  document.getElementById('mold-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e42\u0e21\u0e25':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e42\u0e21\u0e25';
-  if(data){v_set('mold-id',data.ID);v_set('mold-name',data.Name);v_set('mold-asset',data.AssetNo);v_set('mold-vendor',data.Vendor);v_set('mold-material',data.Material);v_set('mold-cavity',data.Cavity);v_set('mold-location',data.Location);v_set('mold-purchase-date',data.PurchaseDate);v_set('mold-notes',data.Notes);}
+  document.getElementById('mold-modal-title').textContent=data?'✏️ แก้ไขโมล':'+ เพิ่มโมล';
+  if(data){
+    v_set('mold-id',data.ID);
+    v_set('mold-name',data.Name);
+    v_set('mold-asset',data.AssetNo);
+    v_set('mold-drawing',data.DrawingNo);
+    v_set('mold-size',data.MoldSize);
+    v_set('mold-weight',data.MoldWeight);
+    v_set('mold-part-weight',data.PartWeight);
+    v_set('mold-runner-weight',data.RunnerWeight);
+    v_set('mold-vendor',data.Vendor);
+    v_set('mold-material',data.Material);
+    v_set('mold-cavity',data.Cavity);
+    v_set('mold-location',data.Location);
+    v_set('mold-purchase-date',data.PurchaseDate);
+    var cleanNotes = (data.Notes||'').replace(/\[SPECS:.*?\]/g, '').trim();
+    v_set('mold-notes',cleanNotes);
+  }
   openModal('mold-modal');
 }
 async function saveMold(){
   var name=v('mold-name'),asset=v('mold-asset');
-  if(!name||!asset){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e25\u0e30 Asset No.','error');return;}
+  if(!name||!asset){showToast('กรุณากรอกชื่อและ Asset No.','error');return;}
   showGlobalLoading(true);
   var imgIds=await uploadPendingPhotos('mold','Molds');
-  var data={ID:v('mold-id'),Name:name,AssetNo:asset,Vendor:v('mold-vendor'),Material:v('mold-material'),Cavity:v('mold-cavity'),Location:v('mold-location'),PurchaseDate:v('mold-purchase-date'),Notes:v('mold-notes'),Status:'Active',ImageIds:JSON.stringify(imgIds)};
+  var data={
+    ID:v('mold-id'),
+    Name:name,
+    AssetNo:asset,
+    DrawingNo:v('mold-drawing'),
+    MoldSize:v('mold-size'),
+    MoldWeight:v('mold-weight'),
+    PartWeight:v('mold-part-weight'),
+    RunnerWeight:v('mold-runner-weight'),
+    Vendor:v('mold-vendor'),
+    Material:v('mold-material'),
+    Cavity:v('mold-cavity'),
+    Location:v('mold-location'),
+    PurchaseDate:v('mold-purchase-date'),
+    Notes:v('mold-notes'),
+    Status:'Active',
+    ImageIds:JSON.stringify(imgIds)
+  };
   var r=await api('saveMold',{data:data});
   showGlobalLoading(false);
-  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('mold-modal');var res=await api('getMolds');if(res.success){STATE.molds=res.data;renderMolds();}}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  if(r.success){
+    showToast('บันทึกสำเร็จ','success');
+    closeModal('mold-modal');
+    var res=await api('getMolds');
+    if(res.success){STATE.molds=res.data;renderMolds();}
+  } else {
+    showToast('ผิดพลาด: '+r.error,'error');
+  }
 }
-async function delMold(id,name){if(!confirm('\u0e25\u0e1a\u0e42\u0e21\u0e25 "'+name+'" ?'))return;var r=await api('deleteMold',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.molds=STATE.molds.filter(function(m){return m.ID!==id;});renderMolds();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function delMold(id,name){if(!confirm('ลบโมล "'+name+'" ?'))return;var r=await api('deleteMold',{id:id});if(r.success){showToast('ลบสำเร็จ','success');STATE.molds=STATE.molds.filter(function(m){return m.ID!==id;});renderMolds();}else showToast('ผิดพลาด: '+r.error,'error');}
 
 // ============================================
 //  MACHINES
@@ -1829,11 +1921,14 @@ async function openPMPrintForm(moldId) {
         '<tr>'+
           '<td rowspan="2" style="border:1px solid #333;text-align:center;font-weight:bold;font-size:9pt">WP.</td>'+
           '<td style="border:1px solid #333;text-align:center">1</td>'+
-          '<td style="border:1px solid #333;padding:3px;font-size:9pt">'+
             'MOLD &nbsp;: '+mold.Name+'<br>'+
-            'DWG.NO. : '+(mold.AssetNo||'-')+'<br>'+
+            'DWG.NO. : '+(mold.DrawingNo||'-')+'<br>'+
             'MODEL &nbsp;: '+(mold.Material||'-')+'<br>'+
             'ASSET &nbsp;&nbsp;: '+(mold.AssetNo||'-')+
+            (mold.MoldSize ? '<br>SIZE &nbsp;&nbsp;: '+mold.MoldSize : '')+
+            (mold.MoldWeight ? ' | WEIGHT: '+mold.MoldWeight : '')+
+            (mold.PartWeight ? '<br>PART WT: '+mold.PartWeight : '')+
+            (mold.RunnerWeight ? ' | RUNNER: '+mold.RunnerWeight : '')+
           '</td>'+
           '<td style="border:1px solid #333;text-align:center">&#10003;</td>'+
           '<td style="border:1px solid #333;text-align:center"></td>'+
