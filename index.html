@@ -2131,21 +2131,21 @@ async function openPMPrintForm(moldId) {
     { id: 9, th: 'ความสะอาดของแม่พิมพ์', std: 'สภาพทั่วไปต้องสะอาด' }
   ];
 
-  // Up to 4 completed plans for actual check results
-  var donePlans = moldPlans.filter(function(p){return p.Status==='Done';}).slice(0, 4);
+  // Determine 4 target rounds from mold plans
+  var roundPlans = [];
+  for(var r=0; r<4; r++){
+    roundPlans.push(moldPlans[r] || null);
+  }
 
-  // Determine the 4 months to display in Action Plan
+  // Determine the 4 months to display in Action Plan headers
   var thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
-  
-  // Find months that have plans
-  var planMonthsMap = {};
-  moldPlans.forEach(function(p){
-    if(!p.PlannedDate) return;
-    var d = new Date(p.PlannedDate);
-    var mo = d.getMonth() + 1;
-    planMonthsMap[mo] = true;
+  var selectedMonths = [];
+  roundPlans.forEach(function(p){
+    if(p && p.PlannedDate){
+      var mo = parseInt(p.PlannedDate.split('-')[1], 10);
+      if(mo && selectedMonths.indexOf(mo) === -1) selectedMonths.push(mo);
+    }
   });
-  var selectedMonths = Object.keys(planMonthsMap).map(Number).sort(function(a,b){return a-b;});
   if(!selectedMonths.length) selectedMonths = [1, 4, 7, 10];
   while(selectedMonths.length < 4) {
     var last = selectedMonths[selectedMonths.length - 1];
@@ -2160,82 +2160,77 @@ async function openPMPrintForm(moldId) {
   var actualWeekCells = '';
   var correctionNotes = [];
 
-  selectedMonths.forEach(function(mNum, mIdx){
-    // Find the plan that belongs to this planned month
-    var roundPlan = moldPlans.find(function(p){
-      if(!p.PlannedDate) return false;
-      return (new Date(p.PlannedDate).getMonth() + 1) === mNum;
-    }) || moldPlans[mIdx];
+  for(var rIdx=0; rIdx<4; rIdx++){
+    var roundPlan = roundPlans[rIdx];
+    var mNum = selectedMonths[rIdx];
 
-    for(var w=1; w<=4; w++){
-      // PLAN row
-      var hasPlanInW = false;
-      if(roundPlan && roundPlan.PlannedDate){
-        var pD = new Date(roundPlan.PlannedDate);
-        if(pD.getMonth() + 1 === mNum){
-          var pDay = pD.getDate();
-          var pW = pDay <= 7 ? 1 : (pDay <= 14 ? 2 : (pDay <= 21 ? 3 : 4));
-          if(pW === w) hasPlanInW = true;
-        }
-      }
-      planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:10pt;padding:0;height:24px;">' + (hasPlanInW ? '●' : '') + '</td>';
-
-      // ACTUAL row
-      var actCellHtml = '';
-      if(roundPlan && roundPlan.Status === 'Done' && roundPlan.ActualDate){
-        var aD = new Date(roundPlan.ActualDate);
-        var pD = roundPlan.PlannedDate ? new Date(roundPlan.PlannedDate) : aD;
-        var aMo = aD.getMonth() + 1;
-        var pMo = pD.getMonth() + 1;
-        var aDay = aD.getDate();
-        var aW = aDay <= 7 ? 1 : (aDay <= 14 ? 2 : (aDay <= 21 ? 3 : 4));
-        var aDateTag = (aDay < 10 ? '0' : '') + aDay + '/' + (aMo < 10 ? '0' : '') + aMo;
-
-        // Same month
-        if(aMo === mNum && aD.getFullYear() === pD.getFullYear()){
-          if(w === aW){
-            actCellHtml = '<div style="line-height:1;font-size:10pt;">●</div>';
-          }
-        }
-        // Delayed past the planned month -> plot at W4 with red date tag
-        else if(aD > pD){
-          if(w === 4){
-            actCellHtml = '<div style="line-height:1;font-size:9pt;">●</div><div style="font-size:6pt;line-height:1;color:#b91c1c;margin-top:1px;font-weight:bold;">(' + aDateTag + ')</div>';
-          }
-        }
-        // Early before the planned month -> plot at W1 with blue date tag
-        else if(aD < pD){
-          if(w === 1){
-            actCellHtml = '<div style="line-height:1;font-size:9pt;">●</div><div style="font-size:6pt;line-height:1;color:#2563eb;margin-top:1px;font-weight:bold;">(' + aDateTag + ')</div>';
-          }
-        }
-      }
-      actualWeekCells += '<td style="border:1px solid #333;text-align:center;padding:1px 0;height:24px;vertical-align:middle;">' + actCellHtml + '</td>';
+    // Determine planned week in this month
+    var plannedWeek = 0;
+    if(roundPlan && roundPlan.PlannedDate){
+      var pParts = roundPlan.PlannedDate.split('-');
+      var pDay = parseInt(pParts[2], 10);
+      plannedWeek = pDay <= 7 ? 1 : (pDay <= 14 ? 2 : (pDay <= 21 ? 3 : 4));
     }
-  });
 
-  // Collect correction notes
-  moldPlans.forEach(function(p, idx){
-    if(p.Status === 'Done' && p.ActualDate && p.PlannedDate){
-      var pD = new Date(p.PlannedDate);
-      var aD = new Date(p.ActualDate);
-      var pMo = pD.getMonth() + 1;
-      var aMo = aD.getMonth() + 1;
-      var roundNum = idx + 1;
-      var aStr = aD.toLocaleDateString('th-TH', {day:'2-digit',month:'2-digit',year:'numeric'});
-      if(aMo > pMo || aD.getFullYear() > pD.getFullYear()){
+    // Determine actual week & early/delayed status
+    var actualWeek = 0;
+    var isEarly = false;
+    var isDelayed = false;
+    var actDateTag = '';
+    if(roundPlan && roundPlan.Status === 'Done' && roundPlan.ActualDate && roundPlan.PlannedDate){
+      var aParts = roundPlan.ActualDate.split('-');
+      var pParts = roundPlan.PlannedDate.split('-');
+      var aYr = parseInt(aParts[0], 10), aMo = parseInt(aParts[1], 10), aDay = parseInt(aParts[2], 10);
+      var pYr = parseInt(pParts[0], 10), pMo = parseInt(pParts[1], 10), pDay = parseInt(pParts[2], 10);
+      actDateTag = (aDay < 10 ? '0' : '') + aDay + '/' + (aMo < 10 ? '0' : '') + aMo;
+      var aW = aDay <= 7 ? 1 : (aDay <= 14 ? 2 : (aDay <= 21 ? 3 : 4));
+
+      if(aYr === pYr && aMo === pMo){
+        actualWeek = aW;
+      } else if(aYr > pYr || (aYr === pYr && aMo > pMo)){
+        isDelayed = true;
+        actualWeek = 4;
+      } else if(aYr < pYr || (aYr === pYr && aMo < pMo)){
+        isEarly = true;
+        actualWeek = 1;
+      }
+
+      // Collect correction notes
+      var roundNum = rIdx + 1;
+      var aStr = (aDay < 10 ? '0' : '') + aDay + '/' + (aMo < 10 ? '0' : '') + aMo + '/' + (aYr + 543);
+      if(isDelayed){
         correctionNotes.push('• ครั้งที่ ' + roundNum + ': ปฏิบัติงานจริง ' + aStr + ' (ล่าช้ากว่าแผน ' + thMonths[pMo-1] + ')');
-      } else if(aMo < pMo && aD.getFullYear() <= pD.getFullYear()){
+      } else if(isEarly){
         correctionNotes.push('• ครั้งที่ ' + roundNum + ': ปฏิบัติงานจริง ' + aStr + ' (ทำก่อนแผน ' + thMonths[pMo-1] + ')');
       }
-      if(p.Notes){
-        var cleanNotes = p.Notes.replace(/\[CO_INSPECTOR:.*?\]/g, '').trim();
+      if(roundPlan.Notes){
+        var cleanNotes = roundPlan.Notes.replace(/\[CO_INSPECTOR:.*?\]/g, '').trim();
         if(cleanNotes && cleanNotes !== 'Normal PM' && cleanNotes !== 'Normal PM cycle check'){
           correctionNotes.push('• บันทึกครั้งที่ ' + roundNum + ': ' + cleanNotes);
         }
       }
     }
-  });
+
+    // Render 4 week columns for this round
+    for(var w=1; w<=4; w++){
+      // PLAN row
+      planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:10pt;padding:0;height:24px;">' + (w === plannedWeek ? '●' : '') + '</td>';
+
+      // ACTUAL row
+      var actCellHtml = '';
+      if(w === actualWeek){
+        if(isDelayed){
+          actCellHtml = '<div style="line-height:1;font-size:9pt;">●</div><div style="font-size:6pt;line-height:1;color:#b91c1c;margin-top:1px;font-weight:bold;">(' + actDateTag + ')</div>';
+        } else if(isEarly){
+          actCellHtml = '<div style="line-height:1;font-size:9pt;">●</div><div style="font-size:6pt;line-height:1;color:#2563eb;margin-top:1px;font-weight:bold;">(' + actDateTag + ')</div>';
+        } else {
+          actCellHtml = '<div style="line-height:1;font-size:10pt;">●</div>';
+        }
+      }
+      actualWeekCells += '<td style="border:1px solid #333;text-align:center;padding:1px 0;height:24px;vertical-align:middle;">' + actCellHtml + '</td>';
+    }
+  }
+
   var correctionNotesHtml = correctionNotes.length ? correctionNotes.map(function(n){return '<div style="margin-bottom:2px;">' + n + '</div>';}).join('') : '&nbsp;';
 
   // Month headers HTML
@@ -2258,10 +2253,10 @@ async function openPMPrintForm(moldId) {
   var checklistRowsHtml = masterCheckItems.map(function(item){
     var roundCols = '';
     for(var rIdx=0; rIdx<4; rIdx++){
-      var p = donePlans[rIdx];
+      var p = roundPlans[rIdx];
       var actFindingStr = '';
       var resultSym = '';
-      if(p){
+      if(p && p.Status === 'Done'){
         try {
           var resObj = JSON.parse(p.ChecklistResult || '{}');
           var resItem = resObj[item.id] || {};
@@ -2297,10 +2292,16 @@ async function openPMPrintForm(moldId) {
   var inspectDateCells = '';
 
   for (var rIdx = 0; rIdx < 4; rIdx++) {
-    var p = donePlans[rIdx];
-    var insp = p ? (p.ActualBy || '') : '';
-    var coInsp = p ? (p.CoInspector || mold.Vendor || '') : '';
-    var dtStr = p && p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH', {day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+    var p = roundPlans[rIdx];
+    var isDone = p && p.Status === 'Done';
+    var insp = isDone ? (p.ActualBy || '') : '';
+    var coInsp = isDone ? (p.CoInspector || mold.Vendor || '') : '';
+    var dtStr = '';
+    if(isDone && p.ActualDate){
+      var dParts = p.ActualDate.split('-');
+      var dy = parseInt(dParts[2], 10), dm = parseInt(dParts[1], 10), dyr = parseInt(dParts[0], 10);
+      dtStr = (dy < 10 ? '0' : '') + dy + '/' + (dm < 10 ? '0' : '') + dm + '/' + (dyr + 543);
+    }
     
     inspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + insp + '</td>';
     coInspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + coInsp + '</td>';
