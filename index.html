@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -2131,13 +2131,9 @@ async function openPMPrintForm(moldId) {
     { id: 9, th: 'เธเธงเธฒเธกเธชเธฐเธญเธฒเธ”เธเธญเธเนเธกเนเธเธดเธกเธเน', std: 'เธชเธ เธฒเธเธ—เธฑเนเธงเนเธเธ•เนเธญเธเธชเธฐเธญเธฒเธ”' }
   ];
 
-  // Determine 4 target rounds from mold plans
   var roundPlans = [];
-  for(var r=0; r<4; r++){
-    roundPlans.push(moldPlans[r] || null);
-  }
+  for(var r=0; r<4; r++){ roundPlans.push(moldPlans[r] || null); }
 
-  // Determine the 4 months to display in Action Plan headers
   var thMonths = ['เธก.เธ.','เธ.เธ.','เธกเธต.เธ.','เน€เธก.เธข.','เธ.เธ.','เธกเธด.เธข.','เธ.เธ.','เธช.เธ.','เธ.เธข.','เธ•.เธ.','เธ.เธข.','เธ.เธ.'];
   var selectedMonths = [];
   roundPlans.forEach(function(p){
@@ -2155,7 +2151,6 @@ async function openPMPrintForm(moldId) {
   }
   selectedMonths = selectedMonths.slice(0, 4);
 
-  // Generate Action Plan 16 week cells
   var planWeekCells = '';
   var actualWeekCells = '';
   var correctionNotes = [];
@@ -2163,16 +2158,12 @@ async function openPMPrintForm(moldId) {
   for(var rIdx=0; rIdx<4; rIdx++){
     var roundPlan = roundPlans[rIdx];
     var mNum = selectedMonths[rIdx];
-
-    // Determine planned week in this month
     var plannedWeek = 0;
     if(roundPlan && roundPlan.PlannedDate){
       var pParts = roundPlan.PlannedDate.split('-');
       var pDay = parseInt(pParts[2], 10);
       plannedWeek = pDay <= 7 ? 1 : (pDay <= 14 ? 2 : (pDay <= 21 ? 3 : 4));
     }
-
-    // Determine actual week & early/delayed status
     var actualWeek = 0;
     var isEarly = false;
     var isDelayed = false;
@@ -2184,18 +2175,13 @@ async function openPMPrintForm(moldId) {
       var pYr = parseInt(pParts[0], 10), pMo = parseInt(pParts[1], 10), pDay = parseInt(pParts[2], 10);
       actDateTag = (aDay < 10 ? '0' : '') + aDay + '/' + (aMo < 10 ? '0' : '') + aMo;
       var aW = aDay <= 7 ? 1 : (aDay <= 14 ? 2 : (aDay <= 21 ? 3 : 4));
-
       if(aYr === pYr && aMo === pMo){
         actualWeek = aW;
       } else if(aYr > pYr || (aYr === pYr && aMo > pMo)){
-        isDelayed = true;
-        actualWeek = 4;
+        isDelayed = true; actualWeek = 4;
       } else if(aYr < pYr || (aYr === pYr && aMo < pMo)){
-        isEarly = true;
-        actualWeek = 1;
+        isEarly = true; actualWeek = 1;
       }
-
-      // Collect correction notes
       var roundNum = rIdx + 1;
       var aStr = (aDay < 10 ? '0' : '') + aDay + '/' + (aMo < 10 ? '0' : '') + aMo + '/' + (aYr + 543);
       if(isDelayed){
@@ -2210,13 +2196,8 @@ async function openPMPrintForm(moldId) {
         }
       }
     }
-
-    // Render 4 week columns for this round
     for(var w=1; w<=4; w++){
-      // PLAN row
       planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:10pt;padding:0;height:24px;">' + (w === plannedWeek ? 'โ—' : '') + '</td>';
-
-      // ACTUAL row
       var actCellHtml = '';
       if(w === actualWeek){
         if(isDelayed){
@@ -2233,7 +2214,6 @@ async function openPMPrintForm(moldId) {
 
   var correctionNotesHtml = correctionNotes.length ? correctionNotes.map(function(n){return '<div style="margin-bottom:2px;">' + n + '</div>';}).join('') : '&nbsp;';
 
-  // Month headers HTML
   var monthHeadersHtml = selectedMonths.map(function(mNum){
     return '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:8.5pt;background:#fff;padding:2px;">เน€เธ”เธทเธญเธ ' + thMonths[mNum-1] + '</th>';
   }).join('');
@@ -2249,7 +2229,6 @@ async function openPMPrintForm(moldId) {
            '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">4</th>';
   }).join('');
 
-  // Generate Checklist 9 rows with 4 rounds
   var checklistRowsHtml = masterCheckItems.map(function(item){
     var roundCols = '';
     for(var rIdx=0; rIdx<4; rIdx++){
@@ -2260,20 +2239,10 @@ async function openPMPrintForm(moldId) {
         try {
           var resObj = JSON.parse(p.ChecklistResult || '{}');
           var resItem = resObj[item.id] || {};
-          if(resItem.result === 'OK') {
-            resultSym = 'โ“';
-            actFindingStr = '';
-          } else if(resItem.result === 'NG') {
-            resultSym = 'โ•';
-            actFindingStr = resItem.remark || 'NG';
-          } else {
-            resultSym = 'โ“';
-            actFindingStr = '';
-          }
-        } catch(e){
-          resultSym = 'โ“';
-          actFindingStr = '';
-        }
+          if(resItem.result === 'OK') { resultSym = 'โ“'; actFindingStr = ''; }
+          else if(resItem.result === 'NG') { resultSym = 'โ•'; actFindingStr = resItem.remark || 'NG'; }
+          else { resultSym = 'โ“'; actFindingStr = ''; }
+        } catch(e){ resultSym = 'โ“'; actFindingStr = ''; }
       }
       roundCols += '<td style="border:1px solid #333;text-align:center;font-size:7.5pt;padding:2px;width:55px;color:'+(resultSym==='โ•'?'#b91c1c':'#000')+'">' + actFindingStr + '</td>' +
                    '<td style="border:1px solid #333;text-align:center;font-size:9pt;font-weight:bold;padding:2px;width:40px;color:'+(resultSym==='โ•'?'#b91c1c':'#000')+'">' + resultSym + '</td>';
@@ -2286,7 +2255,6 @@ async function openPMPrintForm(moldId) {
     '</tr>';
   }).join('');
 
-  // Generate 4 round signature cells for footer
   var inspectorCells = '';
   var coInspectorCells = '';
   var inspectDateCells = '';
@@ -2302,25 +2270,19 @@ async function openPMPrintForm(moldId) {
       var dy = parseInt(dParts[2], 10), dm = parseInt(dParts[1], 10), dyr = parseInt(dParts[0], 10);
       dtStr = (dy < 10 ? '0' : '') + dy + '/' + (dm < 10 ? '0' : '') + dm + '/' + (dyr + 543);
     }
-    
     inspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + insp + '</td>';
     coInspectorCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;width:95px;">' + coInsp + '</td>';
     inspectDateCells += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:22px;width:95px;">' + dtStr + '</td>';
   }
 
-  // Initial Signature loading for header box
   var headerSigs = {};
-  try {
-    headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}');
-  } catch(e){}
+  try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
 
   function getSigHtml(role, defaultName) {
     var s = headerSigs[role];
     if(!s) return '&nbsp;';
     if(s.type === 'draw' || s.type === 'image') {
-      if(s.data) {
-        return '<img src="' + s.data + '" style="max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
-      }
+      if(s.data) return '<img src="' + s.data + '" style="max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
     } else if(s.type === 'stamp') {
       var stName = s.name || defaultName || role.toUpperCase();
       var stDate = s.date || '';
@@ -2353,7 +2315,6 @@ async function openPMPrintForm(moldId) {
       '@media print { .no-print { display: none !important; } .sig-clickable { cursor: default; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }' +
     '</style></head><body>' +
 
-    // Print button & Signature toolbar
     '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:6px; background:#f3f4f6; margin-bottom:6px; border-bottom:1px solid #ccc; flex-wrap:wrap;">' +
       '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">๐–จ๏ธ เธชเธฑเนเธเธเธดเธกเธเน / Print (A4 เนเธเธงเธเธญเธ)</button>' +
       '<button onclick="openSigModal(\'sm\',\'SM\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">โ๏ธ เธเธฑเธ”เธเธฒเธฃเธฅเธฒเธขเน€เธเนเธเธญเธเธธเธกเธฑเธ•เธด</button>' +
@@ -2361,7 +2322,6 @@ async function openPMPrintForm(moldId) {
       '<button onclick="window.close()" style="padding:6px 14px; font-size:10.5pt; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">โ• เธเธดเธ”</button>' +
     '</div>' +
 
-    // ====== TOP HEADER ======
     '<table style="border:none; margin-bottom: 3px;">' +
       '<tr style="border:none;">' +
         '<td style="border:none; width: 62%; vertical-align: top; padding: 0 4px 0 0;">' +
@@ -2387,22 +2347,21 @@ async function openPMPrintForm(moldId) {
               '<td colspan="3" style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: bold;">WEN / WP</td>' +
             '</tr>' +
             '<tr>' +
-              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\',\'' + (mold.Vendor || 'VENDOR').replace(/'/g, "\\'") + '\')" style="border: 1px solid #333; height: 38px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เน€เธเธฅเธตเนเธขเธเธฅเธฒเธขเน€เธเนเธ Vendor">' + vendorSigHtml + '</td>' +
+              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\',\'' + (mold.Vendor || 'VENDOR').replace(/'/g, "\\'") + '\')" style="border: 1px solid #333; height: 38px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เนเธเนเนเธเธฅเธฒเธขเน€เธเนเธ Vendor">' + vendorSigHtml + '</td>' +
               '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SM</td>' +
               '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SV</td>' +
               '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 34%;">ST/SV</td>' +
             '</tr>' +
             '<tr>' +
-              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\',\'SM\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เน€เธเธฅเธตเนเธขเธเธฅเธฒเธขเน€เธเนเธ SM">' + smSigHtml + '</td>' +
-              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\',\'SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เน€เธเธฅเธตเนเธขเธเธฅเธฒเธขเน€เธเนเธ SV">' + svSigHtml + '</td>' +
-              '<td id="sig-cell-st_sv" class="sig-clickable" onclick="openSigModal(\'st_sv\',\'ST/SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เน€เธเธฅเธตเนเธขเธเธฅเธฒเธขเน€เธเนเธ ST/SV">' + stSvSigHtml + '</td>' +
+              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\',\'SM\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เนเธเนเนเธเธฅเธฒเธขเน€เธเนเธ SM">' + smSigHtml + '</td>' +
+              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\',\'SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เนเธเนเนเธเธฅเธฒเธขเน€เธเนเธ SV">' + svSigHtml + '</td>' +
+              '<td id="sig-cell-st_sv" class="sig-clickable" onclick="openSigModal(\'st_sv\',\'ST/SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="เธเธฅเธดเธเน€เธเธทเนเธญเน€เธเนเธ/เนเธเนเนเธเธฅเธฒเธขเน€เธเนเธ ST/SV">' + stSvSigHtml + '</td>' +
             '</tr>' +
           '</table>' +
         '</td>' +
       '</tr>' +
     '</table>' +
 
-    // ====== ACTION PLAN TABLE ======
     '<div class="section-bar">ACTION PLAN PM. CHECK SPECIAL TOOLS</div>' +
     '<table style="font-size:8pt; margin-bottom: 3px;">' +
       '<thead>' +
@@ -2451,7 +2410,6 @@ async function openPMPrintForm(moldId) {
       '</tbody>' +
     '</table>' +
 
-    // ====== CHECK SHEET TABLE ======
     '<div class="section-bar">CHECK SHEET PM. SPECIAL TOOLS</div>' +
     '<table style="font-size:8pt;">' +
       '<thead>' +
@@ -2476,7 +2434,6 @@ async function openPMPrintForm(moldId) {
       '<tbody>' + checklistRowsHtml + '</tbody>' +
     '</table>' +
 
-    // ====== FOOTER ======
     '<table style="margin-top: 3px; font-size: 8pt; width: 100%; border-collapse: collapse;">' +
       '<tr>' +
         '<td style="width: calc(100% - 380px); vertical-align: top; border: 1px solid #333; padding: 0;">' +
@@ -2513,21 +2470,18 @@ async function openPMPrintForm(moldId) {
       '</tr>' +
     '</table>' +
 
-    // Form code footer
     '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 7.5pt; color: #333;">' +
       '<div style="width: 30%;"></div>' +
       '<div style="width: 40%; text-align: center;">1/1</div>' +
       '<div style="width: 30%; text-align: right; font-weight: bold;">MA 8543-07 EFF. 03/24</div>' +
     '</div>' +
 
-    // ====== INTERACTIVE SIGNATURE MODAL (Popup Window Embed) ======
     '<div id="sig-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">' +
       '<div style="background:#fff; border-radius:8px; width:480px; max-width:95%; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-family:sans-serif;">' +
         '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
           '<h3 style="margin:0; font-size:13pt; color:#111827;">โ๏ธ เธเธฑเธ”เธเธฒเธฃเธฅเธฒเธขเน€เธเนเธเธญเธเธธเธกเธฑเธ•เธดเธซเธฑเธงเธเธฃเธฐเธ”เธฒเธฉ</h3>' +
           '<button onclick="closeSigModal()" style="background:none; border:none; font-size:14pt; cursor:pointer; color:#6b7280;">โ•</button>' +
         '</div>' +
-
         '<div style="margin-bottom:12px;">' +
           '<label style="font-size:9.5pt; font-weight:bold; color:#374151; display:block; margin-bottom:4px;">เน€เธฅเธทเธญเธเธ•เธณเนเธซเธเนเธเธ—เธตเนเธ•เนเธญเธเธเธฒเธฃเธฅเธเธเธฒเธก:</label>' +
           '<select id="sig-role-select" onchange="onRoleChange()" style="width:100%; padding:6px 10px; font-size:10pt; border:1px solid #d1d5db; border-radius:4px; background:#f9fafb;">' +
@@ -2537,16 +2491,12 @@ async function openPMPrintForm(moldId) {
             '<option value="vendor">เนเธเธเธเธฒเธฃเธ”เธณเน€เธเธดเธเธเธฒเธฃ VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
           '</select>' +
         '</div>' +
-
-        // Tab buttons
         '<div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:12px;">' +
           '<button id="tab-btn-draw" onclick="switchSigTab(\'draw\')" style="flex:1; padding:7px; border:none; background:#2563eb; color:#fff; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:4px 0 0 0;">โ๏ธ เธงเธฒเธ”เธชเธ”</button>' +
           '<button id="tab-btn-image" onclick="switchSigTab(\'image\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">๐–ผ๏ธ เธญเธฑเธเนเธซเธฅเธ”เธฃเธนเธ</button>' +
           '<button id="tab-btn-stamp" onclick="switchSigTab(\'stamp\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">๐”ด เธ•เธฃเธฒเธขเธฒเธ E-Stamp</button>' +
           '<button id="tab-btn-none" onclick="switchSigTab(\'none\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:0 4px 0 0;">โช เน€เธงเนเธเธงเนเธฒเธ</button>' +
         '</div>' +
-
-        // Content Draw
         '<div id="sig-pane-draw" style="display:block;">' +
           '<div style="border:1px solid #d1d5db; border-radius:4px; background:#fafafa; text-align:center; position:relative;">' +
             '<canvas id="sig-canvas" width="440" height="130" style="display:block; width:100%; cursor:crosshair; touch-action:none;"></canvas>' +
@@ -2556,16 +2506,12 @@ async function openPMPrintForm(moldId) {
             '<button onclick="clearCanvas()" style="padding:4px 10px; font-size:8.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">๐งน เธฅเนเธฒเธเน€เธชเนเธเธงเธฒเธ”</button>' +
           '</div>' +
         '</div>' +
-
-        // Content Image
         '<div id="sig-pane-image" style="display:none; text-align:center; padding:10px 0;">' +
           '<input type="file" id="sig-file-input" accept="image/*" onchange="handleImageUpload(event)" style="display:block; margin:0 auto 10px auto; font-size:9pt;" />' +
           '<div id="sig-image-preview-wrap" style="height:100px; border:1px dashed #d1d5db; border-radius:4px; display:flex; align-items:center; justify-content:center; background:#fafafa;">' +
             '<span style="color:#9ca3af; font-size:8.5pt;">เธ•เธฑเธงเธญเธขเนเธฒเธเธฃเธนเธเธ เธฒเธเธฅเธฒเธขเน€เธเนเธ (PNG/JPG เธเธทเนเธเธซเธฅเธฑเธเนเธชเธซเธฃเธทเธญเธเธฒเธง)</span>' +
           '</div>' +
         '</div>' +
-
-        // Content Stamp
         '<div id="sig-pane-stamp" style="display:none; padding:6px 0;">' +
           '<div style="margin-bottom:8px;">' +
             '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">เธเธทเนเธญเธเธเธ•เธฃเธฒเธขเธฒเธ:</label>' +
@@ -2576,13 +2522,9 @@ async function openPMPrintForm(moldId) {
             '<input id="stamp-date-input" type="date" style="width:100%; padding:5px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;" />' +
           '</div>' +
         '</div>' +
-
-        // Content None
         '<div id="sig-pane-none" style="display:none; padding:16px 0; text-align:center; color:#6b7280; font-size:9pt;">' +
           'โช เธฅเธเธเธฒเธฃเธฅเธเธเธฒเธกเธเธญเธเธ•เธณเนเธซเธเนเธเธเธตเน เน€เธเธทเนเธญเน€เธงเนเธเธงเนเธฒเธเนเธซเนเธเธดเธกเธเนเธญเธญเธเธกเธฒเน€เธเนเธเธ”เนเธงเธขเธเธฒเธเธเธฒเธเธฃเธดเธ' +
         '</div>' +
-
-        // Actions
         '<div style="display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #e5e7eb; padding-top:12px; margin-top:14px;">' +
           '<button onclick="closeSigModal()" style="padding:6px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">เธขเธเน€เธฅเธดเธ</button>' +
           '<button onclick="saveCurrentSignature()" style="padding:6px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">๐’พ เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธ</button>' +
@@ -2590,23 +2532,20 @@ async function openPMPrintForm(moldId) {
       '</div>' +
     '</div>' +
 
-    // Embedded JavaScript for Interactive Signature Pad inside popup
     '<script>' +
       'var sigStore = ' + JSON.stringify(headerSigs) + ';' +
       'var curRole = "sm";' +
       'var curTab = "draw";' +
       'var curUploadedImage = "";' +
       'var canvas, ctx, isDrawing = false;' +
-
       'function initCanvas() {' +
         'canvas = document.getElementById("sig-canvas");' +
         'if(!canvas) return;' +
         'ctx = canvas.getContext("2d");' +
-        'ctx.strokeStyle = "#000080";' + // Dark blue ink
+        'ctx.strokeStyle = "#000080";' +
         'ctx.lineWidth = 2.5;' +
         'ctx.lineCap = "round";' +
         'ctx.lineJoin = "round";' +
-
         'function getPos(e) {' +
           'var r = canvas.getBoundingClientRect();' +
           'var clientX = e.touches ? e.touches[0].clientX : e.clientX;' +
@@ -2616,7 +2555,6 @@ async function openPMPrintForm(moldId) {
         'function start(e) { isDrawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }' +
         'function move(e) { if(!isDrawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); if(e.touches) e.preventDefault(); }' +
         'function end(e) { isDrawing = false; }' +
-
         'canvas.addEventListener("mousedown", start);' +
         'canvas.addEventListener("mousemove", move);' +
         'window.addEventListener("mouseup", end);' +
@@ -2624,11 +2562,9 @@ async function openPMPrintForm(moldId) {
         'canvas.addEventListener("touchmove", move, {passive:false});' +
         'canvas.addEventListener("touchend", end);' +
       '}' +
-
       'function clearCanvas() {' +
         'if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);' +
       '}' +
-
       'function switchSigTab(tab) {' +
         'curTab = tab;' +
         '["draw","image","stamp","none"].forEach(function(t){' +
@@ -2643,7 +2579,6 @@ async function openPMPrintForm(moldId) {
           '}' +
         '});' +
       '}' +
-
       'function openSigModal(role, defaultName) {' +
         'curRole = role || "sm";' +
         'document.getElementById("sig-role-select").value = curRole;' +
@@ -2669,16 +2604,13 @@ async function openPMPrintForm(moldId) {
         'document.getElementById("sig-modal-backdrop").style.display = "flex";' +
         'if(!canvas) setTimeout(initCanvas, 50);' +
       '}' +
-
       'function closeSigModal() {' +
         'document.getElementById("sig-modal-backdrop").style.display = "none";' +
       '}' +
-
       'function onRoleChange() {' +
         'var selRole = document.getElementById("sig-role-select").value;' +
         'openSigModal(selRole);' +
       '}' +
-
       'function handleImageUpload(e) {' +
         'var file = e.target.files[0];' +
         'if(!file) return;' +
@@ -2689,7 +2621,6 @@ async function openPMPrintForm(moldId) {
         '};' +
         'reader.readAsDataURL(file);' +
       '}' +
-
       'function saveCurrentSignature() {' +
         'var role = document.getElementById("sig-role-select").value;' +
         'if(curTab === "draw") {' +
@@ -2705,13 +2636,10 @@ async function openPMPrintForm(moldId) {
         '} else if(curTab === "none") {' +
           'delete sigStore[role];' +
         '}' +
-        'try {' +
-          'localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(sigStore));' +
-        '} catch(e){}' +
+        'try { localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(sigStore)); } catch(e){}' +
         'updateCellInDom(role);' +
         'closeSigModal();' +
       '}' +
-
       'function updateCellInDom(role) {' +
         'var cell = document.getElementById("sig-cell-" + role);' +
         'if(!cell) return;' +
@@ -2728,9 +2656,8 @@ async function openPMPrintForm(moldId) {
           '"</div>";' +
         '}' +
       '}' +
-
       'window.onload = function() { initCanvas(); };' +
-    '</script>' +
+    '<' + '/script>' +
 
   '</body></html>';
 
