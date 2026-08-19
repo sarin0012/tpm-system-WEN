@@ -8,6 +8,11 @@ CREATE TABLE IF NOT EXISTS molds (
   "ID" TEXT PRIMARY KEY,
   "Name" TEXT NOT NULL,
   "AssetNo" TEXT,
+  "DrawingNo" TEXT,
+  "MoldSize" TEXT,
+  "MoldWeight" TEXT,
+  "PartWeight" TEXT,
+  "RunnerWeight" TEXT,
   "Vendor" TEXT,
   "Material" TEXT,
   "Cavity" TEXT,
@@ -18,6 +23,14 @@ CREATE TABLE IF NOT EXISTS molds (
   "ImageIds" TEXT DEFAULT '[]',
   "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- เพิ่มคอลัมน์ใหม่สำหรับตาราง molds เดิม
+ALTER TABLE molds ADD COLUMN IF NOT EXISTS "DrawingNo" TEXT;
+ALTER TABLE molds ADD COLUMN IF NOT EXISTS "MoldSize" TEXT;
+ALTER TABLE molds ADD COLUMN IF NOT EXISTS "MoldWeight" TEXT;
+ALTER TABLE molds ADD COLUMN IF NOT EXISTS "PartWeight" TEXT;
+ALTER TABLE molds ADD COLUMN IF NOT EXISTS "RunnerWeight" TEXT;
+
 
 -- 2. MACHINES (ตารางเครื่องจักร)
 CREATE TABLE IF NOT EXISTS machines (
