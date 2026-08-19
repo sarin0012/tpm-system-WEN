@@ -98,11 +98,16 @@ CREATE TABLE IF NOT EXISTS tpm_plans (
   "Status" TEXT DEFAULT 'Planned',
   "ActualDate" TEXT,
   "ActualBy" TEXT,
+  "CoInspector" TEXT,
   "ChecklistResult" TEXT DEFAULT '{}',
   "Notes" TEXT,
   "AfterImageIds" TEXT DEFAULT '[]',
   "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- เพิ่มคอลัมน์ใหม่สำหรับตาราง tpm_plans เดิม
+ALTER TABLE tpm_plans ADD COLUMN IF NOT EXISTS "CoInspector" TEXT;
+
 
 -- ปิดการใช้งาน RLS เพื่อเปิดสิทธิ์การอ่าน-เขียนผ่าน Anon API Key
 ALTER TABLE molds DISABLE ROW LEVEL SECURITY;
