@@ -2028,250 +2028,309 @@ function closeLightbox(){
 }
 
 // ============================================
-//  PM PRINT FORM
+//  PM PRINT FORM (Master PDF Spec)
 // ============================================
 async function openPMPrintForm(moldId) {
   var mold = STATE.molds.find(function(m){return m.ID===moldId;});
-  if(!mold){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25','error');return;}
+  if(!mold){showToast('ไม่พบข้อมูลโมล','error');return;}
 
   showGlobalLoading(true);
-  // Fetch all TPM plans for this mold
   var yr = new Date().getFullYear();
   var r = await api('getTPMPlans&year='+yr);
   showGlobalLoading(false);
   var allPlans = (r.success ? r.data : STATE.tpmPlans) || [];
   var moldPlans = allPlans.filter(function(p){return p.TargetID===moldId && p.TargetType==='Mold';}).sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
 
-  // Get checklist template (mold-standard)
-  var tmpl = (STATE.checklistTemplates||[]).find(function(t){return t.id==='mold-standard';}) || {items:[]};
-  var checkItems = tmpl.items || [];
+  // Checklist 9 items from Master
+  var masterCheckItems = [
+    { id: 1, th: 'ชิ้นงานสุดท้ายหลังการผลิต', std: 'ต้องไม่เป็นรอยและมีครีบ' },
+    { id: 2, th: 'จุดยึดติดต่างๆ ของแม่พิมพ์', std: 'SCREW ต้องยึดแน่น, ไม่ขาด ร่องประแจต้องไม่ชำรุด' },
+    { id: 3, th: 'การหล่อลื่น GUIDE POST, EJECTOR PIN และจุด SLIDE ต่างๆ', std: 'แม่พิมพ์ ปิด-เปิดต้องคล่องตัวไม่ติดขัดระหว่างเคลื่อนที่เข้าออก' },
+    { id: 4, th: 'ตรวจเช็ครูน้ำหล่อเย็น', std: 'รูน้ำไม่อุดตัน และไม่มีรอยรั่ว' },
+    { id: 5, th: 'เช็ค SPRING FOR RETURN PIN & SPRING FOR SLIDE', std: 'ไม่แตกหัก ไม่คดงอเสียรูป' },
+    { id: 6, th: 'เช็ค EJECTOR PIN', std: 'ต้องไม่มีรอยไหม้ไม่คดงอและไม่หัก ต้องวิ่งเข้า-ออกได้คล่องตัว' },
+    { id: 7, th: 'เช็ค สภาพของ GUIDE POST & GUIDE BUSH ,ANGULAR PIN & BUSH', std: 'ต้องไม่มีรอยไหม้ ไม่สึกหรอ ไม่หลวม ไม่เบียดและต้องมีจาระบีชโลมไว้' },
+    { id: 8, th: 'เช็ค คราบสนิมหน้าแม่พิมพ์', std: 'ต้องไม่มีคราบสนิมที่หน้าแม่พิมพ์ ทั้งด้าน CORE และ CAVITY' },
+    { id: 9, th: 'ความสะอาดของแม่พิมพ์', std: 'สภาพทั่วไปต้องสะอาด' }
+  ];
 
-  // Get last 4 done plans for actual results
-  var donePlans = moldPlans.filter(function(p){return p.Status==='Done';}).slice(-4);
+  // Up to 4 completed plans for actual check results
+  var donePlans = moldPlans.filter(function(p){return p.Status==='Done';}).slice(0, 4);
 
-  // Build plan/actual month grid (current year, find which months have planned/done)
-  var monthlyPlan = {};
-  var monthlyActual = {};
+  // Determine the 4 months to display in Action Plan
+  var thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  
+  // Find months that have plans
+  var planMonthsMap = {};
   moldPlans.forEach(function(p){
     if(!p.PlannedDate) return;
-    var mo = new Date(p.PlannedDate).getMonth()+1;
-    if(!monthlyPlan[mo]) monthlyPlan[mo]=[];
-    monthlyPlan[mo].push(p);
-    if(p.Status==='Done'){
-      if(!monthlyActual[mo]) monthlyActual[mo]=[];
-      monthlyActual[mo].push(p);
+    var d = new Date(p.PlannedDate);
+    var mo = d.getMonth() + 1;
+    planMonthsMap[mo] = true;
+  });
+  var selectedMonths = Object.keys(planMonthsMap).map(Number).sort(function(a,b){return a-b;});
+  if(!selectedMonths.length) selectedMonths = [1, 4, 7, 10];
+  while(selectedMonths.length < 4) {
+    var last = selectedMonths[selectedMonths.length - 1];
+    var next = (last % 12) + 1;
+    if(selectedMonths.indexOf(next) === -1) selectedMonths.push(next);
+    else next = ((next + 1) % 12) + 1;
+  }
+  selectedMonths = selectedMonths.slice(0, 4);
+
+  // Helper to check if a plan falls in a specific month and week (1-4)
+  function getPlanInWeek(monthNum, weekNum, isActual) {
+    return moldPlans.find(function(p){
+      var targetDate = isActual ? (p.ActualDate || p.PlannedDate) : p.PlannedDate;
+      if(!targetDate) return false;
+      if(isActual && p.Status !== 'Done') return false;
+      var d = new Date(targetDate);
+      if(d.getMonth() + 1 !== monthNum) return false;
+      var day = d.getDate();
+      var w = day <= 7 ? 1 : (day <= 14 ? 2 : (day <= 21 ? 3 : 4));
+      return w === weekNum;
+    });
+  }
+
+  // Generate Action Plan 16 week cells
+  var planWeekCells = '';
+  var actualWeekCells = '';
+  selectedMonths.forEach(function(mNum){
+    for(var w=1; w<=4; w++){
+      var hasPlan = getPlanInWeek(mNum, w, false);
+      planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:11pt;padding:0;">' + (hasPlan ? '●' : '') + '</td>';
+      var hasActual = getPlanInWeek(mNum, w, true);
+      actualWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:11pt;padding:0;">' + (hasActual ? '●' : '') + '</td>';
     }
   });
 
-  // Months that have plans — up to 4 columns
-  var planMonths = Object.keys(monthlyPlan).map(Number).sort(function(a,b){return a-b;}).slice(0,4);
-  var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
-  var enMonths = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Month headers HTML
+  var monthHeadersHtml = selectedMonths.map(function(mNum){
+    return '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:8.5pt;background:#fff;padding:2px;">เดือน ' + thMonths[mNum-1] + '</th>';
+  }).join('');
 
-  function buildMonthCols(months) {
-    return months.map(function(mo){
-      return '<th colspan="4" style="text-align:center;border:1px solid #333;padding:3px;font-size:9pt">\u0e40\u0e14\u0e37\u0e2d\u0e19 '+thMonths[mo-1]+' '+yr+'<br><small>'+enMonths[mo-1]+' '+yr+'</small></th>';
-    }).join('');
-  }
-  function buildWeekCols(months) {
-    return months.map(function(){
-      return '<th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">1</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">2</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">3</th><th style="border:1px solid #333;padding:2px;font-size:8pt;width:20px">4</th>';
-    }).join('');
-  }
-  function buildPlanRow(months, type) {
-    return months.map(function(mo){
-      var plans = type==='PLAN' ? monthlyPlan[mo] : monthlyActual[mo];
-      var dot = (plans && plans.length)>0 ? '<span style="font-size:16px">&#9679;</span>' : '';
-      return '<td style="border:1px solid #333;text-align:center">'+dot+'</td><td style="border:1px solid #333"></td><td style="border:1px solid #333"></td><td style="border:1px solid #333"></td>';
-    }).join('');
-  }
+  var weekLabelHtml = selectedMonths.map(function(){
+    return '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:7.5pt;background:#fff;padding:1px;">สัปดาห์ที่</th>';
+  }).join('');
 
-  // Build checklist rows
-  function buildChecklistRows() {
-    return checkItems.map(function(item){
-      var cols = donePlans.map(function(plan){
-        var res = {};
-        try{res=JSON.parse(plan.ChecklistResult||'{}');}catch(e){}
-        var r = res[item.id] || {};
-        var result = r.result || '';
-        var remark = r.remark || '';
-        var sym = result==='OK' ? '<span style="font-size:14px;color:green">&#10003;</span>' : (result==='NG' ? '<span style="font-size:14px;color:red">&#10005;</span>' : '');
-        return '<td style="border:1px solid #333;text-align:center;width:40px">'+sym+'</td><td style="border:1px solid #333;font-size:8pt;width:60px">'+remark+'</td>';
-      }).join('');
-      // Pad if fewer than 4 done plans
-      for(var i=donePlans.length;i<4;i++){
-        cols+='<td style="border:1px solid #333;width:40px"></td><td style="border:1px solid #333;width:60px"></td>';
+  var weekNumHtml = selectedMonths.map(function(){
+    return '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">1</th>' +
+           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">2</th>' +
+           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">3</th>' +
+           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">4</th>';
+  }).join('');
+
+  // Generate Checklist 9 rows with 4 rounds
+  var checklistRowsHtml = masterCheckItems.map(function(item){
+    var roundCols = '';
+    for(var rIdx=0; rIdx<4; rIdx++){
+      var p = donePlans[rIdx];
+      var actDateStr = '';
+      var resultSym = '';
+      if(p){
+        actDateStr = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit'}) : '';
+        try {
+          var resObj = JSON.parse(p.ChecklistResult || '{}');
+          var resItem = resObj[item.id] || {};
+          if(resItem.result === 'OK') resultSym = '✓';
+          else if(resItem.result === 'NG') resultSym = '✕';
+          else resultSym = '✓'; // default normal if plan is done
+        } catch(e){
+          resultSym = '✓';
+        }
       }
-      return '<tr><td style="border:1px solid #333;text-align:center;font-size:9pt">'+item.id+'</td>'+
-             '<td style="border:1px solid #333;font-size:9pt;padding:3px 6px">'+item.th+'</td>'+
-             '<td style="border:1px solid #333;font-size:9pt;padding:3px 6px">'+item.std+'</td>'+
-             cols+'</tr>';
-    }).join('');
-  }
-
-  // Build actual date headers (last 4 done)
-  function buildActualHeaders() {
-    var hdrs = donePlans.map(function(p){
-      var d = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'2-digit'}) : (p.PlannedDate||'').substring(0,10);
-      return '<th colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt">'+
-             'ACTUAL '+d+'<br><small>'+(p.ActualBy||'-')+'</small></th>';
-    }).join('');
-    for(var i=donePlans.length;i<4;i++){
-      hdrs+='<th colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt">ACTUAL '+i+'<br><small>&nbsp;</small></th>';
+      roundCols += '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;width:55px;">' + actDateStr + '</td>' +
+                   '<td style="border:1px solid #333;text-align:center;font-size:9pt;font-weight:bold;padding:2px;width:40px;">' + resultSym + '</td>';
     }
-    return hdrs;
-  }
+    return '<tr>' +
+      '<td style="border:1px solid #333;text-align:center;font-size:8.5pt;padding:2px;">' + item.id + '</td>' +
+      '<td style="border:1px solid #333;font-size:8.5pt;padding:3px 5px;">' + item.th + '</td>' +
+      '<td style="border:1px solid #333;font-size:8.5pt;padding:3px 5px;">' + item.std + '</td>' +
+      roundCols +
+    '</tr>';
+  }).join('');
 
-  var printDate = new Date().toLocaleDateString('th-TH',{day:'2-digit',month:'2-digit',year:'numeric'});
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+    '<title>PM Form - ' + mold.Name + '</title>' +
+    '<style>' +
+      '@page { size: A4 landscape; margin: 6mm 8mm; }' +
+      '* { box-sizing: border-box; }' +
+      'body { font-family: "Sarabun", "TH SarabunPSK", Tahoma, sans-serif; font-size: 8.5pt; color: #000; background: #fff; margin: 0; padding: 0; }' +
+      'table { border-collapse: collapse; width: 100%; }' +
+      'th, td { border: 1px solid #333; padding: 2px 3px; vertical-align: middle; }' +
+      '.header-title { font-size: 13pt; font-weight: bold; margin-bottom: 2px; }' +
+      '.section-bar { text-align: center; font-weight: bold; font-size: 9pt; background: #d9d9d9; border: 1px solid #333; padding: 2px; margin-top: 3px; }' +
+      '@media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }' +
+    '</style></head><body>' +
 
-  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'+
-    '<title>PM Form - '+mold.Name+'</title>'+
-    '<style>'+
-      '@page{size:A4 portrait;margin:10mm 8mm;}'+
-      'body{font-family:"TH SarabunPSK","Sarabun",Arial,sans-serif;font-size:10pt;color:#000;margin:0;padding:0;}'+
-      'table{border-collapse:collapse;width:100%;}'+
-      'th,td{padding:2px 4px;vertical-align:middle;}'+
-      '.header-title{font-size:14pt;font-weight:bold;margin-bottom:4px;}'+
-      '.section-label{font-size:9pt;font-weight:bold;}'+
-      '.sign-box{border:1px solid #333;min-height:40px;width:100%;display:block;}'+
-      '@media print{.no-print{display:none}body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'+
-    '</style></head><body>'+
+    // Print button toolbar
+    '<div class="no-print" style="text-align:center;padding:6px;background:#f3f4f6;margin-bottom:6px;border-bottom:1px solid #ccc">' +
+      '<button onclick="window.print()" style="padding:6px 20px;font-size:11pt;background:#1e40af;color:#fff;border:none;border-radius:4px;cursor:pointer;margin-right:8px;font-weight:bold">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน)</button>' +
+      '<button onclick="window.close()" style="padding:6px 16px;font-size:11pt;background:#6b7280;color:#fff;border:none;border-radius:4px;cursor:pointer">✕ ปิด</button>' +
+    '</div>' +
 
-    // Print button
-    '<div class="no-print" style="text-align:center;padding:8px;background:#f0f0f0;margin-bottom:8px">'+
-      '<button onclick="window.print()" style="padding:8px 24px;font-size:12pt;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-right:8px">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print</button>'+
-      '<button onclick="window.close()" style="padding:8px 24px;font-size:12pt;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer">\u2715 \u0e1b\u0e34\u0e14</button>'+
-    '</div>'+
-
-    // ====== HEADER ======
-    '<table style="margin-bottom:6px"><tr>'+
-      '<td style="width:65%;vertical-align:top">'+
-        '<div class="header-title">\u0e41\u0e1c\u0e19\u0e41\u0e25\u0e30\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a SPECIAL TOOLS \u0e15\u0e32\u0e21\u0e04\u0e32\u0e1a\u0e40\u0e27\u0e25\u0e32 (PM.)</div>'+
-        '<div style="font-size:10pt">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e02\u0e2d\u0e07 SPECIAL TOOLS : \u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e09\u0e35\u0e14\u0e1e\u0e25\u0e32\u0e2a\u0e15\u0e34\u0e01 ( PLASTIC INJECTION )</div>'+
-        '<table style="margin-top:6px;font-size:9pt"><tr>'+
-          '<td style="width:80px">\u0e2b\u0e19\u0e48\u0e27\u0e22\u0e07\u0e32\u0e19 WEN/WP</td>'+
-          '<td style="border-bottom:1px solid #333;width:120px">&nbsp;</td>'+
-          '<td style="width:100px">\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e25\u0e02\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01</td>'+
-          '<td style="border-bottom:1px solid #333;width:120px">&nbsp;</td>'+
-        '</tr></table>'+
-      '</td>'+
-      '<td style="width:35%;vertical-align:top">'+
-        '<table style="border:1px solid #333;font-size:9pt;width:100%">'+
-          '<tr>'+
-            '<th style="border:1px solid #333;padding:3px;background:#e8e8e8">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR</th>'+
-            '<th style="border:1px solid #333;padding:3px;background:#e8e8e8">\u0e01\u0e32\u0e23\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07</th>'+
-          '</tr>'+
-          '<tr>'+
-            '<td style="border:1px solid #333;padding:4px;text-align:center">'+( mold.Vendor||'-')+'</td>'+
-            '<td style="border:1px solid #333;padding:4px;text-align:center">WEN / WP</td>'+
-          '</tr>'+
-          '<tr>'+
-            '<td style="border:1px solid #333;padding:4px;text-align:center;background:#fff3cd">WEN-OSM</td>'+
-            '<td style="border:1px solid #333;padding:4px;text-align:center">SV &nbsp;&nbsp;&nbsp; ST/SV</td>'+
-          '</tr>'+
-          '<tr>'+
-            '<td style="border:1px solid #333;height:32px;font-size:8pt;text-align:center">&nbsp;</td>'+
-            '<td style="border:1px solid #333;height:32px">&nbsp;</td>'+
-          '</tr>'+
-        '</table>'+
-      '</td>'+
-    '</tr></table>'+
+    // ====== TOP HEADER ======
+    '<table style="border:none; margin-bottom: 3px;">' +
+      '<tr style="border:none;">' +
+        '<td style="border:none; width: 62%; vertical-align: top; padding: 0 4px 0 0;">' +
+          '<div class="header-title">แผนและผลการปฏิบัติงานตรวจสอบ SPECIAL TOOLS ตามคาบเวลา (PM.)</div>' +
+          '<div style="font-size:9pt; margin-bottom: 3px;">ประเภทของ SPECIAL TOOLS : แม่พิมพ์ฉีดพลาสติก ( PLASTIC INJECTION )</div>' +
+          '<table style="font-size:8.5pt; width: 100%; margin-top: 3px;">' +
+            '<tr>' +
+              '<td style="width: 95px; border: 1px solid #333; padding: 2px 4px; background: #f5f5f5; font-weight: bold;">หน่วยงาน WEN/WP</td>' +
+              '<td style="width: 110px; border: 1px solid #333; padding: 2px 4px; text-align: center;">WP.</td>' +
+              '<td style="width: 85px; border: 1px solid #333; padding: 2px 4px; background: #f5f5f5; font-weight: bold;">หมายเลขบันทึก</td>' +
+              '<td style="border: 1px solid #333; padding: 2px 4px; text-align: center;">' + (mold.AssetNo || '-') + '</td>' +
+            '</tr>' +
+          '</table>' +
+        '</td>' +
+        '<td style="border:none; width: 38%; vertical-align: top; padding: 0 0 0 4px;">' +
+          '<table style="font-size:8pt; width: 100%; border: 1px solid #333;">' +
+            '<tr>' +
+              '<th style="border: 1px solid #333; padding: 2px 4px; background: #fff; width: 44%;">แผนการดำเนินการ VENDOR</th>' +
+              '<th colspan="3" style="border: 1px solid #333; padding: 2px 4px; background: #fff; width: 56%;">การอนุมัติผลการปฏิบัติงานจริง</th>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: 500;">( ' + (mold.Vendor || 'ชื่อ VENDOR') + ' )</td>' +
+              '<td colspan="3" style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: bold;">WEN / WP</td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td rowspan="2" style="border: 1px solid #333; height: 32px; text-align: center; vertical-align: bottom;">&nbsp;</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SM</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SV</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 34%;">ST/SV</td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="border: 1px solid #333; height: 22px;">&nbsp;</td>' +
+              '<td style="border: 1px solid #333; height: 22px;">&nbsp;</td>' +
+              '<td style="border: 1px solid #333; height: 22px;">&nbsp;</td>' +
+            '</tr>' +
+          '</table>' +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
 
     // ====== ACTION PLAN TABLE ======
-    '<div style="text-align:center;font-weight:bold;font-size:11pt;background:#d9d9d9;border:1px solid #333;padding:4px;margin-top:4px">ACTION PLAN PM. CHECK SPECIAL TOOLS</div>'+
-    '<table style="font-size:9pt;margin-bottom:6px">'+
-      '<thead>'+
-        '<tr>'+
-          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:60px">PRODUCT</th>'+
-          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:30px">NO.</th>'+
-          '<th rowspan="3" style="border:1px solid #333;padding:3px">SPECIAL TOOLS NAME</th>'+
-          '<th colspan="2" style="border:1px solid #333;text-align:center;padding:3px">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th>'+
-          buildMonthCols(planMonths.length?planMonths:[1,2,3,4])+
-          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:70px">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a PIONEER</th>'+
-          '<th rowspan="3" style="border:1px solid #333;padding:3px;width:70px">\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a WEN / WP</th>'+
-        '</tr>'+
-        '<tr>'+
-          '<th style="border:1px solid #333;padding:2px;text-align:center;font-size:8pt">MOLD</th>'+
-          '<th style="border:1px solid #333;padding:2px;text-align:center;font-size:8pt">DIE<br>CAST</th>'+
-          buildWeekCols(planMonths.length?planMonths:[1,2,3,4])+
-        '</tr>'+
-        '<tr>'+
-          '<th style="border:1px solid #333;text-align:center">&#10003;</th>'+
-          '<th style="border:1px solid #333;text-align:center"></th>'+
-          buildWeekCols(planMonths.length?planMonths:[1,2,3,4]).replace(/<th/g,'<td').replace(/<\/th>/g,'</td>')+
-        '</tr>'+
-      '</thead>'+
-      '<tbody>'+
-        '<tr>'+
-          '<td rowspan="2" style="border:1px solid #333;text-align:center;font-weight:bold;font-size:9pt">WP.</td>'+
-          '<td style="border:1px solid #333;text-align:center">1</td>'+
-            'MOLD &nbsp;: '+mold.Name+'<br>'+
-            'DWG.NO. : '+(mold.DrawingNo||'-')+'<br>'+
-            'MODEL &nbsp;: '+(mold.Material||'-')+'<br>'+
-            'ASSET &nbsp;&nbsp;: '+(mold.AssetNo||'-')+
-            (mold.MoldSize ? '<br>SIZE &nbsp;&nbsp;: '+mold.MoldSize : '')+
-            (mold.MoldWeight ? ' | WEIGHT: '+mold.MoldWeight : '')+
-            (mold.PartWeight ? '<br>PART WT: '+mold.PartWeight : '')+
-            (mold.RunnerWeight ? ' | RUNNER: '+mold.RunnerWeight : '')+
-          '</td>'+
-          '<td style="border:1px solid #333;text-align:center">&#10003;</td>'+
-          '<td style="border:1px solid #333;text-align:center"></td>'+
-          '<td style="border:1px solid #333;text-align:center;font-weight:bold;font-size:11pt" colspan="1">PLAN</td>'+
-          buildPlanRow(planMonths.length?planMonths:[1,2,3,4],'PLAN')+
-          '<td rowspan="2" style="border:1px solid #333;text-align:center"></td>'+
-          '<td rowspan="2" style="border:1px solid #333;text-align:center"></td>'+
-        '</tr>'+
-        '<tr>'+
-          '<td style="border:1px solid #333;text-align:center;font-weight:bold;font-size:11pt" colspan="3">ACTUAL</td>'+
-          buildPlanRow(planMonths.length?planMonths:[1,2,3,4],'ACTUAL')+
-        '</tr>'+
-      '</tbody>'+
-    '</table>'+
+    '<div class="section-bar">ACTION PLAN PM. CHECK SPECIAL TOOLS</div>' +
+    '<table style="font-size:8pt; margin-bottom: 3px;">' +
+      '<thead>' +
+        '<tr>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 45px; padding: 2px; text-align: center;">PRODUCT</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 25px; padding: 2px; text-align: center;">NO.</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 210px; padding: 2px; text-align: left;">SPECIAL TOOLS NAME</th>' +
+          '<th colspan="2" style="border: 1px solid #333; text-align: center; padding: 2px; width: 60px;">ประเภท</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">การดำเนินการ</th>' +
+          monthHeadersHtml +
+          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">ผู้รับผิดชอบ<br>(ชื่อ VENDOR)</th>' +
+          '<th rowspan="3" style="border: 1px solid #333; width: 75px; padding: 2px; text-align: center;">ผู้รับผิดชอบ<br>WEN / WP</th>' +
+        '</tr>' +
+        '<tr>' +
+          '<th style="border: 1px solid #333; padding: 1px; font-size: 7.5pt; text-align: center;">MOLD</th>' +
+          '<th style="border: 1px solid #333; padding: 1px; font-size: 7.5pt; text-align: center;">DIE<br>CAST</th>' +
+          weekLabelHtml +
+        '</tr>' +
+        '<tr>' +
+          '<th style="border: 1px solid #333; text-align: center; font-size: 8.5pt; padding: 0;">✓</th>' +
+          '<th style="border: 1px solid #333; text-align: center; padding: 0;"></th>' +
+          weekNumHtml +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' +
+        '<tr>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 9pt;">WP.</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center;">1</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; padding: 3px 4px; font-size: 8pt; line-height: 1.35;">' +
+            '<strong>MOLD &nbsp;:</strong> ' + mold.Name + '<br>' +
+            '<strong>DWG.NO. :</strong> ' + (mold.DrawingNo || '-') + '<br>' +
+            '<strong>MODEL. :</strong> ' + (mold.Material || mold.Name || '-') + '<br>' +
+            '<strong>ASSET. :</strong> ' + (mold.AssetNo || '-') +
+          '</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 9pt;">✓</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center;"></td>' +
+          '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">PLAN</td>' +
+          planWeekCells +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (mold.Vendor || '-') + '</td>' +
+          '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">WEN / WP</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">ACTUAL</td>' +
+          actualWeekCells +
+        '</tr>' +
+      '</tbody>' +
+    '</table>' +
 
     // ====== CHECK SHEET TABLE ======
-    '<div style="text-align:center;font-weight:bold;font-size:11pt;background:#d9d9d9;border:1px solid #333;padding:4px">CHECK SHEET PM. SPECIAL TOOLS</div>'+
-    '<table style="font-size:9pt">'+
-      '<thead>'+
-        '<tr>'+
-          '<th colspan="3" style="border:1px solid #333;text-align:center;padding:4px;background:#f0f0f0">\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
-          '<th colspan="'+(donePlans.length*2 + (4-donePlans.length)*2)+'" style="border:1px solid #333;text-align:center;padding:4px;background:#f0f0f0">\u0e23\u0e2d\u0e1a\u0e41\u0e25\u0e30\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
-        '</tr>'+
-        '<tr>'+
-          '<th style="border:1px solid #333;text-align:center;width:28px">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>'+
-          '<th style="border:1px solid #333;padding:4px">\u0e2b\u0e31\u0e27\u0e02\u0e49\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
-          '<th style="border:1px solid #333;padding:4px">\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
-          buildActualHeaders()+
-        '</tr>'+
-      '</thead>'+
-      '<tbody>'+buildChecklistRows()+'</tbody>'+
-    '</table>'+
+    '<div class="section-bar">CHECK SHEET PM. SPECIAL TOOLS</div>' +
+    '<table style="font-size:8pt;">' +
+      '<thead>' +
+        '<tr>' +
+          '<th colspan="3" style="border: 1px solid #333; text-align: center; padding: 2px; background: #fff;">การตรวจสอบ</th>' +
+          '<th colspan="8" style="border: 1px solid #333; text-align: center; padding: 2px; background: #fff;">รอบและผลการตรวจสอบ</th>' +
+        '</tr>' +
+        '<tr>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 28px; padding: 2px;">ลำดับ</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 280px; padding: 2px;">หัวข้อการตรวจสอบ</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 280px; padding: 2px;">มาตรฐานการตรวจสอบ</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">ACTUAL 1</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 40px; padding: 2px;">ผลครั้งที่ 1</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">ACTUAL 2</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 40px; padding: 2px;">ผลครั้งที่ 2</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">ACTUAL 3</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 40px; padding: 2px;">ผลครั้งที่ 3</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 55px; padding: 2px;">ACTUAL 4</th>' +
+          '<th style="border: 1px solid #333; text-align: center; width: 40px; padding: 2px;">ผลครั้งที่ 4</th>' +
+        '</tr>' +
+      '</thead>' +
+      '<tbody>' + checklistRowsHtml + '</tbody>' +
+    '</table>' +
 
     // ====== FOOTER ======
-    '<table style="margin-top:6px;font-size:9pt"><tr>'+
-      '<td style="width:50%;vertical-align:top">'+
-        '<table style="font-size:9pt"><tr>'+
-          '<td style="padding-right:16px">\u0e2a\u0e31\u0e0d\u0e25\u0e31\u0e01\u0e29\u0e13\u0e4c\u0e43\u0e19\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</td>'+
-          '<td>\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02</td>'+
-        '</tr><tr>'+
-          '<td><span style="font-size:13pt">&#10003;</span> = \u0e1b\u0e01\u0e15\u0e34 &nbsp;&nbsp; <span style="font-size:13pt">&#10005;</span> = \u0e15\u0e49\u0e2d\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</td>'+
-          '<td><div style="border:1px solid #333;min-height:48px;width:180px;padding:3px;font-size:9pt"></div></td>'+
-        '</tr></table>'+
-      '</td>'+
-      '<td style="width:50%;vertical-align:top">'+
-        '<table style="font-size:9pt;width:100%">'+
-          '<tr><td>\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (WEN/WP)</td><td style="border-bottom:1px solid #333;min-width:120px">&nbsp;</td></tr>'+
-          '<tr><td>\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e48\u0e27\u0e21 &nbsp; PIONEER</td><td style="border-bottom:1px solid #333">&nbsp;</td></tr>'+
-          '<tr><td>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</td><td style="border-bottom:1px solid #333">&nbsp;</td></tr>'+
-        '</table>'+
-      '</td>'+
-    '</tr></table>'+
+    '<table style="margin-top: 3px; font-size: 8pt; border: none;">' +
+      '<tr style="border: none;">' +
+        '<td style="width: 52%; vertical-align: top; border: none; padding: 0 4px 0 0;">' +
+          '<table style="font-size: 8pt; width: 100%; border: 1px solid #333;">' +
+            '<tr>' +
+              '<th style="width: 45%; border: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">สัญลักษณ์ในการตรวจสอบ</th>' +
+              '<th style="border: 1px solid #333; padding: 2px 4px; background: #fff; text-align: left;">บันทึกการแก้ไข</th>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="border: 1px solid #333; padding: 4px; vertical-align: top;">' +
+                '<span style="font-size: 11pt; font-weight: bold;">✓</span> = ปกติ &nbsp;&nbsp;&nbsp;&nbsp; ' +
+                '<span style="font-size: 11pt; font-weight: bold;">✕</span> = ต้องแก้ไข' +
+              '</td>' +
+              '<td style="border: 1px solid #333; height: 38px; vertical-align: top; padding: 2px 4px;">&nbsp;</td>' +
+            '</tr>' +
+          '</table>' +
+        '</td>' +
+        '<td style="width: 48%; vertical-align: top; border: none; padding: 0 0 0 4px;">' +
+          '<table style="font-size: 8pt; width: 100%; border: 1px solid #333;">' +
+            '<tr>' +
+              '<td style="width: 140px; border: 1px solid #333; padding: 3px 5px; font-weight: 500;">ผู้ตรวจสอบ (WEN/WP)</td>' +
+              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="border: 1px solid #333; padding: 3px 5px; font-weight: 500;">ผู้ตรวจสอบร่วม</td>' +
+              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+            '</tr>' +
+            '<tr>' +
+              '<td style="border: 1px solid #333; padding: 3px 5px; font-weight: 500;">วันที่ตรวจสอบ</td>' +
+              '<td style="border: 1px solid #333; padding: 3px 5px;">&nbsp;</td>' +
+            '</tr>' +
+          '</table>' +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
 
-    '<div style="text-align:right;font-size:8pt;margin-top:6px;color:#555">MA 8543-07 EFF. 03/24 &nbsp;&nbsp; \u0e2a\u0e23\u0e49\u0e32\u0e07\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: '+printDate+' &nbsp;|\u0e42\u0e21\u0e25: '+mold.Name+'</div>'+
-    '<div style="text-align:center;font-size:8pt;margin-top:2px;color:#555">1/1</div>'+
+    // Form code footer
+    '<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px; font-size: 7.5pt; color: #333;">' +
+      '<div style="width: 30%;"></div>' +
+      '<div style="width: 40%; text-align: center;">1/1</div>' +
+      '<div style="width: 30%; text-align: right; font-weight: bold;">MA 8543-07 EFF. 03/24</div>' +
+    '</div>' +
 
   '</body></html>';
 
-  var w = window.open('','_blank','width=900,height=1100,scrollbars=yes');
+  var w = window.open('','_blank','width=1100,height=800,scrollbars=yes');
   w.document.write(html);
   w.document.close();
 }
