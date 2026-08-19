@@ -2286,35 +2286,34 @@ async function openPMPrintForm(moldId) {
   for(var r=0; r<4; r++){ roundPlans.push(moldPlans[r] || null); }
 
   var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
-  var selectedMonths = [];
-  roundPlans.forEach(function(p){
-    if(p && p.PlannedDate){
-      var mo = parseInt(p.PlannedDate.split('-')[1], 10);
-      if(mo && selectedMonths.indexOf(mo) === -1) selectedMonths.push(mo);
-    }
-  });
-  if(!selectedMonths.length) selectedMonths = [1, 4, 7, 10];
-  while(selectedMonths.length < 4) {
-    var last = selectedMonths[selectedMonths.length - 1];
-    var next = (last % 12) + 1;
-    if(selectedMonths.indexOf(next) === -1) selectedMonths.push(next);
-    else next = ((next + 1) % 12) + 1;
-  }
-  selectedMonths = selectedMonths.slice(0, 4);
-
+  
   var planWeekCells = '';
   var actualWeekCells = '';
   var correctionNotes = [];
+  var monthHeadersHtml = '';
+  var weekLabelHtml = '';
+  var weekNumHtml = '';
 
   for(var rIdx=0; rIdx<4; rIdx++){
     var roundPlan = roundPlans[rIdx];
-    var mNum = selectedMonths[rIdx];
     var plannedWeek = 0;
+    var mTitle = '&nbsp;';
+    
     if(roundPlan && roundPlan.PlannedDate){
       var pParts = roundPlan.PlannedDate.split('-');
+      var pMo = parseInt(pParts[1], 10);
       var pDay = parseInt(pParts[2], 10);
+      if(pMo >= 1 && pMo <= 12) mTitle = '\u0e40\u0e14\u0e37\u0e2d\u0e19 ' + thMonths[pMo-1];
       plannedWeek = pDay <= 7 ? 1 : (pDay <= 14 ? 2 : (pDay <= 21 ? 3 : 4));
     }
+
+    monthHeadersHtml += '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:8.5pt;background:#fff;padding:2px;">' + mTitle + '</th>';
+    weekLabelHtml += '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:7.5pt;background:#fff;padding:1px;">\u0e2a\u0e31\u0e1b\u0e14\u0e32\u0e2b\u0e4c\u0e17\u0e35\u0e48</th>';
+    weekNumHtml += '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">1</th>' +
+                   '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">2</th>' +
+                   '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">3</th>' +
+                   '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">4</th>';
+
     var actualWeek = 0;
     var isEarly = false;
     var isDelayed = false;
@@ -2341,16 +2340,17 @@ async function openPMPrintForm(moldId) {
         correctionNotes.push('\u2022 \u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 ' + roundNum + ': \u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07 ' + aStr + ' (\u0e17\u0e33\u0e01\u0e48\u0e2d\u0e19\u0e41\u0e1c\u0e19 ' + thMonths[pMo-1] + ')');
       }
       if(roundPlan.Notes){
-        var cleanNotes = roundPlan.Notes.replace(/\[CO_INSPECTOR:.*?\]/g, '').trim();
+        var cleanNotes = roundPlan.Notes.replace(/\[CO_INSPECTOR:.*?\]/g, '').replace(/\[VENDOR_RESP:.*?\]/g, '').trim();
         if(cleanNotes && cleanNotes !== 'Normal PM' && cleanNotes !== 'Normal PM cycle check'){
           correctionNotes.push('\u2022 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 ' + roundNum + ': ' + cleanNotes);
         }
       }
     }
+
     for(var w=1; w<=4; w++){
-      planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:10pt;padding:0;height:24px;">' + (w === plannedWeek ? '\u25cf' : '') + '</td>';
+      planWeekCells += '<td style="border:1px solid #333;text-align:center;font-size:10pt;padding:0;height:24px;">' + (roundPlan && w === plannedWeek ? '\u25cf' : '') + '</td>';
       var actCellHtml = '';
-      if(w === actualWeek){
+      if(roundPlan && w === actualWeek){
         if(isDelayed){
           actCellHtml = '<div style="line-height:1;font-size:9pt;">\u25cf</div><div style="font-size:6pt;line-height:1;color:#b91c1c;margin-top:1px;font-weight:bold;">(' + actDateTag + ')</div>';
         } else if(isEarly){
@@ -2364,21 +2364,6 @@ async function openPMPrintForm(moldId) {
   }
 
   var correctionNotesHtml = correctionNotes.length ? correctionNotes.map(function(n){return '<div style="margin-bottom:2px;">' + n + '</div>';}).join('') : '&nbsp;';
-
-  var monthHeadersHtml = selectedMonths.map(function(mNum){
-    return '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:8.5pt;background:#fff;padding:2px;">\u0e40\u0e14\u0e37\u0e2d\u0e19 ' + thMonths[mNum-1] + '</th>';
-  }).join('');
-
-  var weekLabelHtml = selectedMonths.map(function(){
-    return '<th colspan="4" style="border:1px solid #333;text-align:center;font-size:7.5pt;background:#fff;padding:1px;">\u0e2a\u0e31\u0e1b\u0e14\u0e32\u0e2b\u0e4c\u0e17\u0e35\u0e48</th>';
-  }).join('');
-
-  var weekNumHtml = selectedMonths.map(function(){
-    return '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">1</th>' +
-           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">2</th>' +
-           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">3</th>' +
-           '<th style="border:1px solid #333;text-align:center;font-size:7.5pt;width:18px;padding:1px;">4</th>';
-  }).join('');
 
   var checklistRowsHtml = masterCheckItems.map(function(item){
     var roundCols = '';
