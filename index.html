@@ -2317,9 +2317,15 @@ function openTPMCompleteModal(planId){
         '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">'+item.id+'</td>'+
         '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+'</div><div style="font-size:11px;color:var(--text-faint)">'+item.en+'</div></td>'+
         '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
-        '<td style="padding:10px 8px;text-align:center;white-space:nowrap">'+
-          '<label style="cursor:pointer;margin-right:12px"><input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:var(--success);margin-right:3px"/> <span style="color:var(--success);font-weight:600;font-size:12px">OK</span></label>'+
-          '<label style="cursor:pointer"><input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:var(--danger);margin-right:3px"/> <span style="color:var(--danger);font-weight:600;font-size:12px">NG</span></label>'+
+        '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+
+          '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
+            '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">'+
+              '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>'+
+            '</label>'+
+            '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">'+
+              '<input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>'+
+            '</label>'+
+          '</div>'+
         '</td>'+
         '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="\u0e23\u0e30\u0e1a\u0e38\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38 (\u0e16\u0e49\u0e32 NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
       '</tr>';
@@ -2329,7 +2335,7 @@ function openTPMCompleteModal(planId){
       '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>'+
       '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e2b\u0e31\u0e27\u0e02\u0e49\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
       '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19</th>'+
-      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted)">\u0e1c\u0e25</th>'+
+      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">\u0e1c\u0e25</th>'+
       '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   } else {
