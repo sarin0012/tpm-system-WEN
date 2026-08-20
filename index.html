@@ -695,7 +695,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
       <button type="button" class="btn btn-outline" onclick="closeModal('mold-tpm-detail-modal')">&#3611;&#3636;&#3604;</button>
       <div style="display:flex;gap:8px;">
-        <button type="button" class="btn btn-outline" onclick="closeModal('mold-tpm-detail-modal'); openBulkTPMModal();">&#10133; &#3648;&#3614;&#3636;&#3656;&#3617;/&#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM</button>
+        <button type="button" id="mold-tpm-detail-create-plan-btn" class="btn btn-outline">&#10133; &#3648;&#3614;&#3636;&#3656;&#3617;/&#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM</button>
         <button type="button" id="mold-tpm-detail-print-btn" class="btn btn-primary">&#128438;&#65039; &#3614;&#3636;&#3617;&#3614;&#3660;&#3651;&#3610;&#3591;&#3634;&#3609; PM (A4)</button>
       </div>
     </div>
@@ -1629,7 +1629,7 @@ function openMoldTPMDetailModal(moldId) {
     if (!plans.length) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">' +
         'แม่พิมพ์นี้ยังไม่มีการสร้างแผน TPM ประจำปี<br>' +
-        '<button class="btn btn-primary btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openBulkTPMModal();" style="margin-top:12px;">📋 สร้างแผน TPM ประจำปี</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openBulkTPMModal(\'Mold\', \'' + moldId + '\');" style="margin-top:12px;">📋 สร้างแผน TPM ประจำปี (สำหรับแม่พิมพ์นี้)</button>' +
       '</td></tr>';
     } else {
       tbody.innerHTML = plans.map(function(p, idx){
@@ -1659,6 +1659,13 @@ function openMoldTPMDetailModal(moldId) {
   var printBtn = document.getElementById('mold-tpm-detail-print-btn');
   if (printBtn) {
     printBtn.onclick = function() { openPMPrintForm(moldId); };
+  }
+  var createPlanBtn = document.getElementById('mold-tpm-detail-create-plan-btn');
+  if (createPlanBtn) {
+    createPlanBtn.onclick = function() {
+      closeModal('mold-tpm-detail-modal');
+      openBulkTPMModal('Mold', moldId);
+    };
   }
   
   openModal('mold-tpm-detail-modal');
@@ -1953,15 +1960,27 @@ function loadBulkTargets(){
   s.innerHTML='<option value="">-- ทั้งหมด (ที่ Active) --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
 }
 
-function openBulkTPMModal(){
+function openBulkTPMModal(targetType, targetId){
+  if (targetType) v_set('bulk-target-type', targetType);
   loadBulkTargets();
+  if (targetId) {
+    v_set('bulk-target-id', targetId);
+    var type = v('bulk-target-type');
+    var list = type === 'Mold' ? STATE.molds : STATE.machines;
+    var target = (list || []).find(function(x){ return x.ID === targetId; });
+    if (target && target.Vendor) {
+      v_set('bulk-vendor-resp', target.Vendor);
+    }
+  } else {
+    v_set('bulk-target-id', '');
+    v_set('bulk-vendor-resp', '');
+  }
   const now = new Date();
   const curFY = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
   v_set('bulk-year', curFY);
   v_set('bulk-day', 15);
   v_set('bulk-freq', '6');
   v_set('bulk-assigned', '');
-  v_set('bulk-vendor-resp', '');
   const customWrap = document.getElementById('bulk-custom-count-wrap');
   if (customWrap) customWrap.style.display = 'none';
   renderMonthChips([4, 7, 10, 1]);
