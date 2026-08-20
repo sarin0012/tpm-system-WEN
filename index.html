@@ -304,7 +304,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select id="tpm-month" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</option></select>
     <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Planned</option><option>Done</option><option>Overdue</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
+    <button class="btn btn-outline" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">&#9997;&#65039; &#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619;</button><button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
   </div>
   <div id="tpm-container"></div>
 </div>
@@ -607,6 +607,65 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   </div>
 </div>
 
+<!-- SIGNATURE MANAGER MODAL (MAIN PAGE) -->
+<div class="modal-overlay" id="signature-manager-modal">
+  <div class="modal modal-md">
+    <div class="modal-header">
+      <div class="modal-title">&#9997;&#65039; &#3592;&#3633;&#3604;&#3585;&#3634;&#3619;&#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619; PM</div>
+      <button class="modal-close" onclick="closeModal('signature-manager-modal')">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>&#3648;&#3621;&#3639;&#3629;&#3585;&#3605;&#3635;&#3649;&#3627;&#3609;&#3656;&#3591;&#3607;&#3637;&#3656;&#3605;&#3657;&#3629;&#3591;&#3585;&#3634;&#3619;&#3621;&#3591;&#3609;&#3634;&#3617;:</label>
+        <select id="main-sig-role" onchange="onMainSigRoleChange()" style="font-weight:600">
+          <option value="vendor">&#3649;&#3612;&#3609;&#3601;&#3634;&#3619;&#3604;&#3635;&#3648;&#3609;&#3636;&#3609;&#3585;&#3634;&#3619; VENDOR (&#3588;&#3619;&#3610;&#3585;&#3634;&#3619;&#3594;&#3656;&#3634;&#3591;)</option>
+          <option value="sm">SM (Section Manager - WEN/WP)</option>
+          <option value="sv">SV (Supervisor - WEN/WP)</option>
+          <option value="st">ST (Staff - WEN/WP)</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <button type="button" id="main-tab-draw" class="btn btn-primary btn-sm" onclick="switchMainSigTab('draw')" style="flex:1">&#9999;&#65039; &#3623;&#3634;&#3604;&#3626;&#3604;</button>
+        <button type="button" id="main-tab-image" class="btn btn-outline btn-sm" onclick="switchMainSigTab('image')" style="flex:1">&#128444;&#65039; &#3629;&#3633;&#3611;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;</button>
+        <button type="button" id="main-tab-stamp" class="btn btn-outline btn-sm" onclick="switchMainSigTab('stamp')" style="flex:1">&#128308; E-Stamp</button>
+        <button type="button" id="main-tab-none" class="btn btn-outline btn-sm" onclick="switchMainSigTab('none')" style="flex:1">&#9898; &#3648;&#3623;&#3657;&#3609;&#3623;&#3656;&#3634;&#3591;</button>
+      </div>
+      <div id="main-sig-pane-draw" style="display:block">
+        <div style="border:1px solid var(--border);border-radius:var(--r-sm);background:#fff;position:relative">
+          <canvas id="main-sig-canvas" width="440" height="130" style="display:block;width:100%;cursor:crosshair;touch-action:none;background:#fff;border-radius:var(--r-sm)"></canvas>
+          <div style="position:absolute;bottom:4px;left:8px;font-size:11px;color:#9ca3af">(&#3651;&#3594;&#3657;&#3609;&#3636;&#3657;&#3623;&#3627;&#3619;&#3639;&#3629;&#3648;&#3617;&#3634;&#3626;&#3660;&#3623;&#3634;&#3604;&#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;)</div>
+        </div>
+        <div style="margin-top:6px;text-align:right">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="clearMainCanvas()">&#129529; &#3621;&#3657;&#3634;&#3591;&#3648;&#3626;&#3657;&#3609;&#3623;&#3634;&#3604;</button>
+        </div>
+      </div>
+      <div id="main-sig-pane-image" style="display:none;text-align:center;padding:10px 0">
+        <input type="file" id="main-sig-file-input" accept="image/*" onchange="handleMainImageUpload(event)" style="margin-bottom:10px"/>
+        <div id="main-sig-image-preview" style="height:100px;border:1px dashed var(--border);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;background:var(--surface2)">
+          <span style="color:var(--text-muted);font-size:12px">&#3648;&#3621;&#3639;&#3629;&#3585;&#3652;&#3615;&#3621;&#3660;&#3619;&#3641;&#3611;&#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609; (PNG/JPG)</span>
+        </div>
+      </div>
+      <div id="main-sig-pane-stamp" style="display:none;padding:6px 0">
+        <div class="form-group">
+          <label>&#3594;&#3639;&#3656;&#3629;&#3610;&#3609;&#3605;&#3619;&#3634;&#3618;&#3634;&#3591;:</label>
+          <input id="main-stamp-name" placeholder="&#3648;&#3594;&#3656;&#3609; SARIN T."/>
+        </div>
+        <div class="form-group">
+          <label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3629;&#3609;&#3648;&#3617;&#3633;&#3605;&#3636;:</label>
+          <input id="main-stamp-date" type="date"/>
+        </div>
+      </div>
+      <div id="main-sig-pane-none" style="display:none;padding:16px 0;text-align:center;color:var(--text-muted);font-size:13px">
+        &#9898; &#3648;&#3623;&#3657;&#3609;&#3623;&#3656;&#3634;&#3591;&#3605;&#3635;&#3649;&#3627;&#3609;&#3656;&#3591;&#3609;&#3635;&#3657; (&#3648;&#3614;&#3639;&#3656;&#3629;&#3614;&#3636;&#3617;&#3614;&#3660;&#3629;&#3629;&#3585;&#3617;&#3634;&#3648;&#3595;&#3647;&#3609;&#3604;&#3657;&#3623;&#3618;&#3611;&#3634;&#3585;&#3585;&#3634;&#3592;&#3619;&#3636;&#3591;)
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('signature-manager-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
+      <button class="btn btn-primary" onclick="saveMainSignature()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;</button>
+    </div>
+  </div>
+</div>
+
 <!-- LIGHTBOX -->
 <div id="lightbox-overlay" onclick="if(event.target===this)closeLightbox()">
   <button id="lightbox-close" onclick="closeLightbox()">&#10005;</button>
@@ -860,6 +919,31 @@ async function _apiInternal(actionStr, payload = null) {
         const { error } = await sb.from('molds').delete().eq('ID', id);
         if (error) return { success: false, error: error.message };
         return { success: true };
+      }
+      case 'saveMoldHeaderSig': {
+        const moldId = payload.moldId;
+        const role = payload.role;
+        const sigData = payload.sigData;
+        if (!moldId) return { success: false, error: 'Missing moldId' };
+        const { data: mData, error: mErr } = await sb.from('molds').select('ID, Notes').eq('ID', moldId).single();
+        if (mErr) return { success: false, error: mErr.message };
+        let currentSigs = {};
+        if (mData.Notes && mData.Notes.indexOf('[HEADER_SIGS:') !== -1) {
+          try {
+            const match = mData.Notes.match(/\[HEADER_SIGS:(.*?)\]/);
+            if (match && match[1]) currentSigs = JSON.parse(match[1]);
+          } catch(e){}
+        }
+        if (sigData && sigData.type !== 'none') {
+          currentSigs[role] = sigData;
+        } else {
+          delete currentSigs[role];
+        }
+        let cleanNotes = (mData.Notes || '').replace(/\[HEADER_SIGS:.*?\]/g, '').trim();
+        const updatedNotes = (cleanNotes ? cleanNotes + '\n' : '') + '[HEADER_SIGS:' + JSON.stringify(currentSigs) + ']';
+        const { error: upErr } = await sb.from('molds').update({ Notes: updatedNotes }).eq('ID', moldId);
+        if (upErr) return { success: false, error: upErr.message };
+        return { success: true, sigs: currentSigs };
       }
       case 'resetTPMPlan': {
         const { error } = await sb.from('tpm_plans').update({
@@ -1136,6 +1220,12 @@ async function api(actionStr, payload = null) {
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
   try {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mobile_sign') === '1') {
+      initMobileSignPage(urlParams.get('mold') || '', urlParams.get('role') || 'sm');
+      return;
+    }
+
     initSelects();
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
@@ -2284,18 +2374,262 @@ function saveMainSignature() {
   closeModal('signature-manager-modal');
 }
 
+// ============================================
+//  MOBILE SIGNING SCREEN
+// ============================================
+var mobCanvas, mobCtx, mobIsDrawing = false;
+var mobCurRole = 'sm';
+var mobCurTab = 'draw';
+var mobUploadedImage = '';
+var mobMoldId = '';
+var mobMoldData = null;
+
+async function initMobileSignPage(moldId, defaultRole) {
+  mobMoldId = moldId || '';
+  mobCurRole = defaultRole || 'sm';
+  
+  // Set clean mobile styling on body
+  document.body.innerHTML = `
+    <div style="font-family:'Sarabun',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:14px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">
+      <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid #334155;">
+        
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid #334155;padding-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:26px;background:rgba(99,102,241,0.2);padding:6px 10px;border-radius:10px;">โ๏ธ</div>
+            <div>
+              <h2 style="margin:0;font-size:16px;color:#fff;font-weight:700;">เน€เธเนเธเธฅเธฒเธขเน€เธเนเธ PM เธเนเธฒเธเธกเธทเธญเธ–เธทเธญ</h2>
+              <div style="font-size:12px;color:#94a3b8;" id="mob-target-title">เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธเธดเธกเธเน...</div>
+            </div>
+          </div>
+          <a href="/" style="color:#94a3b8;font-size:18px;text-decoration:none;padding:4px 8px;">โ•</a>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:600;">เน€เธฅเธทเธญเธเธ•เธณเนเธซเธเนเธเธเธนเนเธฅเธเธเธฒเธก:</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button type="button" class="mob-role-btn" id="mob-role-vendor" onclick="setMobRole('vendor')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐ข VENDOR</button>
+            <button type="button" class="mob-role-btn" id="mob-role-sm" onclick="setMobRole('sm')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐‘” SM (Manager)</button>
+            <button type="button" class="mob-role-btn" id="mob-role-sv" onclick="setMobRole('sv')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐‘ท SV (Supervisor)</button>
+            <button type="button" class="mob-role-btn" id="mob-role-st" onclick="setMobRole('st')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐“ ST (Staff)</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid #334155;padding-bottom:10px;">
+          <button type="button" id="mob-tab-draw" onclick="switchMobTab('draw')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#6366f1;color:#fff;font-size:11.5px;font-weight:bold;cursor:pointer;">โ๏ธ เธงเธฒเธ”เธชเธ”</button>
+          <button type="button" id="mob-tab-stamp" onclick="switchMobTab('stamp')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">๐”ด E-Stamp</button>
+          <button type="button" id="mob-tab-image" onclick="switchMobTab('image')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">๐–ผ๏ธ เธญเธฑเธเนเธซเธฅเธ”เธฃเธนเธ</button>
+        </div>
+
+        <div id="mob-pane-draw" style="display:block;">
+          <div style="background:#fff;border-radius:10px;overflow:hidden;position:relative;margin-bottom:8px;border:2px solid #6366f1;">
+            <canvas id="mob-canvas" width="440" height="180" style="display:block;width:100%;height:180px;cursor:crosshair;touch-action:none;background:#fff;"></canvas>
+            <div style="position:absolute;bottom:6px;left:10px;font-size:10.5px;color:#9ca3af;pointer-events:none;">(เนเธเนเธเธดเนเธงเธฅเธฒเธเน€เธเธทเนเธญเน€เธเนเธเธเธทเนเธญ)</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <span style="font-size:11px;color:#94a3b8;">เธงเธฒเธ”เธฅเธฒเธขเน€เธเนเธเนเธเธเธฃเธญเธเธชเธตเธเธฒเธง</span>
+            <button type="button" onclick="clearMobCanvas()" style="padding:4px 12px;background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;">๐งน เธฅเนเธฒเธเน€เธชเนเธเธงเธฒเธ”</button>
+          </div>
+        </div>
+
+        <div id="mob-pane-stamp" style="display:none;padding:6px 0 14px 0;">
+          <div style="margin-bottom:10px;">
+            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">เธเธทเนเธญ-เธเธฒเธกเธชเธเธธเธฅ เธเธเธ•เธฃเธฒเธขเธฒเธ:</label>
+            <input id="mob-stamp-name" placeholder="เน€เธเนเธ SARIN T." style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">เธงเธฑเธเธ—เธตเนเธญเธเธธเธกเธฑเธ•เธด:</label>
+            <input id="mob-stamp-date" type="date" style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
+          </div>
+        </div>
+
+        <div id="mob-pane-image" style="display:none;padding:10px 0;text-align:center;">
+          <input type="file" id="mob-file-input" accept="image/*" onchange="handleMobImageUpload(event)" style="margin-bottom:10px;color:#94a3b8;font-size:11.5px;" />
+          <div id="mob-image-preview" style="height:100px;border:1px dashed #475569;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0f172a;">
+            <span style="color:#64748b;font-size:11.5px;">เน€เธฅเธทเธญเธเนเธเธฅเนเธฃเธนเธเธ เธฒเธเธฅเธฒเธขเน€เธเนเธ (PNG/JPG)</span>
+          </div>
+        </div>
+
+        <div id="mob-status" style="display:none;margin-bottom:12px;padding:10px;border-radius:8px;font-size:12.5px;text-align:center;"></div>
+
+        <button type="button" id="mob-save-btn" onclick="saveMobSignature()" style="width:100%;padding:13px;border-radius:10px;border:none;background:#10b981;color:#fff;font-size:14.5px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+          ๐’พ เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธเธฅเธเธฃเธฐเธเธ
+        </button>
+      </div>
+    </div>
+  `;
+
+  initMobCanvas();
+  setMobRole(mobCurRole);
+
+  // Fetch Mold info from Supabase if moldId is given
+  if (mobMoldId) {
+    try {
+      const res = await api('getMolds');
+      if (res.success && res.data) {
+        mobMoldData = res.data.find(m => m.ID === mobMoldId);
+        if (mobMoldData) {
+          document.getElementById('mob-target-title').innerText = 'เนเธกเนเธเธดเธกเธเน: ' + mobMoldData.Name + ' (' + (mobMoldData.AssetNo || '-') + ')';
+        }
+      }
+    } catch(e){}
+  } else {
+    document.getElementById('mob-target-title').innerText = 'เธฅเธฒเธขเน€เธเนเธเธซเธฑเธงเน€เธญเธเธชเธฒเธฃเธชเนเธงเธเธเธฅเธฒเธ';
+  }
+}
+
+function initMobCanvas() {
+  mobCanvas = document.getElementById('mob-canvas');
+  if (!mobCanvas) return;
+  mobCtx = mobCanvas.getContext('2d');
+  mobCtx.strokeStyle = '#000080';
+  mobCtx.lineWidth = 2.8;
+  mobCtx.lineCap = 'round';
+  mobCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var r = mobCanvas.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - r.left) * (mobCanvas.width / r.width),
+      y: (clientY - r.top) * (mobCanvas.height / r.height)
+    };
+  }
+  function start(e) { mobIsDrawing = true; var p = getPos(e); mobCtx.beginPath(); mobCtx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }
+  function move(e) { if(!mobIsDrawing) return; var p = getPos(e); mobCtx.lineTo(p.x, p.y); mobCtx.stroke(); if(e.touches) e.preventDefault(); }
+  function end(e) { mobIsDrawing = false; }
+
+  mobCanvas.addEventListener('mousedown', start);
+  mobCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  mobCanvas.addEventListener('touchstart', start, {passive:false});
+  mobCanvas.addEventListener('touchmove', move, {passive:false});
+  mobCanvas.addEventListener('touchend', end);
+}
+
+function clearMobCanvas() {
+  if (mobCtx && mobCanvas) mobCtx.clearRect(0, 0, mobCanvas.width, mobCanvas.height);
+}
+
+function setMobRole(role) {
+  mobCurRole = role;
+  ['vendor', 'sm', 'sv', 'st'].forEach(r => {
+    var btn = document.getElementById('mob-role-' + r);
+    if (!btn) return;
+    if (r === role) {
+      btn.style.background = '#6366f1';
+      btn.style.borderColor = '#818cf8';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#334155';
+      btn.style.borderColor = '#475569';
+      btn.style.color = '#94a3b8';
+    }
+  });
+
+  var stampName = document.getElementById('mob-stamp-name');
+  if (stampName) stampName.value = role.toUpperCase();
+  var stampDate = document.getElementById('mob-stamp-date');
+  if (stampDate) stampDate.value = new Date().toISOString().substring(0, 10);
+}
+
+function switchMobTab(tab) {
+  mobCurTab = tab;
+  ['draw', 'stamp', 'image'].forEach(t => {
+    var btn = document.getElementById('mob-tab-' + t);
+    var pane = document.getElementById('mob-pane-' + t);
+    if (btn) {
+      btn.style.background = (t === tab) ? '#6366f1' : '#334155';
+      btn.style.color = (t === tab) ? '#fff' : '#94a3b8';
+    }
+    if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
+  });
+}
+
+function handleMobImageUpload(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    mobUploadedImage = evt.target.result;
+    var prev = document.getElementById('mob-image-preview');
+    if (prev) prev.innerHTML = '<img src="' + mobUploadedImage + '" style="max-height:90px;max-width:90%;object-fit:contain;" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveMobSignature() {
+  var btn = document.getElementById('mob-save-btn');
+  var statusBox = document.getElementById('mob-status');
+  btn.disabled = true;
+  btn.innerText = 'เธเธณเธฅเธฑเธเธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธ...';
+
+  var sigData = null;
+  if (mobCurTab === 'draw') {
+    if (!mobCanvas) initMobCanvas();
+    var dataUrl = mobCanvas.toDataURL('image/png');
+    sigData = { type: 'draw', data: dataUrl };
+  } else if (mobCurTab === 'image') {
+    if (!mobUploadedImage) {
+      alert('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเนเธเธฅเนเธฃเธนเธเธ เธฒเธเธเนเธญเธเธเธฃเธฑเธ');
+      btn.disabled = false;
+      btn.innerText = '๐’พ เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธเธฅเธเธฃเธฐเธเธ';
+      return;
+    }
+    sigData = { type: 'image', data: mobUploadedImage };
+  } else if (mobCurTab === 'stamp') {
+    var stName = (document.getElementById('mob-stamp-name').value || '').trim() || mobCurRole.toUpperCase();
+    var stDate = document.getElementById('mob-stamp-date').value || '';
+    sigData = { type: 'stamp', name: stName, date: stDate };
+  }
+
+  // 1. Save to LocalStorage
+  try {
+    var localSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}');
+    localSigs[mobCurRole] = sigData;
+    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(localSigs));
+  } catch(e){}
+
+  // 2. Save to Supabase (if moldId is provided)
+  if (mobMoldId) {
+    try {
+      await api('saveMoldHeaderSig', {
+        moldId: mobMoldId,
+        role: mobCurRole,
+        sigData: sigData
+      });
+    } catch(err) {
+      console.error('Supabase sig save error:', err);
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerText = '๐’พ เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธเธฅเธเธฃเธฐเธเธ';
+
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'rgba(16,185,129,0.2)';
+    statusBox.style.border = '1px solid #10b981';
+    statusBox.style.color = '#34d399';
+    statusBox.innerHTML = 'โ… <strong>เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธ [' + mobCurRole.toUpperCase() + '] เน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง!</strong><br><span style="font-size:11px;color:#94a3b8;">เน€เธญเธเธชเธฒเธฃ PM เธเธเธเธญเธกเธเธดเธงเน€เธ•เธญเธฃเนเธเธฐเธญเธฑเธเน€เธ”เธ•เธฅเธฒเธขเน€เธเนเธเธเธตเนเธ—เธฑเธเธ—เธต</span>';
+  }
+}
+
+// ============================================
+//  OPEN PM PRINT FORM (A4 LANDSCAPE PM SHEET)
+// ============================================
 async function openPMPrintForm(moldId) {
-  var mold = STATE.molds.find(function(m){return m.ID===moldId;});
-  if(!mold){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25','error');return;}
+  var mold = STATE.molds.find(function(m){ return m.ID === moldId; });
+  if (!mold) { showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25', 'error'); return; }
 
   showGlobalLoading(true);
   var nowDate = new Date();
   var yr = nowDate.getFullYear();
   var fy = nowDate.getMonth() >= 3 ? yr : yr - 1;
-  var r = await api('getTPMPlans&fyear='+fy);
+  var r = await api('getTPMPlans&fyear=' + fy);
   showGlobalLoading(false);
   var allPlans = (r.success ? r.data : STATE.tpmPlans) || [];
-  var moldPlans = allPlans.filter(function(p){return p.TargetID===moldId && p.TargetType==='Mold';}).sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
+  var moldPlans = allPlans.filter(function(p){ return p.TargetID === moldId && p.TargetType === 'Mold'; }).sort(function(a,b){ return new Date(a.PlannedDate) - new Date(b.PlannedDate); });
 
   var masterCheckItems = [
     { id: 1, th: '\u0e0a\u0e34\u0e49\u0e19\u0e07\u0e32\u0e19\u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22\u0e2b\u0e25\u0e31\u0e07\u0e01\u0e32\u0e23\u0e1c\u0e25\u0e34\u0e15', std: '\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e23\u0e2d\u0e22\u0e41\u0e25\u0e30\u0e21\u0e35\u0e04\u0e23\u0e35\u0e1a' },
@@ -2311,7 +2645,6 @@ async function openPMPrintForm(moldId) {
 
   var roundPlans = [];
   for(var r=0; r<4; r++){ roundPlans.push(moldPlans[r] || null); }
-
   var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
   
   var planWeekCells = '';
@@ -2438,27 +2771,38 @@ async function openPMPrintForm(moldId) {
     inspectDateCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:22px;">' + dtStr + '</td>';
   }
 
+  // Load Signatures: LocalStorage + Cloud Notes
   var headerSigs = {};
   try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  if (mold.Notes && mold.Notes.indexOf('[HEADER_SIGS:') !== -1) {
+    try {
+      var sigMatch = mold.Notes.match(/\[HEADER_SIGS:(.*?)\]/);
+      if (sigMatch && sigMatch[1]) {
+        var cloudSigs = JSON.parse(sigMatch[1]);
+        headerSigs = Object.assign({}, headerSigs, cloudSigs);
+      }
+    } catch(e){}
+  }
 
   function getSigHtml(role, defaultName) {
     var s = headerSigs[role];
-    if(!s) return '&nbsp;';
+    if(!s) return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>';
     if(s.type === 'draw' || s.type === 'image') {
       if(s.data) return '<img src="' + s.data + '" style="max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
     } else if(s.type === 'stamp') {
       var stName = s.name || defaultName || role.toUpperCase();
       var stDate = s.date || '';
+      var dFormatted = stDate ? stDate.split('-').reverse().join('/') : '';
       return '<div style="display:inline-block; border: 1.5px solid #dc2626; border-radius: 3px; color: #dc2626; font-size: 6.5pt; font-weight: bold; padding: 1px 3px; line-height: 1.1; text-align: center;">' +
                '<div>APPROVED</div>' +
                '<div style="font-size:7pt;">' + stName + '</div>' +
-               (stDate ? '<div style="font-size:5.5pt; font-weight:normal;">' + stDate + '</div>' : '') +
+               (dFormatted ? '<div style="font-size:5.5pt; font-weight:normal;">' + dFormatted + '</div>' : '') +
              '</div>';
     }
-    return '&nbsp;';
+    return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>';
   }
 
-    var respPerson = '';
+  var respPerson = '';
   var vendorResp = '';
   var assignedPlan = moldPlans.find(function(p){ return !!p.AssignedTo; });
   if(assignedPlan && assignedPlan.AssignedTo) {
@@ -2483,7 +2827,7 @@ async function openPMPrintForm(moldId) {
   var vendorSigHtml = getSigHtml('vendor', mold.Vendor);
   var smSigHtml = getSigHtml('sm', 'SM');
   var svSigHtml = getSigHtml('sv', 'SV');
-  var stSvSigHtml = getSigHtml('st_sv', 'ST/SV');
+  var stSigHtml = getSigHtml('st', 'ST');
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>PM Form - ' + mold.Name + '</title>' +
@@ -2495,15 +2839,16 @@ async function openPMPrintForm(moldId) {
       'th, td { border: 1px solid #333; padding: 2px 3px; vertical-align: middle; }' +
       '.header-title { font-size: 13pt; font-weight: bold; margin-bottom: 2px; }' +
       '.section-bar { text-align: center; font-weight: bold; font-size: 9pt; background: #d9d9d9; border: 1px solid #333; padding: 2px; margin-top: 3px; }' +
-      '.sig-clickable { cursor: pointer; transition: background 0.2s; }' +
-      '.sig-clickable:hover { background: #eff6ff !important; }' +
-      '@media print { .no-print { display: none !important; } .sig-clickable { cursor: default; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }' +
+      '.sig-clickable { cursor: pointer; transition: all 0.2s; background: #fafafa; }' +
+      '.sig-clickable:hover { background: #eff6ff !important; outline: 1.5px dashed #2563eb; }' +
+      '@media print { .no-print { display: none !important; } .sig-clickable { cursor: default; background: transparent !important; outline: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }' +
     '</style></head><body>' +
 
     '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:6px; background:#f3f4f6; margin-bottom:6px; border-bottom:1px solid #ccc; flex-wrap:wrap;">' +
       '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print (A4 \u0e41\u0e19\u0e27\u0e19\u0e2d\u0e19)</button>' +
-      '<button onclick="openSigModal(\'sm\',\'SM\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\u270d\ufe0f \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34</button>' +
-      '<span style="font-size:9pt; color:#4b5563; margin-left:4px;">(\ud83d\udca1 \u0e04\u0e25\u0e34\u0e01\u0e17\u0e35\u0e48\u0e0a\u0e48\u0e2d\u0e07\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e1a\u0e19\u0e2b\u0e31\u0e27\u0e15\u0e32\u0e23\u0e32\u0e07\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e44\u0e14\u0e49)</span>' +
+      '<button onclick="openSigModal(\'sm\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19 / \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
+      '<button onclick="openQRPanel()" style="padding:6px 14px; font-size:10.5pt; background:#7c3aed; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udcf1 QR \u0e40\u0e0b\u0e47\u0e19\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d</button>' +
+      '<button onclick="refreshSignatures()" style="padding:6px 14px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
       '<button onclick="window.close()" style="padding:6px 14px; font-size:10.5pt; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">\u2715 \u0e1b\u0e34\u0e14</button>' +
     '</div>' +
 
@@ -2532,15 +2877,15 @@ async function openPMPrintForm(moldId) {
               '<td colspan="3" style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: bold;">WEN / WP</td>' +
             '</tr>' +
             '<tr>' +
-              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\',\'' + (mold.Vendor || 'VENDOR').replace(/'/g, "\\'") + '\')" style="border: 1px solid #333; height: 38px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 Vendor">' + vendorSigHtml + '</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SM</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%;">SV</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 34%;">ST/SV</td>' +
+              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\')" style="border: 1px solid #333; height: 38px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 VENDOR">' + vendorSigHtml + '</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%; font-weight:bold;">SM</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%; font-weight:bold;">SV</td>' +
+              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 34%; font-weight:bold;">ST</td>' +
             '</tr>' +
             '<tr>' +
-              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\',\'SM\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SM">' + smSigHtml + '</td>' +
-              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\',\'SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SV">' + svSigHtml + '</td>' +
-              '<td id="sig-cell-st_sv" class="sig-clickable" onclick="openSigModal(\'st_sv\',\'ST/SV\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST/SV">' + stSvSigHtml + '</td>' +
+              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SM">' + smSigHtml + '</td>' +
+              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SV">' + svSigHtml + '</td>' +
+              '<td id="sig-cell-st" class="sig-clickable" onclick="openSigModal(\'st\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST (Staff)">' + stSigHtml + '</td>' +
             '</tr>' +
           '</table>' +
         '</td>' +
@@ -2653,19 +2998,22 @@ async function openPMPrintForm(moldId) {
       '<div style="width: 30%; text-align: right; font-weight: bold;">MA 8543-07 EFF. 03/24</div>' +
     '</div>' +
 
-    '<div id="sig-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:9999; justify-content:center; align-items:center;">' +
-      '<div style="background:#fff; border-radius:8px; width:480px; max-width:95%; padding:18px; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-family:sans-serif;">' +
+    // ============================================
+    //  SIGNATURE MODAL (INSIDE PRINT WINDOW)
+    // ============================================
+    '<div id="sig-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; justify-content:center; align-items:center;">' +
+      '<div style="background:#fff; border-radius:10px; width:480px; max-width:95%; padding:18px; box-shadow:0 12px 30px rgba(0,0,0,0.35); font-family:sans-serif;">' +
         '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
-          '<h3 style="margin:0; font-size:13pt; color:#111827;">\u270d\ufe0f \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e2b\u0e31\u0e27\u0e01\u0e23\u0e30\u0e14\u0e32\u0e28</h3>' +
-          '<button onclick="closeSigModal()" style="background:none; border:none; font-size:14pt; cursor:pointer; color:#6b7280;">\u2715</button>' +
+          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e2b\u0e31\u0e27\u0e41\u0e1c\u0e19 PM</h3>' +
+          '<button onclick="closeSigModal()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">\u2715</button>' +
         '</div>' +
         '<div style="margin-bottom:12px;">' +
           '<label style="font-size:9.5pt; font-weight:bold; color:#374151; display:block; margin-bottom:4px;">\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e07\u0e19\u0e32\u0e21:</label>' +
-          '<select id="sig-role-select" onchange="onRoleChange()" style="width:100%; padding:6px 10px; font-size:10pt; border:1px solid #d1d5db; border-radius:4px; background:#f9fafb;">' +
+          '<select id="sig-role-select" onchange="onRoleChange()" style="width:100%; padding:7px 10px; font-size:10pt; border:1.5px solid #6366f1; border-radius:6px; background:#f8fafc; font-weight:600;">' +
+            '<option value="vendor">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
             '<option value="sm">SM (Section Manager - WEN/WP)</option>' +
             '<option value="sv">SV (Supervisor - WEN/WP)</option>' +
-            '<option value="st_sv">ST/SV (Staff / Sub-Leader - WEN/WP)</option>' +
-            '<option value="vendor">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
+            '<option value="st">ST (Staff - WEN/WP)</option>' +
           '</select>' +
         '</div>' +
         '<div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:12px;">' +
@@ -2675,9 +3023,9 @@ async function openPMPrintForm(moldId) {
           '<button id="tab-btn-none" onclick="switchSigTab(\'none\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:0 4px 0 0;">\u26aa \u0e40\u0e27\u0e49\u0e19\u0e27\u0e48\u0e32\u0e07</button>' +
         '</div>' +
         '<div id="sig-pane-draw" style="display:block;">' +
-          '<div style="border:1px solid #d1d5db; border-radius:4px; background:#fafafa; text-align:center; position:relative;">' +
-            '<canvas id="sig-canvas" width="440" height="130" style="display:block; width:100%; cursor:crosshair; touch-action:none;"></canvas>' +
-            '<div style="position:absolute; bottom:4px; left:8px; font-size:7.5pt; color:#9ca3af;">(\u0e43\u0e0a\u0e49\u0e19\u0e34\u0e49\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e21\u0e32\u0e2a\u0e4c\u0e27\u0e32\u0e14\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19)</div>' +
+          '<div style="border:1.5px solid #d1d5db; border-radius:6px; background:#fff; text-align:center; position:relative;">' +
+            '<canvas id="sig-canvas" width="440" height="130" style="display:block; width:100%; cursor:crosshair; touch-action:none; background:#fff; border-radius:6px;"></canvas>' +
+            '<div style="position:absolute; bottom:4px; left:8px; font-size:7.5pt; color:#9ca3af; pointer-events:none;">(\u0e43\u0e0a\u0e49\u0e19\u0e34\u0e49\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e21\u0e32\u0e2a\u0e4c\u0e27\u0e32\u0e14\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19)</div>' +
           '</div>' +
           '<div style="margin-top:6px; text-align:right;">' +
             '<button onclick="clearCanvas()" style="padding:4px 10px; font-size:8.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">\ud83e\uddf9 \u0e25\u0e49\u0e32\u0e07\u0e40\u0e2a\u0e49\u0e19\u0e27\u0e32\u0e14</button>' +
@@ -2686,35 +3034,72 @@ async function openPMPrintForm(moldId) {
         '<div id="sig-pane-image" style="display:none; text-align:center; padding:10px 0;">' +
           '<input type="file" id="sig-file-input" accept="image/*" onchange="handleImageUpload(event)" style="display:block; margin:0 auto 10px auto; font-size:9pt;" />' +
           '<div id="sig-image-preview-wrap" style="height:100px; border:1px dashed #d1d5db; border-radius:4px; display:flex; align-items:center; justify-content:center; background:#fafafa;">' +
-            '<span style="color:#9ca3af; font-size:8.5pt;">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG \u0e1e\u0e37\u0e49\u0e19\u0e2b\u0e25\u0e31\u0e07\u0e43\u0e2a\u0e2b\u0e23\u0e37\u0e2d\u0e02\u0e32\u0e27)</span>' +
+            '<span style="color:#9ca3af; font-size:8.5pt;">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG)</span>' +
           '</div>' +
         '</div>' +
         '<div id="sig-pane-stamp" style="display:none; padding:6px 0;">' +
           '<div style="margin-bottom:8px;">' +
             '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">\u0e0a\u0e37\u0e48\u0e2d\u0e1a\u0e19\u0e15\u0e23\u0e32\u0e22\u0e32\u0e07:</label>' +
-            '<input id="stamp-name-input" placeholder="\u0e40\u0e0a\u0e48\u0e19 SARIN T." style="width:100%; padding:5px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;" />' +
+            '<input id="stamp-name-input" placeholder="\u0e40\u0e0a\u0e48\u0e19 SARIN T." style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
           '</div>' +
           '<div style="margin-bottom:10px;">' +
             '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34:</label>' +
-            '<input id="stamp-date-input" type="date" style="width:100%; padding:5px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px;" />' +
+            '<input id="stamp-date-input" type="date" style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
           '</div>' +
         '</div>' +
         '<div id="sig-pane-none" style="display:none; padding:16px 0; text-align:center; color:#6b7280; font-size:9pt;">' +
-          '\u26aa \u0e25\u0e1a\u0e01\u0e32\u0e23\u0e25\u0e07\u0e19\u0e32\u0e21\u0e02\u0e2d\u0e07\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e19\u0e35\u0e49 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e27\u0e49\u0e19\u0e27\u0e48\u0e32\u0e07\u0e43\u0e2b\u0e49\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2d\u0e2d\u0e01\u0e21\u0e32\u0e40\u0e0b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22\u0e1b\u0e32\u0e01\u0e01\u0e32\u0e08\u0e23\u0e34\u0e07' +
+          '\u26aa \u0e25\u0e1a\u0e01\u0e32\u0e23\u0e25\u0e07\u0e19\u0e32\u0e21\u0e02\u0e2d\u0e07\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e19\u0e35\u0e49 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e27\u0e49\u0e19\u0e27\u0e48\u0e32\u0e07\u0e43\u0e2b\u0e49\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2d\u0e2d\u0e01\u0e21\u0e34\u0e40\u0e0b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22\u0e1b\u0e34\u0e32\u0e01\u0e01\u0e32\u0e08\u0e23\u0e34\u0e07' +
         '</div>' +
         '<div style="display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #e5e7eb; padding-top:12px; margin-top:14px;">' +
-          '<button onclick="closeSigModal()" style="padding:6px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>' +
-          '<button onclick="saveCurrentSignature()" style="padding:6px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
+          '<button onclick="closeSigModal()" style="padding:7px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>' +
+          '<button onclick="saveCurrentSignature()" style="padding:7px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
 
+    // ============================================
+    //  QR CODE MODAL (INSIDE PRINT WINDOW)
+    // ============================================
+    '<div id="qr-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">' +
+      '<div style="background:#fff; border-radius:12px; width:520px; max-width:95%; padding:20px; box-shadow:0 12px 35px rgba(0,0,0,0.4); font-family:sans-serif;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
+          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">\ud83d\udcf1 \u0e2a\u0e41\u0e01\u0e19 QR Code \u0e40\u0e0b\u0e47\u0e19\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d</h3>' +
+          '<button onclick="closeQRPanel()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">\u2715</button>' +
+        '</div>' +
+        '<p style="color:#4b5563; font-size:9.5pt; margin:0 0 14px 0;">\u0e43\u0e0a\u0e49\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d\u0e2a\u0e41\u0e01\u0e19 QR \u0e15\u0e32\u0e21\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e27\u0e32\u0e14\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e1a\u0e19\u0e2b\u0e19\u0e49\u0e32\u0e08\u0e2d\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d:</p>' +
+        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">' +
+          ['vendor','sm','sv','st'].map(function(r){
+            var roleTitle = r === 'vendor' ? 'VENDOR' : (r === 'sm' ? 'SM (Manager)' : (r === 'sv' ? 'SV (Supervisor)' : 'ST (Staff)'));
+            var targetUrl = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&mold=' + encodeURIComponent(mold.ID) + '&role=' + r;
+            var qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(targetUrl);
+            return '<div style="border:1px solid #e5e7eb; border-radius:8px; padding:8px; text-align:center; background:#fafafa;">' +
+                     '<div style="font-size:9.5pt; font-weight:bold; color:#1e40af; margin-bottom:4px;">' + roleTitle + '</div>' +
+                     '<img src="' + qrImg + '" style="width:110px; height:110px; display:block; margin:0 auto;" />' +
+                     '<a href="' + targetUrl + '" target="_blank" style="font-size:7.5pt; color:#6366f1; display:block; margin-top:4px; text-decoration:none;">\u0e40\u0e1b\u0e34\u0e14\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e42\u0e14\u0e22\u0e15\u0e23\u0e07 \u2197</a>' +
+                   '</div>';
+          }).join('') +
+        '</div>' +
+        '<div style="margin-top:12px; padding:8px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:8.5pt; color:#166534;">' +
+          '\u2705 \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19\u0e1a\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27 \u0e43\u0e2b\u0e49\u0e01\u0e14\u0e1b\u0e38\u0e48\u0e21 <strong>\u201c\u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u201d</strong> \u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07\u0e19\u0e35\u0e49' +
+        '</div>' +
+        '<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">' +
+          '<button onclick="refreshSignatures()" style="padding:7px 16px; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt; font-weight:bold;">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
+          '<button onclick="closeQRPanel()" style="padding:7px 16px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt;">\u0e1b\u0e34\u0e14</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+
+    // ============================================
+    //  SCRIPT INSIDE PRINT WINDOW
+    // ============================================
     '<script>' +
       'var sigStore = ' + JSON.stringify(headerSigs) + ';' +
+      'var moldIdForSync = "' + mold.ID + '";' +
       'var curRole = "sm";' +
       'var curTab = "draw";' +
       'var curUploadedImage = "";' +
       'var canvas, ctx, isDrawing = false;' +
+      
       'function initCanvas() {' +
         'canvas = document.getElementById("sig-canvas");' +
         'if(!canvas) return;' +
@@ -2739,9 +3124,11 @@ async function openPMPrintForm(moldId) {
         'canvas.addEventListener("touchmove", move, {passive:false});' +
         'canvas.addEventListener("touchend", end);' +
       '}' +
+
       'function clearCanvas() {' +
         'if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);' +
       '}' +
+
       'function switchSigTab(tab) {' +
         'curTab = tab;' +
         '["draw","image","stamp","none"].forEach(function(t){' +
@@ -2756,72 +3143,93 @@ async function openPMPrintForm(moldId) {
           '}' +
         '});' +
       '}' +
+
       'function openSigModal(role, defaultName) {' +
-        'curRole = role || "sm";' +
-        'document.getElementById("sig-role-select").value = curRole;' +
-        'document.getElementById("stamp-name-input").value = (sigStore[curRole] && sigStore[curRole].name) || defaultName || curRole.toUpperCase();' +
-        'document.getElementById("stamp-date-input").value = (sigStore[curRole] && sigStore[curRole].date) || new Date().toISOString().substring(0,10);' +
-        'clearCanvas();' +
-        'curUploadedImage = "";' +
-        'document.getElementById("sig-image-preview-wrap").innerHTML = "<span style=\"color:#9ca3af; font-size:8.5pt;\">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG \u0e1e\u0e37\u0e49\u0e19\u0e2b\u0e25\u0e31\u0e07\u0e43\u0e2a\u0e2b\u0e23\u0e37\u0e2d\u0e02\u0e32\u0e27)</span>";' +
-        'var existing = sigStore[curRole];' +
-        'if(existing && existing.type){' +
-          'switchSigTab(existing.type);' +
-          'if(existing.type === "draw" && existing.data){' +
-            'var img = new Image();' +
-            'img.onload = function(){ if(ctx) ctx.drawImage(img, 0, 0); };' +
-            'img.src = existing.data;' +
-          '} else if(existing.type === "image" && existing.data){' +
-            'curUploadedImage = existing.data;' +
-            'document.getElementById("sig-image-preview-wrap").innerHTML = "<img src=\"" + existing.data + "\" style=\"max-height:80px; max-width:90%; object-fit:contain;\" />";' +
+        'try {' +
+          'curRole = role || "sm";' +
+          'var roleSel = document.getElementById("sig-role-select");' +
+          'if(roleSel) roleSel.value = curRole;' +
+          'var stampNameEl = document.getElementById("stamp-name-input");' +
+          'if(stampNameEl) stampNameEl.value = (sigStore[curRole] && sigStore[curRole].name) || defaultName || curRole.toUpperCase();' +
+          'var stampDateEl = document.getElementById("stamp-date-input");' +
+          'if(stampDateEl) stampDateEl.value = (sigStore[curRole] && sigStore[curRole].date) || new Date().toISOString().substring(0,10);' +
+          'clearCanvas();' +
+          'curUploadedImage = "";' +
+          'var prevEl = document.getElementById("sig-image-preview-wrap");' +
+          'if(prevEl) prevEl.innerHTML = "<span style=\"color:#9ca3af;font-size:8.5pt;\">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG)</span>";' +
+          'var existing = sigStore[curRole];' +
+          'if(existing && existing.type){' +
+            'switchSigTab(existing.type);' +
+            'if((existing.type === "draw" || existing.type === "image") && existing.data){' +
+              'if(existing.type === "draw"){' +
+                'var img = new Image();' +
+                'img.onload = function(){ if(ctx) ctx.drawImage(img, 0, 0); };' +
+                'img.src = existing.data;' +
+              '} else {' +
+                'curUploadedImage = existing.data;' +
+                'if(prevEl) prevEl.innerHTML = "<img src=\"" + existing.data + "\" style=\"max-height:80px;max-width:90%;object-fit:contain;\" />";' +
+              '}' +
+            '}' +
+          '} else {' +
+            'switchSigTab("draw");' +
           '}' +
-        '} else {' +
-          'switchSigTab("draw");' +
-        '}' +
-        'document.getElementById("sig-modal-backdrop").style.display = "flex";' +
-        'if(!canvas) setTimeout(initCanvas, 50);' +
+          'var backdrop = document.getElementById("sig-modal-backdrop");' +
+          'if(backdrop) backdrop.style.display = "flex";' +
+          'setTimeout(initCanvas, 50);' +
+        '} catch(err){ console.error(err); }' +
       '}' +
+
       'function closeSigModal() {' +
-        'document.getElementById("sig-modal-backdrop").style.display = "none";' +
+        'var backdrop = document.getElementById("sig-modal-backdrop");' +
+        'if(backdrop) backdrop.style.display = "none";' +
       '}' +
+
       'function onRoleChange() {' +
         'var selRole = document.getElementById("sig-role-select").value;' +
         'openSigModal(selRole);' +
       '}' +
+
       'function handleImageUpload(e) {' +
         'var file = e.target.files[0];' +
         'if(!file) return;' +
         'var reader = new FileReader();' +
         'reader.onload = function(evt) {' +
           'curUploadedImage = evt.target.result;' +
-          'document.getElementById("sig-image-preview-wrap").innerHTML = "<img src=\"" + curUploadedImage + "\" style=\"max-height:80px; max-width:90%; object-fit:contain;\" />";' +
+          'var prevEl = document.getElementById("sig-image-preview-wrap");' +
+          'if(prevEl) prevEl.innerHTML = "<img src=\"" + curUploadedImage + "\" style=\"max-height:80px;max-width:90%;object-fit:contain;\" />";' +
         '};' +
         'reader.readAsDataURL(file);' +
       '}' +
+
       'function saveCurrentSignature() {' +
         'var role = document.getElementById("sig-role-select").value;' +
         'if(curTab === "draw") {' +
+          'if(!canvas) initCanvas();' +
           'var dataUrl = canvas.toDataURL("image/png");' +
           'sigStore[role] = { type: "draw", data: dataUrl };' +
         '} else if(curTab === "image") {' +
           'if(!curUploadedImage){ alert("\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e44\u0e1f\u0e25\u0e4c\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e01\u0e48\u0e2d\u0e19\u0e04\u0e23\u0e31\u0e1a"); return; }' +
           'sigStore[role] = { type: "image", data: curUploadedImage };' +
         '} else if(curTab === "stamp") {' +
-          'var stName = document.getElementById("stamp-name-input").value.trim() || role.toUpperCase();' +
+          'var stName = (document.getElementById("stamp-name-input").value || "").trim() || role.toUpperCase();' +
           'var stDate = document.getElementById("stamp-date-input").value || "";' +
           'sigStore[role] = { type: "stamp", name: stName, date: stDate };' +
         '} else if(curTab === "none") {' +
           'delete sigStore[role];' +
         '}' +
         'try { localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(sigStore)); } catch(e){}' +
+        'if(window.opener && window.opener.api){' +
+          'window.opener.api("saveMoldHeaderSig", { moldId: moldIdForSync, role: role, sigData: sigStore[role] });' +
+        '}' +
         'updateCellInDom(role);' +
         'closeSigModal();' +
       '}' +
+
       'function updateCellInDom(role) {' +
         'var cell = document.getElementById("sig-cell-" + role);' +
         'if(!cell) return;' +
         'var s = sigStore[role];' +
-        'if(!s) { cell.innerHTML = "&nbsp;"; return; }' +
+        'if(!s) { cell.innerHTML = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;\">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>"; return; }' +
         'if(s.type === "draw" || s.type === "image") {' +
           'cell.innerHTML = "<img src=\"" + s.data + "\" style=\"max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;\" />";' +
         '} else if(s.type === "stamp") {' +
@@ -2833,7 +3241,41 @@ async function openPMPrintForm(moldId) {
           '"</div>";' +
         '}' +
       '}' +
-      'window.onload = function() { initCanvas(); };' +
+
+      'function openQRPanel() {' +
+        'var qrModal = document.getElementById("qr-modal-backdrop");' +
+        'if(qrModal) qrModal.style.display = "flex";' +
+      '}' +
+
+      'function closeQRPanel() {' +
+        'var qrModal = document.getElementById("qr-modal-backdrop");' +
+        'if(qrModal) qrModal.style.display = "none";' +
+      '}' +
+
+      'async function refreshSignatures() {' +
+        'try {' +
+          'var local = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}");' +
+          'if(window.opener && window.opener.api){' +
+            'var res = await window.opener.api("getMolds");' +
+            'if(res && res.success && res.data){' +
+              'var m = res.data.find(function(x){ return x.ID === moldIdForSync; });' +
+              'if(m && m.Notes && m.Notes.indexOf("[HEADER_SIGS:") !== -1){' +
+                'var match = m.Notes.match(/\\[HEADER_SIGS:(.*?)\\]/);' +
+                'if(match && match[1]) {' +
+                  'var cloud = JSON.parse(match[1]);' +
+                  'local = Object.assign({}, local, cloud);' +
+                '}' +
+              '}' +
+            '}' +
+          '}' +
+          'sigStore = local;' +
+          '["vendor","sm","sv","st"].forEach(function(r){ updateCellInDom(r); });' +
+          'closeQRPanel();' +
+          'alert("\u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22\u0e41\u0e25\u0e49\u0e27 \u2705");' +
+        '} catch(e){ console.error(e); }' +
+      '}' +
+
+      'setTimeout(initCanvas, 100);' +
     '<' + '/script>' +
 
   '</body></html>';
