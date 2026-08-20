@@ -433,7 +433,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="form-row col-3">
       <div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="bulk-target-type" onchange="loadBulkTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div>
       <div class="form-group"><label>Mold / Machine</label><select id="bulk-target-id"><option value="">-- &#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604; (&#3607;&#3637;&#3656; Active) --</option></select></div>
-      <div class="form-group"><label>&#3611;&#3637; (&#3614;.&#3624;. / &#3588;.&#3624;.)</label><input id="bulk-year" type="number" onchange="onBulkYearOrDayChange()"/></div>
+      <div class="form-group"><label>&#3611;&#3637;&#3591;&#3610;&#3611;&#3619;&#3632;&#3617;&#3634;&#3603; FY (&#3648;&#3617;.&#3625;&#3634; - &#3617;&#3637;.&#3588;.)</label><input id="bulk-year" type="number" onchange="onBulkYearOrDayChange()" min="2020" max="2040" style="font-weight:bold"/></div>
     </div>
     
     <div class="form-row col-3">
@@ -972,7 +972,15 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getTPMPlans': {
         let query = sb.from('tpm_plans').select('*');
         const yr = (payload && payload.year) || urlParams.year;
-        if (yr) query = query.eq('Year', Number(yr));
+        const fyr = (payload && payload.fyear) || urlParams.fyear;
+        if (fyr) {
+          // FY: April 1 of fyr to March 31 of fyr+1
+          const fyStart = fyr + '-04-01';
+          const fyEnd = (parseInt(fyr) + 1) + '-03-31';
+          query = query.gte('PlannedDate', fyStart).lte('PlannedDate', fyEnd);
+        } else if (yr) {
+          query = query.eq('Year', Number(yr));
+        }
         const { data, error } = await query;
         if (error) return { success: false, error: error.message };
         (data || []).forEach(p => {
@@ -1151,13 +1159,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initSelects() {
   const yr = new Date().getFullYear();
+  // FY starts April: if current month >= 4, current FY = yr; else current FY = yr-1
+  const curFY = new Date().getMonth() >= 3 ? yr : yr - 1;
   const ys = document.getElementById('tpm-year');
   if (ys) {
     ys.innerHTML = '';
-    for (let y = yr-1; y <= yr+2; y++) ys.add(new Option(y, y, y===yr, y===yr));
+    for (let fy = curFY - 1; fy <= curFY + 2; fy++) {
+      const label = 'FY' + fy + ' (\u0e40\u0e21.\u0e29\u0e32 ' + fy + ' - \u0e21\u0e35.\u0e04. ' + (fy + 1) + ')';
+      const opt = new Option(label, fy, fy === curFY, fy === curFY);
+      ys.add(opt);
+    }
   }
   const by = document.getElementById('bulk-year');
-  if (by) by.value = yr;
+  if (by) by.value = curFY;
   const ms = document.getElementById('tpm-month');
   if (ms) {
     ms.innerHTML = '<option value="">ทุกเดือน</option>';
@@ -1502,14 +1516,14 @@ async function delMachine(id,name){if(!confirm('\u0e25\u0e1a\u0e40\u0e04\u0e23\u
 // ============================================
 //  TPM
 // ============================================
-async function loadTPMPlans(){var yr=v('tpm-year')||new Date().getFullYear();var r=await api('getTPMPlans&year='+yr);if(r.success){STATE.tpmPlans=r.data;updateBadges();renderTPM();}}
+async function loadTPMPlans(){var fy=v('tpm-year')||(new Date().getMonth()>=3?new Date().getFullYear():new Date().getFullYear()-1);var r=await api('getTPMPlans&fyear='+fy);if(r.success){STATE.tpmPlans=r.data;updateBadges();renderTPM();}}
 function renderTPM(){var view=v('tpm-view')||'calendar';var container=document.getElementById('tpm-container');view==='calendar'?renderTPMCalendar(container):renderTPMList(container);}
 function renderTPMCalendar(container){
   var yr=parseInt(v('tpm-year'))||new Date().getFullYear();
   var mo=parseInt(v('tpm-month'))||new Date().getMonth()+1;
   var status=v('tpm-filter-status')||'';
   var today=new Date();var firstDay=new Date(yr,mo-1,1);var lastDay=new Date(yr,mo,0);
-  var plans=STATE.tpmPlans.filter(function(p){return p.PlannedDate&&new Date(p.PlannedDate).getFullYear()===yr&&new Date(p.PlannedDate).getMonth()===mo-1;});
+  var plans=STATE.tpmPlans.filter(function(p){return p.PlannedDate&&new Date(p.PlannedDate).getMonth()===mo-1;});
   if(status)plans=plans.filter(function(p){return p.Status===status;});
   var dayHdrs=['\u0e2d\u0e32','\u0e08','\u0e2d','\u0e1e','\u0e1e\u0e24','\u0e28','\u0e2a'].map(function(d){return '<div class="cal-header-cell">'+d+'</div>';}).join('');
   var cells='';
@@ -1522,7 +1536,7 @@ function renderTPMCalendar(container){
   }
   var rem=(7-(firstDay.getDay()+lastDay.getDate())%7)%7;
   for(var i=0;i<rem;i++)cells+='<div class="cal-day other-month"></div>';
-  container.innerHTML='<div class="card"><div class="calendar-nav"><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">\u25c0</button><h3>'+TH_MONTHS[mo-1]+' / '+EN_MONTHS[mo-1]+' '+yr+'</h3><button class="btn btn-outline btn-sm" onclick="changeMonth(1)">\u25b6</button></div><div class="calendar-grid">'+dayHdrs+cells+'</div><div style="display:flex;gap:16px;margin-top:12px;font-size:11px;flex-wrap:wrap"><span style="color:#34d399">\ud83d\udfe2 Done</span><span style="color:#a5b4fc">\ud83d\udd35 Planned</span><span style="color:#fbbf24">\ud83d\udfe1 Due Soon</span><span style="color:#f87171">\ud83d\udd34 Overdue</span></div></div>';
+  var dispYr = (mo >= 4) ? parseInt(v('tpm-year')||yr) : parseInt(v('tpm-year')||yr)+1; container.innerHTML='<div class="card"><div class="calendar-nav"><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">\u25c0</button><h3>'+TH_MONTHS[mo-1]+' / '+EN_MONTHS[mo-1]+' '+dispYr+'</h3><button class="btn btn-outline btn-sm" onclick="changeMonth(1)">\u25b6</button></div><div class="calendar-grid">'+dayHdrs+cells+'</div><div style="display:flex;gap:16px;margin-top:12px;font-size:11px;flex-wrap:wrap"><span style="color:#34d399">\ud83d\udfe2 Done</span><span style="color:#a5b4fc">\ud83d\udd35 Planned</span><span style="color:#fbbf24">\ud83d\udfe1 Due Soon</span><span style="color:#f87171">\ud83d\udd34 Overdue</span></div></div>';
 }
 function changeMonth(dir){var ms=document.getElementById('tpm-month');var ys=document.getElementById('tpm-year');var mo=parseInt(ms.value)||new Date().getMonth()+1;var yr=parseInt(ys.value)||new Date().getFullYear();mo+=dir;if(mo>12){mo=1;yr++;}if(mo<1){mo=12;yr--;}ms.value=mo;ys.value=yr;loadTPMPlans();}
 function renderTPMList(container){
@@ -1575,8 +1589,9 @@ function loadBulkTargets(){
 
 function openBulkTPMModal(){
   loadBulkTargets();
-  const yr = new Date().getFullYear();
-  v_set('bulk-year', yr);
+  const now = new Date();
+  const curFY = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  v_set('bulk-year', curFY);
   v_set('bulk-day', 15);
   v_set('bulk-freq', '6');
   v_set('bulk-assigned', '');
@@ -1680,7 +1695,7 @@ function onBulkFreqChange() {
 
 function onCustomCountChange() {
   const count = Math.max(1, Math.min(52, parseInt(v('bulk-custom-count')) || 1));
-  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const fy = parseInt(v('bulk-year')) || new Date().getFullYear();
   const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
   
   BULK_DATES = [];
@@ -1688,7 +1703,8 @@ function onCustomCountChange() {
   for (let i = 0; i < count; i++) {
     const month = Math.min(12, Math.floor((i * 12) / count) + 1);
     selectedMonths.push(month);
-    const d = new Date(yr, month - 1, day);
+    const actualYr = (month >= 4) ? fy : fy + 1;
+    const d = new Date(actualYr, month - 1, day);
     BULK_DATES.push(d.toISOString().substring(0, 10));
   }
   renderMonthChips([...new Set(selectedMonths)]);
@@ -1705,10 +1721,12 @@ function onBulkYearOrDayChange() {
 }
 
 function generateBulkDatesFromMonths(months) {
-  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const fy = parseInt(v('bulk-year')) || new Date().getFullYear();
   const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
   BULK_DATES = months.map(m => {
-    const d = new Date(yr, m - 1, day);
+    // FY: Apr(4)-Dec(12) = fy year, Jan(1)-Mar(3) = fy+1 year
+    const actualYr = (m >= 4) ? fy : fy + 1;
+    const d = new Date(actualYr, m - 1, day);
     return d.toISOString().substring(0, 10);
   });
   renderBulkDatesList();
@@ -1751,9 +1769,9 @@ function updateBulkDate(idx, val) {
 }
 
 function addBulkDateRow() {
-  const yr = parseInt(v('bulk-year')) || new Date().getFullYear();
+  const fy = parseInt(v('bulk-year')) || new Date().getFullYear();
   const day = Math.min(28, Math.max(1, parseInt(v('bulk-day')) || 15));
-  let nextMonth = 1;
+  let nextMonth = 4; // FY starts in April
   if (BULK_DATES.length) {
     const lastDate = BULK_DATES[BULK_DATES.length - 1];
     const parts = (lastDate||'').split('-');
@@ -1761,7 +1779,8 @@ function addBulkDateRow() {
       nextMonth = (parseInt(parts[1]) % 12) + 1;
     }
   }
-  const d = new Date(yr, nextMonth - 1, day);
+  const actualYr = (nextMonth >= 4) ? fy : fy + 1;
+  const d = new Date(actualYr, nextMonth - 1, day);
   BULK_DATES.push(d.toISOString().substring(0, 10));
   renderBulkDatesList();
   
@@ -1805,7 +1824,7 @@ async function saveBulkTPM(){
         TargetType: type,
         TargetID: target.ID,
         TargetName: target.Name,
-        Year: parseInt(yr) || new Date().getFullYear(),
+        Year: parseInt(yr) || (new Date().getMonth()>=3?new Date().getFullYear():new Date().getFullYear()-1), // FY
         PlannedDate: dateStr,
         AssignedTo: wenResp,
         VendorResp: vName,
@@ -2264,8 +2283,10 @@ async function openPMPrintForm(moldId) {
   if(!mold){showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25','error');return;}
 
   showGlobalLoading(true);
-  var yr = new Date().getFullYear();
-  var r = await api('getTPMPlans&year='+yr);
+  var nowDate = new Date();
+  var yr = nowDate.getFullYear();
+  var fy = nowDate.getMonth() >= 3 ? yr : yr - 1;
+  var r = await api('getTPMPlans&fyear='+fy);
   showGlobalLoading(false);
   var allPlans = (r.success ? r.data : STATE.tpmPlans) || [];
   var moldPlans = allPlans.filter(function(p){return p.TargetID===moldId && p.TargetType==='Mold';}).sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
