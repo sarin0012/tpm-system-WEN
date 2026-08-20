@@ -2783,23 +2783,27 @@ async function openPMPrintForm(moldId) {
       }
     } catch(e){}
   }
+  // Auto-migrate legacy st_sv key to st
+  if (headerSigs['st_sv'] && !headerSigs['st']) {
+    headerSigs['st'] = headerSigs['st_sv'];
+  }
 
   function getSigHtml(role, defaultName) {
     var s = headerSigs[role];
-    if(!s) return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>';
+    if(!s) return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>';
     if(s.type === 'draw' || s.type === 'image') {
-      if(s.data) return '<img src="' + s.data + '" style="max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
+      if(s.data) return '<img src="' + s.data + '" style="max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
     } else if(s.type === 'stamp') {
       var stName = s.name || defaultName || role.toUpperCase();
       var stDate = s.date || '';
       var dFormatted = stDate ? stDate.split('-').reverse().join('/') : '';
       return '<div style="display:inline-block; border: 1.5px solid #dc2626; border-radius: 3px; color: #dc2626; font-size: 6.5pt; font-weight: bold; padding: 1px 3px; line-height: 1.1; text-align: center;">' +
                '<div>APPROVED</div>' +
-               '<div style="font-size:7pt;">' + stName + '</div>' +
+               '<div style="font-size:7pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px;">' + stName + '</div>' +
                (dFormatted ? '<div style="font-size:5.5pt; font-weight:normal;">' + dFormatted + '</div>' : '') +
              '</div>';
     }
-    return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>';
+    return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>';
   }
 
   var respPerson = '';
@@ -2854,7 +2858,7 @@ async function openPMPrintForm(moldId) {
 
     '<table style="border:none; margin-bottom: 3px;">' +
       '<tr style="border:none;">' +
-        '<td style="border:none; width: 62%; vertical-align: top; padding: 0 4px 0 0;">' +
+        '<td style="border:none; width: 57%; vertical-align: top; padding: 0 4px 0 0;">' +
           '<div class="header-title">\u0e41\u0e1c\u0e19\u0e41\u0e25\u0e30\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a SPECIAL TOOLS \u0e15\u0e32\u0e21\u0e04\u0e32\u0e1a\u0e40\u0e27\u0e25\u0e32 (PM.)</div>' +
           '<div style="font-size:9pt; margin-bottom: 3px;">\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e02\u0e2d\u0e07 SPECIAL TOOLS : \u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e09\u0e35\u0e14\u0e1e\u0e25\u0e32\u0e2a\u0e15\u0e34\u0e01 ( PLASTIC INJECTION )</div>' +
           '<table style="font-size:8.5pt; width: 100%; margin-top: 3px;">' +
@@ -2866,26 +2870,26 @@ async function openPMPrintForm(moldId) {
             '</tr>' +
           '</table>' +
         '</td>' +
-        '<td style="border:none; width: 38%; vertical-align: top; padding: 0 0 0 4px;">' +
+        '<td style="border:none; width: 43%; vertical-align: top; padding: 0 0 0 4px;">' +
           '<table style="font-size:8pt; width: 100%; border: 1px solid #333;">' +
             '<tr>' +
-              '<th style="border: 1px solid #333; padding: 2px 4px; background: #fff; width: 44%;">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR</th>' +
-              '<th colspan="3" style="border: 1px solid #333; padding: 2px 4px; background: #fff; width: 56%;">\u0e01\u0e32\u0e23\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07</th>' +
+              '<th style="border: 1px solid #333; padding: 3px 4px; background: #fff; width: 38%;">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR</th>' +
+              '<th colspan="3" style="border: 1px solid #333; padding: 3px 4px; background: #fff; width: 62%;">\u0e01\u0e32\u0e23\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07</th>' +
             '</tr>' +
             '<tr>' +
               '<td style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: 500;">( ' + (mold.Vendor || '\u0e0a\u0e37\u0e48\u0e2d VENDOR') + ' )</td>' +
               '<td colspan="3" style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: bold;">WEN / WP</td>' +
             '</tr>' +
             '<tr>' +
-              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\')" style="border: 1px solid #333; height: 38px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 VENDOR">' + vendorSigHtml + '</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%; font-weight:bold;">SM</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 33%; font-weight:bold;">SV</td>' +
-              '<td style="border: 1px solid #333; padding: 1px 2px; text-align: center; width: 34%; font-weight:bold;">ST</td>' +
+              '<td rowspan="2" id="sig-cell-vendor" class="sig-clickable" onclick="openSigModal(\'vendor\')" style="border: 1px solid #333; height: 50px; text-align: center; vertical-align: middle; width: 38%; padding: 2px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 VENDOR">' + vendorSigHtml + '</td>' +
+              '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.6%; font-weight:bold;">SM</td>' +
+              '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.6%; font-weight:bold;">SV</td>' +
+              '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.8%; font-weight:bold;">ST</td>' +
             '</tr>' +
             '<tr>' +
-              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SM">' + smSigHtml + '</td>' +
-              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SV">' + svSigHtml + '</td>' +
-              '<td id="sig-cell-st" class="sig-clickable" onclick="openSigModal(\'st\')" style="border: 1px solid #333; height: 26px; text-align: center; vertical-align: middle;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST (Staff)">' + stSigHtml + '</td>' +
+              '<td id="sig-cell-sm" class="sig-clickable" onclick="openSigModal(\'sm\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SM">' + smSigHtml + '</td>' +
+              '<td id="sig-cell-sv" class="sig-clickable" onclick="openSigModal(\'sv\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SV">' + svSigHtml + '</td>' +
+              '<td id="sig-cell-st" class="sig-clickable" onclick="openSigModal(\'st\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST (Staff)">' + stSigHtml + '</td>' +
             '</tr>' +
           '</table>' +
         '</td>' +
@@ -3229,14 +3233,14 @@ async function openPMPrintForm(moldId) {
         'var cell = document.getElementById("sig-cell-" + role);' +
         'if(!cell) return;' +
         'var s = sigStore[role];' +
-        'if(!s) { cell.innerHTML = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;\">\u270d\ufe0f \u0e04\u0e25\u0e34\u0e01\u0e40\u0e0b\u0e47\u0e19</span>"; return; }' +
+        'if(!s) { cell.innerHTML = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;\">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>"; return; }' +
         'if(s.type === "draw" || s.type === "image") {' +
-          'cell.innerHTML = "<img src=\"" + s.data + "\" style=\"max-height: 24px; max-width: 95%; object-fit: contain; display: inline-block; vertical-align: middle;\" />";' +
+          'cell.innerHTML = "<img src=\"" + s.data + "\" style=\"max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;\" />";' +
         '} else if(s.type === "stamp") {' +
           'var dFormatted = s.date ? s.date.split("-").reverse().join("/") : "";' +
           'cell.innerHTML = "<div style=\"display:inline-block; border: 1.5px solid #dc2626; border-radius: 3px; color: #dc2626; font-size: 6.5pt; font-weight: bold; padding: 1px 3px; line-height: 1.1; text-align: center;\">" +' +
             '"<div>APPROVED</div>" +' +
-            '"<div style=\"font-size:7pt;\">" + s.name + "</div>" +' +
+            '"<div style=\"font-size:7pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px;\">" + s.name + "</div>" +' +
             '(dFormatted ? "<div style=\"font-size:5.5pt; font-weight:normal;\">" + dFormatted + "</div>" : "") +' +
           '"</div>";' +
         '}' +
