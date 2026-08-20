@@ -501,7 +501,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <input type="hidden" id="tpm-complete-id"/>
     <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
     <div class="form-row col-3">
-      <div class="form-group"><label>วันที่ทำจริง *</label><input id="tpm-actual-date" type="date"/></div>
+      <div class="form-group"><label>วันที่ทำจริง <span style="color:var(--danger)">*</span> (DD/MM/YYYY)</label><input id="tpm-actual-date" type="text" placeholder="เช่น 20/08/2026"/></div>
       <div class="form-group"><label>ผู้ตรวจสอบ (WEN/WP) *</label><input id="tpm-actual-by" placeholder="ระบุชื่อผู้ตรวจสอบ WEN/WP"/></div>
       <div class="form-group"><label>ผู้ตรวจสอบร่วม (Vendor)</label><input id="tpm-co-inspector" placeholder="ระบุชื่อตัวแทน Vendor"/></div>
     </div>
@@ -2203,12 +2203,45 @@ async function saveBulkTPM(){
     showToast('ผิดพลาด: ' + r.error, 'error');
   }
 }
+function formatDMY(dateOrStr) {
+  if (!dateOrStr) return '';
+  if (typeof dateOrStr === 'string' && dateOrStr.indexOf('/') !== -1) return dateOrStr;
+  var d = new Date(dateOrStr);
+  if (isNaN(d.getTime())) {
+    var parts = (dateOrStr || '').split('-');
+    if (parts.length === 3) return parts[2] + '/' + parts[1] + '/' + parts[0];
+    return dateOrStr;
+  }
+  var day = ('0' + d.getDate()).slice(-2);
+  var month = ('0' + (d.getMonth() + 1)).slice(-2);
+  var yr = d.getFullYear();
+  return day + '/' + month + '/' + yr;
+}
+
+function parseDMYtoYMD(dmyStr) {
+  if (!dmyStr) return '';
+  var s = dmyStr.trim();
+  if (s.indexOf('-') !== -1) {
+    var p = s.split('-');
+    if (p.length === 3 && p[0].length === 4) return s;
+  }
+  var parts = s.split('/');
+  if (parts.length === 3) {
+    var day = ('0' + parseInt(parts[0], 10)).slice(-2);
+    var month = ('0' + parseInt(parts[1], 10)).slice(-2);
+    var yr = parseInt(parts[2], 10);
+    if (yr > 2400) yr -= 543;
+    return yr + '-' + month + '-' + day;
+  }
+  return s;
+}
+
 function openTPMCompleteModal(planId){
   var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
   var target = (plan.TargetType==='Mold' ? STATE.molds : STATE.machines).find(function(x){return x.ID===plan.TargetID;});
   var defaultVendor = target ? (target.Vendor || '') : '';
   v_set('tpm-complete-id',planId);
-  v_set('tpm-actual-date',new Date().toISOString().substring(0,10));
+  v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
   v_set('tpm-actual-by',plan.ActualBy || '');
   v_set('tpm-co-inspector',plan.CoInspector || defaultVendor);
   v_set('tpm-complete-notes',plan.Notes || '');
@@ -2252,11 +2285,12 @@ function toggleRemark(itemId){
 }
 async function completeTPM(){
   var planId=v('tpm-complete-id');
-  var actualDate=(v('tpm-actual-date')||'').trim();
+  var rawDate=(v('tpm-actual-date')||'').trim();
+  var actualDate=parseDMYtoYMD(rawDate);
   var actualBy=(v('tpm-actual-by')||'').trim();
   var coInspector=(v('tpm-co-inspector')||'').trim();
   if(!actualDate){
-    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e08\u0e23\u0e34\u0e07', 'warning');
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e08\u0e23\u0e34\u0e07 (DD/MM/YYYY \u0e40\u0e0a\u0e48\u0e19 20/08/2026)', 'warning');
     var elDate = document.getElementById('tpm-actual-date');
     if(elDate) elDate.focus();
     return;
