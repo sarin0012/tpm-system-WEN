@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -276,8 +276,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
-    <thead><tr><th>ชื่อโมล</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
-    <tbody id="molds-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
+    <thead><tr><th>ชื่อโมล</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
@@ -1531,6 +1531,131 @@ async function loadDashboard() {
 // ============================================
 //  MOLDS
 // ============================================
+function getMoldTPMSummary(moldId) {
+  var plans = (STATE.tpmPlans || []).filter(function(p){
+    return p.TargetID === moldId && p.TargetType === 'Mold';
+  }).sort(function(a,b){ return new Date(a.PlannedDate) - new Date(b.PlannedDate); });
+  
+  if (!plans.length) {
+    return {
+      status: 'NoPlan',
+      badgeHtml: '<span class="badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดู/สร้างแผน">⚪ ยังไม่มีแผน</span>',
+      plans: plans,
+      total: 0,
+      done: 0
+    };
+  }
+  
+  var donePlans = plans.filter(function(p){ return p.Status === 'Done'; });
+  if (donePlans.length === plans.length) {
+    return {
+      status: 'Done',
+      badgeHtml: '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูรายละเอียด">✅ ตรวจครบ (' + donePlans.length + '/' + plans.length + ')</span>',
+      plans: plans,
+      total: plans.length,
+      done: donePlans.length
+    };
+  }
+  
+  var overduePlans = plans.filter(function(p){ return getTPMStatus(p) === 'Overdue'; });
+  if (overduePlans.length > 0) {
+    var p0 = overduePlans[0];
+    var dStr = p0.PlannedDate ? p0.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+    return {
+      status: 'Overdue',
+      badgeHtml: '<span class="badge overdue" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อบันทึกผลรอบที่ช้ากว่าแผน">🔴 ช้ากว่าแผน (' + dStr + ')</span>',
+      plans: plans,
+      total: plans.length,
+      done: donePlans.length
+    };
+  }
+  
+  var dueSoonPlans = plans.filter(function(p){ return getTPMStatus(p) === 'Due Soon'; });
+  if (dueSoonPlans.length > 0) {
+    var p0 = dueSoonPlans[0];
+    var dStr = p0.PlannedDate ? p0.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+    return {
+      status: 'Due Soon',
+      badgeHtml: '<span class="badge due-soon" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูรอบที่ใกล้ถึง">🟡 ใกล้ถึงแผน (' + dStr + ')</span>',
+      plans: plans,
+      total: plans.length,
+      done: donePlans.length
+    };
+  }
+  
+  var nextPlan = plans.find(function(p){ return p.Status !== 'Done'; });
+  var dStr = (nextPlan && nextPlan.PlannedDate) ? nextPlan.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+  return {
+    status: 'Planned',
+    badgeHtml: '<span class="badge planned" style="background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูแผน">🔵 ตามแผน (' + dStr + ')</span>',
+    plans: plans,
+    total: plans.length,
+    done: donePlans.length
+  };
+}
+
+function openMoldTPMDetailModal(moldId) {
+  var mold = STATE.molds.find(function(m){ return m.ID === moldId; });
+  if (!mold) return;
+  
+  var summary = getMoldTPMSummary(moldId);
+  var plans = summary.plans;
+  
+  var titleEl = document.getElementById('mold-tpm-detail-title');
+  if (titleEl) {
+    titleEl.innerHTML = '📋 แผนและการตรวจ PM: <strong>' + mold.Name + '</strong> (' + (mold.AssetNo || '-') + ')';
+  }
+  
+  var infoEl = document.getElementById('mold-tpm-detail-info');
+  if (infoEl) {
+    infoEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;font-size:12px;background:var(--surface2);padding:12px;border-radius:var(--r-sm);border:1px solid var(--border);">' +
+      '<div><span style="color:var(--text-muted)">🏢 Vendor:</span> <strong>' + (mold.Vendor || '-') + '</strong></div>' +
+      '<div><span style="color:var(--text-muted)">📐 Drawing No:</span> <strong>' + (mold.DrawingNo || '-') + '</strong></div>' +
+      '<div><span style="color:var(--text-muted)">📦 Material:</span> <strong>' + (mold.Material || '-') + '</strong></div>' +
+      '<div><span style="color:var(--text-muted)">🔧 สถานะ PM รวม:</span> ' + summary.badgeHtml + '</div>' +
+    '</div>';
+  }
+  
+  var tbody = document.getElementById('mold-tpm-detail-tbody');
+  if (tbody) {
+    if (!plans.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:28px;color:var(--text-muted);">' +
+        'แม่พิมพ์นี้ยังไม่มีการสร้างแผน TPM ประจำปี<br>' +
+        '<button class="btn btn-primary btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openBulkTPMModal();" style="margin-top:12px;">📋 สร้างแผน TPM ประจำปี</button>' +
+      '</td></tr>';
+    } else {
+      tbody.innerHTML = plans.map(function(p, idx){
+        var isDone = p.Status === 'Done';
+        var stBadge = getTPMStatusBadge(p);
+        var actDate = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH') : '-';
+        var planDate = p.PlannedDate ? new Date(p.PlannedDate).toLocaleDateString('th-TH') : '-';
+        var insp = isDone ? (p.ActualBy || '-') + (p.CoInspector ? ' / ' + p.CoInspector : '') : '-';
+        
+        var actionBtn = !isDone
+          ? '<button class="btn btn-success btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ บันทึกผล</button>'
+          : '<button class="btn btn-outline btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');" title="ดู/แก้ไขผลตรวจ">🔍 ดูผล</button> <button class="btn btn-ghost btn-sm" onclick="resetTPMPlan(\'' + p.ID + '\')" title="รีเซ็ต">🔄</button>';
+        
+        return '<tr>' +
+          '<td style="text-align:center;font-weight:600;">รอบที่ ' + (idx + 1) + '</td>' +
+          '<td><strong>' + planDate + '</strong></td>' +
+          '<td>' + (p.AssignedTo || '-') + (p.VendorResp ? '<br><span style="font-size:11px;color:var(--text-muted)">Vendor: ' + p.VendorResp + '</span>' : '') + '</td>' +
+          '<td>' + stBadge + '</td>' +
+          '<td>' + actDate + '</td>' +
+          '<td style="font-size:11px;">' + insp + '</td>' +
+          '<td style="text-align:center;white-space:nowrap;">' + actionBtn + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+  }
+  
+  var printBtn = document.getElementById('mold-tpm-detail-print-btn');
+  if (printBtn) {
+    printBtn.onclick = function() { openPMPrintForm(moldId); };
+  }
+  
+  openModal('mold-tpm-detail-modal');
+}
+
 function renderMolds() {
   var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
@@ -1548,7 +1673,7 @@ function filterMolds(){
     return true;
   });
   var tb=document.getElementById('molds-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
+  if(!data.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m){
     var imgs=tryParse(m.ImageIds);
     var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="คลิกดูรูป"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
@@ -1558,7 +1683,24 @@ function filterMolds(){
     if(m.PartWeight) specs.push('📦 Part: '+m.PartWeight);
     if(m.RunnerWeight) specs.push('⚡ Runner: '+m.RunnerWeight);
     var specStr = specs.length ? '<div style="font-size:11px;color:var(--text-muted);line-height:1.3">'+specs.join('<br>')+'</div>' : '<span style="color:var(--text-faint);font-size:11px">-</span>';
-    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+(m.AssetNo||'-')+'</td><td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Material||'-')+'</td><td>'+specStr+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td><button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button><button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>✏️</button><button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">🗑️</button></td></tr>';
+    var tpmSummary = getMoldTPMSummary(m.ID);
+    return '<tr>'+
+      '<td><strong>'+m.Name+'</strong></td>'+
+      '<td>'+(m.AssetNo||'-')+'</td>'+
+      '<td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
+      '<td>'+(m.Vendor||'-')+'</td>'+
+      '<td>'+(m.Material||'-')+'</td>'+
+      '<td>'+specStr+'</td>'+
+      '<td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
+      '<td>'+tpmSummary.badgeHtml+'</td>'+
+      '<td>'+thumbs+'</td>'+
+      '<td style="white-space:nowrap;">'+
+        '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="ดูรายละเอียด & แผน PM" style="margin-right:2px">📋 แผน PM</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>✏️</button>'+
+        '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">🗑️</button>'+
+      '</td>'+
+    '</tr>';
   }).join('');
 }
 function openMoldModal(data) {
