@@ -3054,9 +3054,12 @@ async function openPMPrintForm(moldId) {
 
       if (roundPlan && roundPlan.PlannedDate) {
         var pParts = roundPlan.PlannedDate.split('-');
+        var pYr = parseInt(pParts[0], 10);
         var pMo = parseInt(pParts[1], 10);
         var pDay = parseInt(pParts[2], 10);
-        if (pMo >= 1 && pMo <= 12) mTitle = '\u0e40\u0e14\u0e37\u0e2d\u0e19 ' + thMonths[pMo - 1];
+        var yrBe2 = ((pYr + 543) % 100).toString();
+        if (yrBe2.length === 1) yrBe2 = '0' + yrBe2;
+        if (pMo >= 1 && pMo <= 12) mTitle = thMonths[pMo - 1] + ' ' + yrBe2;
         plannedWeek = pDay <= 7 ? 1 : (pDay <= 14 ? 2 : (pDay <= 21 ? 3 : 4));
       }
 
