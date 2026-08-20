@@ -1546,52 +1546,58 @@ function getMoldTPMSummary(moldId) {
     };
   }
   
-  var donePlans = plans.filter(function(p){ return p.Status === 'Done'; });
-  if (donePlans.length === plans.length) {
+  var pendingPlans = plans.filter(function(p){ return p.Status !== 'Done'; });
+  var doneCount = plans.length - pendingPlans.length;
+  
+  // If all rounds are done
+  if (pendingPlans.length === 0) {
     return {
       status: 'Done',
-      badgeHtml: '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูรายละเอียด">✅ ตรวจครบ (' + donePlans.length + '/' + plans.length + ')</span>',
+      badgeHtml: '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูรายละเอียด">✅ ตรวจครบ (' + doneCount + '/' + plans.length + ')</span>',
       plans: plans,
       total: plans.length,
-      done: donePlans.length
+      done: doneCount
     };
   }
   
-  var overduePlans = plans.filter(function(p){ return getTPMStatus(p) === 'Overdue'; });
-  if (overduePlans.length > 0) {
-    var p0 = overduePlans[0];
-    var dStr = p0.PlannedDate ? p0.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+  // Focus on the NEXT pending round
+  var nextPlan = pendingPlans[0];
+  var roundIdx = plans.indexOf(nextPlan) + 1;
+  var todayStr = new Date().toISOString().substring(0, 10);
+  var planTime = new Date(nextPlan.PlannedDate + 'T00:00:00').getTime();
+  var todayTime = new Date(todayStr + 'T00:00:00').getTime();
+  var diffDays = Math.round((planTime - todayTime) / 86400000);
+  var dStr = nextPlan.PlannedDate ? nextPlan.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+  
+  if (nextPlan.PlannedDate < todayStr) {
+    var overdueDays = Math.max(1, Math.round((todayTime - planTime) / 86400000));
     return {
       status: 'Overdue',
-      badgeHtml: '<span class="badge overdue" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อบันทึกผลรอบที่ช้ากว่าแผน">🔴 ช้ากว่าแผน (' + dStr + ')</span>',
+      badgeHtml: '<span class="badge overdue" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="รอบที่ ' + roundIdx + ' เลยกำหนดมาแล้ว ' + overdueDays + ' วัน">🔴 ช้ากว่าแผน (รอบ ' + roundIdx + ': ' + dStr + ')</span>',
       plans: plans,
       total: plans.length,
-      done: donePlans.length
+      done: doneCount,
+      nextPlan: nextPlan
     };
-  }
-  
-  var dueSoonPlans = plans.filter(function(p){ return getTPMStatus(p) === 'Due Soon'; });
-  if (dueSoonPlans.length > 0) {
-    var p0 = dueSoonPlans[0];
-    var dStr = p0.PlannedDate ? p0.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
+  } else if (diffDays >= 0 && diffDays <= 7) {
     return {
       status: 'Due Soon',
-      badgeHtml: '<span class="badge due-soon" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูรอบที่ใกล้ถึง">🟡 ใกล้ถึงแผน (' + dStr + ')</span>',
+      badgeHtml: '<span class="badge due-soon" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.35);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="รอบที่ ' + roundIdx + ' จะถึงกำหนดในอีก ' + diffDays + ' วัน">🟡 ใกล้ถึงแผน (รอบ ' + roundIdx + ': ' + dStr + ')</span>',
       plans: plans,
       total: plans.length,
-      done: donePlans.length
+      done: doneCount,
+      nextPlan: nextPlan
+    };
+  } else {
+    return {
+      status: 'Planned',
+      badgeHtml: '<span class="badge planned" style="background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="รอบที่ ' + roundIdx + ' กำหนดวัน ' + dStr + '">🟢 ปกติ (รอบถัดไป ' + dStr + ')</span>',
+      plans: plans,
+      total: plans.length,
+      done: doneCount,
+      nextPlan: nextPlan
     };
   }
-  
-  var nextPlan = plans.find(function(p){ return p.Status !== 'Done'; });
-  var dStr = (nextPlan && nextPlan.PlannedDate) ? nextPlan.PlannedDate.split('-').reverse().slice(0,2).join('/') : '';
-  return {
-    status: 'Planned',
-    badgeHtml: '<span class="badge planned" style="background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);cursor:pointer;white-space:nowrap;" onclick="openMoldTPMDetailModal(\''+moldId+'\')" title="คลิกเพื่อดูแผน">🔵 ตามแผน (' + dStr + ')</span>',
-    plans: plans,
-    total: plans.length,
-    done: donePlans.length
-  };
 }
 
 function openMoldTPMDetailModal(moldId) {
@@ -1627,8 +1633,8 @@ function openMoldTPMDetailModal(moldId) {
       tbody.innerHTML = plans.map(function(p, idx){
         var isDone = p.Status === 'Done';
         var stBadge = getTPMStatusBadge(p);
-        var actDate = p.ActualDate ? new Date(p.ActualDate).toLocaleDateString('th-TH') : '-';
-        var planDate = p.PlannedDate ? new Date(p.PlannedDate).toLocaleDateString('th-TH') : '-';
+        var actDate = p.ActualDate ? formatDMY(p.ActualDate) : '-';
+        var planDate = p.PlannedDate ? formatDMY(p.PlannedDate) : '-';
         var insp = isDone ? (p.ActualBy || '-') + (p.CoInspector ? ' / ' + p.CoInspector : '') : '-';
         
         var actionBtn = !isDone
