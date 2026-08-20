@@ -302,7 +302,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select id="tpm-view" onchange="renderTPM()"><option value="calendar">&#128197; &#3611;&#3599;&#3636;&#3607;&#3636;&#3609;</option><option value="list">&#128203; &#3619;&#3634;&#3618;&#3585;&#3634;&#3619;</option></select>
     <select id="tpm-year" onchange="loadTPMPlans()"></select>
     <select id="tpm-month" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</option></select>
-    <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Planned</option><option>Done</option><option>Overdue</option></select>
+    <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option value="Overdue">&#128308; Overdue (&#3594;&#3657;&#3634;&#3585;&#3623;&#3656;&#3634;&#3585;&#3635;&#3627;&#3609;&#3604;)</option><option value="Due Soon">&#128993; Due Soon (&#3651;&#3585;&#3621;&#3657;&#3606;&#3638;&#3591;&#3649;&#3612;&#3609;)</option><option value="Planned">&#128309; Planned (&#3605;&#3634;&#3617;&#3649;&#3612;&#3609;)</option><option value="Done">&#128994; Done (&#3648;&#3626;&#3619;&#3647;&#3592;&#3649;&#3621;&#3657;&#3623;)</option></select>
     <div style="flex:1"></div>
     <button class="btn btn-outline" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">&#9997;&#65039; &#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619;</button><button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
   </div>
@@ -795,12 +795,16 @@ async function _apiInternal(actionStr, payload = null) {
           return d.getMonth() === curMo && d.getFullYear() === curYr;
         });
 
+        const todayStr = now.toISOString().substring(0, 10);
         const tpmDone = thisMoPlans.filter(p => p.Status === 'Done').length;
-        const tpmOverdue = tpmPlans.filter(p => p.Status === 'Overdue').length;
+        const tpmOverdue = tpmPlans.filter(p => p.Status !== 'Done' && p.PlannedDate && p.PlannedDate < todayStr).length;
         const tpmDueSoon = tpmPlans.filter(p => {
           if (p.Status === 'Done' || !p.PlannedDate) return false;
-          const diff = (new Date(p.PlannedDate) - now) / 86400000;
-          return diff >= 0 && diff <= 7;
+          if (p.PlannedDate < todayStr) return false;
+          const planTime = new Date(p.PlannedDate + 'T00:00:00').getTime();
+          const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+          const diffDays = Math.round((planTime - todayTime) / 86400000);
+          return diffDays >= 0 && diffDays <= 7;
         }).length;
 
         const thMonths = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
@@ -832,7 +836,7 @@ async function _apiInternal(actionStr, payload = null) {
         }
 
         const recentIssues = openIssues.slice(0, 5);
-        const overdueTPM = tpmPlans.filter(p => p.Status === 'Overdue').slice(0, 5);
+        const overdueTPM = tpmPlans.filter(p => p.Status !== 'Done' && p.PlannedDate && p.PlannedDate < todayStr).slice(0, 5);
 
         return {
           success: true,
@@ -1336,6 +1340,43 @@ function nav(page) {
   }
 }
 
+function getTPMStatus(p) {
+  if (!p) return 'Planned';
+  if (p.Status === 'Done') return 'Done';
+  if (!p.PlannedDate) return 'Planned';
+  
+  const todayStr = new Date().toISOString().substring(0, 10);
+  if (p.PlannedDate < todayStr) return 'Overdue';
+  
+  const planTime = new Date(p.PlannedDate + 'T00:00:00').getTime();
+  const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+  const diffDays = Math.round((planTime - todayTime) / 86400000);
+  
+  if (diffDays >= 0 && diffDays <= 7) return 'Due Soon';
+  return 'Planned';
+}
+
+function getTPMStatusBadge(p) {
+  const status = getTPMStatus(p);
+  if (status === 'Done') {
+    return '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:600;">\u2705 Done</span>';
+  } else if (status === 'Overdue') {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const planTime = new Date(p.PlannedDate + 'T00:00:00').getTime();
+    const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+    const diffDays = Math.max(1, Math.round((todayTime - planTime) / 86400000));
+    return '<span class="badge overdue" style="background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.35);font-weight:600;" title="\u0e40\u0e25\u0e22\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e21\u0e32\u0e41\u0e25\u0e49\u0e27 ' + diffDays + ' \u0e27\u0e31\u0e19">\ud83d\udd34 \u0e0a\u0e49\u0e32\u0e01\u0e27\u0e48\u0e32\u0e41\u0e1c\u0e19 (' + diffDays + ' \u0e27\u0e31\u0e19)</span>';
+  } else if (status === 'Due Soon') {
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const planTime = new Date(p.PlannedDate + 'T00:00:00').getTime();
+    const todayTime = new Date(todayStr + 'T00:00:00').getTime();
+    const diffDays = Math.max(0, Math.round((planTime - todayTime) / 86400000));
+    return '<span class="badge due-soon" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.35);font-weight:600;" title="\u0e08\u0e30\u0e16\u0e36\u0e01\u0e01\u0e33\u0e2b\u0e19\u0e14\u0e43\u0e19\u0e2d\u0e35\u0e01 ' + diffDays + ' \u0e27\u0e31\u0e19">\ud83d\udfe1 \u0e43\u0e01\u0e25\u0e49\u0e16\u0e36\u0e01\u0e41\u0e1c\u0e19 (\u0e2d\u0e35\u0e01 ' + diffDays + ' \u0e27\u0e31\u0e19)</span>';
+  } else {
+    return '<span class="badge planned" style="background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);font-weight:600;">\ud83d\udd35 Planned</span>';
+  }
+}
+
 function updateBadges() {
   try {
     const open = (STATE.issues || []).filter(i=>i.Status==='Open'||i.Status==='In Progress').length;
@@ -1346,7 +1387,7 @@ function updateBadges() {
     const bs = document.getElementById('badge-stock');
     if (bs) { bs.style.display = low>0?'':'none'; bs.textContent = low; }
     
-    const od = (STATE.tpmPlans || []).filter(p=>p.Status==='Overdue').length;
+    const od = (STATE.tpmPlans || []).filter(p => getTPMStatus(p) === 'Overdue').length;
     const bt = document.getElementById('badge-tpm');
     if (bt) { bt.style.display = od>0?'':'none'; bt.textContent = od; }
   } catch (err) {
@@ -1613,31 +1654,38 @@ function renderTPMCalendar(container){
   var status=v('tpm-filter-status')||'';
   var today=new Date();var firstDay=new Date(yr,mo-1,1);var lastDay=new Date(yr,mo,0);
   var plans=STATE.tpmPlans.filter(function(p){return p.PlannedDate&&new Date(p.PlannedDate).getMonth()===mo-1;});
-  if(status)plans=plans.filter(function(p){return p.Status===status;});
+  if(status) plans=plans.filter(function(p){ return getTPMStatus(p) === status; });
   var dayHdrs=['\u0e2d\u0e32','\u0e08','\u0e2d','\u0e1e','\u0e1e\u0e24','\u0e28','\u0e2a'].map(function(d){return '<div class="cal-header-cell">'+d+'</div>';}).join('');
   var cells='';
   for(var i=0;i<firstDay.getDay();i++)cells+='<div class="cal-day other-month"></div>';
   for(var d=1;d<=lastDay.getDate();d++){
     var isToday=today.getDate()===d&&today.getMonth()===mo-1&&today.getFullYear()===yr;
     var dp=plans.filter(function(p){return new Date(p.PlannedDate).getDate()===d;});
-    var evs=dp.map(function(p){var cls=p.Status==='Done'?'done':p.Status==='Overdue'?'overdue':(function(){var diff=(new Date(p.PlannedDate)-new Date())/86400000;return diff<=7&&diff>=0?'due-soon':'planned';})();return '<div class="cal-event '+cls+'" onclick="openTPMCompleteModal(\''+p.ID+'\')">'+p.TargetName+'</div>';}).join('');
+    var evs=dp.map(function(p){
+      var st = getTPMStatus(p);
+      var cls = st === 'Done' ? 'done' : (st === 'Overdue' ? 'overdue' : (st === 'Due Soon' ? 'due-soon' : 'planned'));
+      var prefix = st === 'Done' ? '\u2705 ' : (st === 'Overdue' ? '\ud83d\udd34 ' : (st === 'Due Soon' ? '\ud83d\udfe1 ' : '\ud83d\udd35 '));
+      return '<div class="cal-event '+cls+'" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="'+st+': '+p.TargetName+'">'+prefix+p.TargetName+'</div>';
+    }).join('');
     cells+='<div class="cal-day'+(isToday?' today':'')+'"><div class="cal-day-num">'+d+'</div>'+evs+'</div>';
   }
   var rem=(7-(firstDay.getDay()+lastDay.getDate())%7)%7;
   for(var i=0;i<rem;i++)cells+='<div class="cal-day other-month"></div>';
-  var dispYr = (mo >= 4) ? parseInt(v('tpm-year')||yr) : parseInt(v('tpm-year')||yr)+1; container.innerHTML='<div class="card"><div class="calendar-nav"><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">\u25c0</button><h3>'+TH_MONTHS[mo-1]+' / '+EN_MONTHS[mo-1]+' '+dispYr+'</h3><button class="btn btn-outline btn-sm" onclick="changeMonth(1)">\u25b6</button></div><div class="calendar-grid">'+dayHdrs+cells+'</div><div style="display:flex;gap:16px;margin-top:12px;font-size:11px;flex-wrap:wrap"><span style="color:#34d399">\ud83d\udfe2 Done</span><span style="color:#a5b4fc">\ud83d\udd35 Planned</span><span style="color:#fbbf24">\ud83d\udfe1 Due Soon</span><span style="color:#f87171">\ud83d\udd34 Overdue</span></div></div>';
+  var dispYr = (mo >= 4) ? parseInt(v('tpm-year')||yr) : parseInt(v('tpm-year')||yr)+1;
+  container.innerHTML='<div class="card"><div class="calendar-nav"><button class="btn btn-outline btn-sm" onclick="changeMonth(-1)">\u25c0</button><h3>'+TH_MONTHS[mo-1]+' / '+EN_MONTHS[mo-1]+' '+dispYr+'</h3><button class="btn btn-outline btn-sm" onclick="changeMonth(1)">\u25b6</button></div><div class="calendar-grid">'+dayHdrs+cells+'</div><div style="display:flex;gap:16px;margin-top:12px;font-size:11px;flex-wrap:wrap"><span style="color:#10b981">\ud83d\udfe2 Done (\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e23)</span><span style="color:#ef4444">\ud83d\udd34 Overdue (\u0e0a\u0e49\u0e32\u0e01\u0e27\u0e48\u0e32\u0e41\u0e1c\u0e19)</span><span style="color:#f59e0b">\ud83d\udfe1 Due Soon (\u0e43\u0e01\u0e25\u0e49\u0e16\u0e36\u0e01\u0e41\u0e1c\u0e19)</span><span style="color:#6366f1">\ud83d\udd35 Planned (\u0e15\u0e32\u0e21\u0e41\u0e1c\u0e19)</span></div></div>';
 }
 function changeMonth(dir){var ms=document.getElementById('tpm-month');var ys=document.getElementById('tpm-year');var mo=parseInt(ms.value)||new Date().getMonth()+1;var yr=parseInt(ys.value)||new Date().getFullYear();mo+=dir;if(mo>12){mo=1;yr++;}if(mo<1){mo=12;yr--;}ms.value=mo;ys.value=yr;loadTPMPlans();}
 function renderTPMList(container){
   var status=v('tpm-filter-status');var plans=STATE.tpmPlans.slice();
-  if(status)plans=plans.filter(function(p){return p.Status===status;});
+  if(status) plans=plans.filter(function(p){ return getTPMStatus(p) === status; });
   plans.sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
-    var actionBtns = p.Status!=='Done'
+    var isDone = p.Status === 'Done';
+    var actionBtns = !isDone
       ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25</button>'
       : '<span style="color:var(--success);font-size:12px">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08</span> <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="\u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15</button>';
-    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td><span class="badge '+(p.Status||'planned').toLowerCase().replace(' ','-')+'">'+p.Status+'</span></td><td>'+actionBtns+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="\u0e25\u0e1a\u0e41\u0e1c\u0e19\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button></td></tr>';
+    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="\u0e25\u0e1a\u0e41\u0e1c\u0e19\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button></td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
