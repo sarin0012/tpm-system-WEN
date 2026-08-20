@@ -276,8 +276,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
-    <thead><tr><th>ชื่อโมล</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
-    <tbody id="molds-tbody"><tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
+    <thead><tr><th>ชื่อโมล</th><th>Model</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
@@ -905,6 +905,7 @@ async function _apiInternal(actionStr, payload = null) {
               const match = m.Notes.match(/\[SPECS:(.*?)\]/);
               if (match && match[1]) {
                 const specs = JSON.parse(match[1]);
+                if (!m.Model && specs.Model) m.Model = specs.Model;
                 if (!m.DrawingNo && specs.DrawingNo) m.DrawingNo = specs.DrawingNo;
                 if (!m.MoldSize && specs.MoldSize) m.MoldSize = specs.MoldSize;
                 if (!m.MoldWeight && specs.MoldWeight) m.MoldWeight = specs.MoldWeight;
@@ -927,6 +928,7 @@ async function _apiInternal(actionStr, payload = null) {
         // Fallback: If DB columns don't exist yet in Supabase, pack specs into Notes
         if (error && (error.message.indexOf('column') !== -1 || error.code === 'PGRST204' || error.message.indexOf('DrawingNo') !== -1)) {
           const specs = {
+            Model: item.Model || '',
             DrawingNo: item.DrawingNo || '',
             MoldSize: item.MoldSize || '',
             MoldWeight: item.MoldWeight || '',
@@ -1675,11 +1677,11 @@ function filterMolds(){
   var data=STATE.molds.filter(function(m){
     if(vendor&&m.Vendor!==vendor)return false;
     if(status&&(m.Status||'Active')!==status)return false;
-    if(q&&(m.Name+(m.AssetNo||'')+(m.DrawingNo||'')+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
+    if(q&&(m.Name+(m.Model||'')+(m.AssetNo||'')+(m.DrawingNo||'')+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
     return true;
   });
   var tb=document.getElementById('molds-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
+  if(!data.length){tb.innerHTML='<tr><td colspan="11">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m){
     var imgs=tryParse(m.ImageIds);
     var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="คลิกดูรูป"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
@@ -1692,6 +1694,7 @@ function filterMolds(){
     var tpmSummary = getMoldTPMSummary(m.ID);
     return '<tr>'+
       '<td><strong>'+m.Name+'</strong></td>'+
+      '<td><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
       '<td>'+(m.AssetNo||'-')+'</td>'+
       '<td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
       '<td>'+(m.Vendor||'-')+'</td>'+
@@ -1710,12 +1713,13 @@ function filterMolds(){
   }).join('');
 }
 function openMoldModal(data) {
-  ['mold-id','mold-name','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
+  ['mold-id','mold-name','mold-model','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
   document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
   document.getElementById('mold-modal-title').textContent=data?'✏️ แก้ไขโมล':'+ เพิ่มโมล';
   if(data){
     v_set('mold-id',data.ID);
     v_set('mold-name',data.Name);
+    v_set('mold-model',data.Model || '');
     v_set('mold-asset',data.AssetNo);
     v_set('mold-drawing',data.DrawingNo);
     v_set('mold-size',data.MoldSize);
@@ -1740,6 +1744,7 @@ async function saveMold(){
   var data={
     ID:v('mold-id'),
     Name:name,
+    Model:v('mold-model'),
     AssetNo:asset,
     DrawingNo:v('mold-drawing'),
     MoldSize:v('mold-size'),
@@ -3241,7 +3246,7 @@ async function openPMPrintForm(moldId) {
             '<td rowspan="2" style="border: 1px solid #333; padding: 3px 4px; font-size: 8pt; line-height: 1.35;">' +
               '<strong>MOLD &nbsp;:</strong> ' + mold.Name + '<br>' +
               '<strong>DWG.NO. :</strong> ' + (mold.DrawingNo || '-') + '<br>' +
-              '<strong>MODEL. :</strong> ' + (mold.Material || mold.Name || '-') + '<br>' +
+              '<strong>MODEL. :</strong> ' + (mold.Model || mold.Material || mold.Name || '-') + '<br>' +
               '<strong>ASSET. :</strong> ' + (mold.AssetNo || '-') +
             '</td>' +
             '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 9pt;">\u2713</td>' +
