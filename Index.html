@@ -418,7 +418,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <input type="hidden" id="tpm-id"/>
     <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
     <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input id="tpm-planned-date" type="date"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP</label><input id="tpm-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR)</label><input id="tpm-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP <span style="color:var(--danger)">*</span></label><input id="tpm-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR) <span style="color:var(--danger)">*</span></label><input id="tpm-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div></div>
     <div class="form-group"><label>Checklist Template</label><select id="tpm-checklist-template"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveTPMPlan()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
@@ -477,8 +477,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     </div>
 
     <div class="form-row col-2">
-      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP</label><input id="bulk-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div>
-      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR)</label><input id="bulk-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div>
+      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP <span style="color:var(--danger)">*</span></label><input id="bulk-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div>
+      <div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR) <span style="color:var(--danger)">*</span></label><input id="bulk-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div>
     </div>
     
     <!-- Dates list header + Add Date button -->
@@ -1642,7 +1642,31 @@ function renderTPMList(container){
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
 function openTPMModal(){['tpm-id','tpm-planned-date','tpm-assigned','tpm-vendor-resp'].forEach(function(i){v_set(i,'');});v_set('tpm-plan-year',new Date().getFullYear());loadTPMTargets();openModal('tpm-modal');}
-async function saveTPMPlan(){var targetId=v('tpm-target-id'),date=v('tpm-planned-date');if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}var type=v('tpm-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});var vResp=v('tpm-vendor-resp')||(target?target.Vendor:'')||'';var data={ID:v('tpm-id'),TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',Year:v('tpm-plan-year'),PlannedDate:date,AssignedTo:v('tpm-assigned'),VendorResp:vResp,Notes:vResp?'[VENDOR_RESP:'+vResp+']':'',ChecklistTemplate:v('tpm-checklist-template'),Status:'Planned'};var r=await api('saveTPMPlan',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('tpm-modal');await loadTPMPlans();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function saveTPMPlan(){
+  var targetId=v('tpm-target-id'),date=v('tpm-planned-date');
+  if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}
+  var wenResp=(v('tpm-assigned')||'').trim();
+  if(!wenResp){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a WEN / WP', 'warning');
+    var elAssigned = document.getElementById('tpm-assigned');
+    if(elAssigned) elAssigned.focus();
+    return;
+  }
+  var vResp=(v('tpm-vendor-resp')||'').trim();
+  if(!vResp){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a (VENDOR)', 'warning');
+    var elVendor = document.getElementById('tpm-vendor-resp');
+    if(elVendor) elVendor.focus();
+    return;
+  }
+  var type=v('tpm-target-type');
+  var list=type==='Mold'?STATE.molds:STATE.machines;
+  var target=list.find(function(x){return x.ID===targetId;});
+  var data={ID:v('tpm-id'),TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',Year:v('tpm-plan-year'),PlannedDate:date,AssignedTo:wenResp,VendorResp:vResp,Notes:vResp?'[VENDOR_RESP:'+vResp+']':'',ChecklistTemplate:v('tpm-checklist-template'),Status:'Planned'};
+  var r=await api('saveTPMPlan',{data:data});
+  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('tpm-modal');await loadTPMPlans();}
+  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+}
 async function delTPMPlan(id){
   if(!confirm('\u0e22\u0e37\u0e19\u0e22\u0e31\u0e19\u0e01\u0e32\u0e23\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e41\u0e1c\u0e19 TPM \u0e19\u0e35\u0e49\u0e43\u0e0a\u0e48\u0e2b\u0e23\u0e37\u0e2d\u0e47\u0e21\u0e48? (\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e08\u0e30\u0e44\u0e21\u0e48\u0e16\u0e39\u0e01\u0e25\u0e1a)')) return;
   showGlobalLoading(true);
@@ -1910,11 +1934,23 @@ async function saveBulkTPM(){
   const validDates = BULK_DATES.filter(d => !!d);
   if(!validDates.length){ showToast('กรุณาระบุวันที่อย่างน้อย 1 วัน','error'); return; }
   
+  const wenResp = (v('bulk-assigned') || '').trim();
+  if(!wenResp){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a WEN / WP \u0e01\u0e48\u0e2d\u0e19\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01', 'warning');
+    const el = document.getElementById('bulk-assigned');
+    if(el) el.focus();
+    return;
+  }
+  const vendorResp = (v('bulk-vendor-resp') || '').trim();
+  if(!vendorResp){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a (VENDOR) \u0e01\u0e48\u0e2d\u0e19\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01', 'warning');
+    const el = document.getElementById('bulk-vendor-resp');
+    if(el) el.focus();
+    return;
+  }
+
   const plans = [];
-  const wenResp = v('bulk-assigned');
-  const vendorResp = v('bulk-vendor-resp');
   targets.forEach(target => {
-    const vName = vendorResp || target.Vendor || '';
     validDates.forEach(dateStr => {
       plans.push({
         TargetType: type,
@@ -1923,7 +1959,7 @@ async function saveBulkTPM(){
         Year: parseInt(yr) || (new Date().getMonth()>=3?new Date().getFullYear():new Date().getFullYear()-1), // FY
         PlannedDate: dateStr,
         AssignedTo: wenResp,
-        VendorResp: vName,
+        VendorResp: vendorResp,
         ChecklistTemplate: v('bulk-checklist'),
         Status: 'Planned'
       });
@@ -1989,8 +2025,28 @@ function toggleRemark(itemId){
   else{remark.style.borderColor='';}
 }
 async function completeTPM(){
-  var planId=v('tpm-complete-id'),actualDate=v('tpm-actual-date'),actualBy=v('tpm-actual-by'),coInspector=v('tpm-co-inspector');
-  if(!actualDate||!actualBy){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e41\u0e25\u0e30\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a','error');return;}
+  var planId=v('tpm-complete-id');
+  var actualDate=(v('tpm-actual-date')||'').trim();
+  var actualBy=(v('tpm-actual-by')||'').trim();
+  var coInspector=(v('tpm-co-inspector')||'').trim();
+  if(!actualDate){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e08\u0e23\u0e34\u0e07', 'warning');
+    var elDate = document.getElementById('tpm-actual-date');
+    if(elDate) elDate.focus();
+    return;
+  }
+  if(!actualBy){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (WEN/WP)', 'warning');
+    var elBy = document.getElementById('tpm-actual-by');
+    if(elBy) elBy.focus();
+    return;
+  }
+  if(!coInspector){
+    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e48\u0e27\u0e21 (Vendor)', 'warning');
+    var elCo = document.getElementById('tpm-co-inspector');
+    if(elCo) elCo.focus();
+    return;
+  }
   var checks={};
   document.querySelectorAll('[name^="chk-"]').forEach(function(radio){
     if(!radio.checked)return;
