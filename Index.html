@@ -1987,16 +1987,10 @@ function openBulkTPMModal(targetType, targetId){
   loadBulkTargets();
   if (targetId) {
     v_set('bulk-target-id', targetId);
-    var type = v('bulk-target-type');
-    var list = type === 'Mold' ? STATE.molds : STATE.machines;
-    var target = (list || []).find(function(x){ return x.ID === targetId; });
-    if (target && target.Vendor) {
-      v_set('bulk-vendor-resp', target.Vendor);
-    }
   } else {
     v_set('bulk-target-id', '');
-    v_set('bulk-vendor-resp', '');
   }
+  v_set('bulk-vendor-resp', '');
   const now = new Date();
   const curFY = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
   v_set('bulk-year', curFY);
@@ -2306,12 +2300,10 @@ function parseDMYtoYMD(dmyStr) {
 
 function openTPMCompleteModal(planId){
   var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
-  var target = (plan.TargetType==='Mold' ? STATE.molds : STATE.machines).find(function(x){return x.ID===plan.TargetID;});
-  var defaultVendor = target ? (target.Vendor || '') : '';
   v_set('tpm-complete-id',planId);
   v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
   v_set('tpm-actual-by',plan.ActualBy || '');
-  v_set('tpm-co-inspector',plan.CoInspector || defaultVendor);
+  v_set('tpm-co-inspector',plan.CoInspector || '');
   v_set('tpm-complete-notes',plan.Notes || '');
   document.getElementById('tpm-complete-photos-preview').innerHTML='';STATE.pendingPhotos['tpm-complete']={files:[]};
   document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; \u0e01\u0e33\u0e2b\u0e19\u0e14: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
@@ -3216,7 +3208,7 @@ async function openPMPrintForm(moldId) {
       var p = roundPlans[rIdx];
       var isDone = p && p.Status === 'Done';
       var insp = isDone ? (p.ActualBy || '') : '';
-      var coInsp = isDone ? (p.CoInspector || mold.Vendor || '') : '';
+      var coInsp = isDone ? (p.CoInspector || '') : '';
       var dtStr = '';
       if (isDone && p.ActualDate) {
         var dParts = p.ActualDate.split('-');
