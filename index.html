@@ -1602,18 +1602,23 @@ function openBulkTPMModal(){
   openModal('tpm-bulk-modal');
 }
 
+// FY order: Apr(4)→Dec(12) then Jan(1)→Mar(3)
+var FY_MONTH_ORDER = [4,5,6,7,8,9,10,11,12,1,2,3];
+
 function renderMonthChips(selectedMonths) {
   const container = document.getElementById('bulk-month-chips');
   if (!container) return;
   const selSet = new Set(selectedMonths);
-  container.innerHTML = TH_MONTHS.map((mName, idx) => {
-    const mNum = idx + 1;
+  const fy = parseInt(v('bulk-year')) || new Date().getFullYear();
+  container.innerHTML = FY_MONTH_ORDER.map(mNum => {
+    const mName = TH_MONTHS[mNum - 1];
+    const dispYr = (mNum >= 4) ? fy : fy + 1;
     const isSel = selSet.has(mNum);
     const bg = isSel ? 'var(--primary)' : 'var(--surface)';
     const color = isSel ? '#fff' : 'var(--text-muted)';
     const border = isSel ? 'var(--primary)' : 'var(--border)';
-    return `<button type="button" onclick="toggleBulkMonth(${mNum})" style="background:${bg};color:${color};border:1px solid ${border};border-radius:6px;padding:6px 2px;font-size:12px;font-weight:${isSel?'600':'400'};cursor:pointer;text-align:center;transition:all .15s">
-      ${mName} ${isSel ? '✓' : ''}
+    return `<button type="button" onclick="toggleBulkMonth(${mNum})" style="background:${bg};color:${color};border:1px solid ${border};border-radius:6px;padding:5px 2px;font-size:11px;font-weight:${isSel?'600':'400'};cursor:pointer;text-align:center;transition:all .15s;line-height:1.4">
+      <div>${mName}</div><div style="font-size:9px;opacity:0.8">${dispYr}${isSel ? ' \u2713' : ''}</div>
     </button>`;
   }).join('');
 }
@@ -1625,7 +1630,8 @@ function toggleBulkMonth(monthNum) {
     currentMonths.splice(idx, 1);
   } else {
     currentMonths.push(monthNum);
-    currentMonths.sort((a,b)=>a-b);
+    // sort by FY order
+    currentMonths.sort((a,b) => FY_MONTH_ORDER.indexOf(a) - FY_MONTH_ORDER.indexOf(b));
   }
   v_set('bulk-freq', 'custom');
   const customWrap = document.getElementById('bulk-custom-count-wrap');
@@ -1653,9 +1659,9 @@ function setQuickMonths(months) {
 function getSelectedMonthsFromChips() {
   const chips = document.querySelectorAll('#bulk-month-chips button');
   const selected = [];
-  chips.forEach((btn, idx) => {
-    if (btn.innerText.indexOf('✓') !== -1) {
-      selected.push(idx + 1);
+  chips.forEach((btn, chipIdx) => {
+    if (btn.innerText.indexOf('\u2713') !== -1) {
+      selected.push(FY_MONTH_ORDER[chipIdx]);
     }
   });
   return selected;
@@ -2274,7 +2280,7 @@ function saveMainSignature() {
     localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE));
   } catch(e){}
 
-  showToast('เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธ ' + role.toUpperCase() + ' เธชเธณเน€เธฃเนเธเนเธฅเนเธง โ…', 'success');
+  showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ' + role.toUpperCase() + ' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27 \u2705', 'success');
   closeModal('signature-manager-modal');
 }
 
