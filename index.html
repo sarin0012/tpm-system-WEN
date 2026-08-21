@@ -1378,10 +1378,13 @@ async function _apiInternal(actionStr, payload = null) {
 // Timeout-protected API wrapper (10 seconds max)
 async function api(actionStr, payload = null) {
   try {
+    // Ensure Supabase is ready before starting the timeout race
+    const sb = await getSupabase(12000);
+    if (!sb) return { success: false, error: 'ไม่สามารถเชื่อมต่อ Supabase ได้ (CDN timeout)' };
     return await Promise.race([
       _apiInternal(actionStr, payload),
       new Promise(function(_, reject) {
-        setTimeout(function() { reject(new Error('API timeout (10s) for: ' + (actionStr || '').split('&')[0])); }, 10000);
+        setTimeout(function() { reject(new Error('API timeout (30s) for: ' + (actionStr || '').split('&')[0])); }, 30000);
       })
     ]);
   } catch (err) {
@@ -1405,11 +1408,22 @@ async function initApp() {
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
     
-    // Initial navigation
-    nav('dashboard');
-    
-    // Load all data
+    // Show loading state in molds/machines tables
+    var moldsBody = document.getElementById('molds-tbody');
+    if (moldsBody) moldsBody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ กำลังเชื่อมต่อ Supabase...</td></tr>';
+
+    // Wait for Supabase CDN to load (up to 12 seconds)
+    var sb = await getSupabase(12000);
+    if (!sb) {
+      if (moldsBody) moldsBody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--danger)">❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณา Refresh หน้าเว็บ</td></tr>';
+      return;
+    }
+
+    // Load all data first, then navigate
     await loadAllData();
+
+    // Navigate to dashboard after data is loaded
+    nav('dashboard');
   } catch (err) {
     console.error('initApp error:', err);
   }
