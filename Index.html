@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -868,12 +868,19 @@ const SUPABASE_URL = 'https://kkghaqgdlxomoskrycgp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y';
 
 let _sbClient = null;
-function getSupabase() {
-  if (!_sbClient) {
-    if (window.supabase && typeof window.supabase.createClient === 'function') {
-      _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      console.log('✅ Supabase initialized successfully');
+async function getSupabase(maxWaitMs = 6000) {
+  if (_sbClient) return _sbClient;
+  const start = Date.now();
+  while (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    if (Date.now() - start > maxWaitMs) {
+      console.error('Supabase CDN load timeout');
+      return null;
     }
+    await new Promise(r => setTimeout(r, 40));
+  }
+  if (!_sbClient) {
+    _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    console.log('✅ Supabase initialized successfully');
   }
   return _sbClient;
 }
@@ -899,7 +906,7 @@ function _uid() {
 // High-Speed Supabase API Helper with timeout protection
 async function _apiInternal(actionStr, payload = null) {
   try {
-    const sb = getSupabase();
+    const sb = await getSupabase();
     if (!sb) return { success: false, error: 'Supabase CDN กำลังโหลด หรือยังไม่พร้อม' };
     
     let action = actionStr;
@@ -1381,7 +1388,7 @@ async function api(actionStr, payload = null) {
 // ============================================
 //  SETUP / CONNECT
 // ============================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   try {
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mobile_sign') === '1') {
@@ -1393,10 +1400,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
     
-    // Navigate immediately so UI is responsive
+    // Ensure Supabase client is ready
+    await getSupabase(6000);
+
+    // Initial navigation
     nav('dashboard');
     
-    // Load data in background (don't block navigation)
+    // Load all data
     loadAllData().then(function() {
       var page = document.querySelector('.page.active');
       if (page) {
