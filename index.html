@@ -867,21 +867,26 @@ window.addEventListener('unhandledrejection', function(e) {
 const SUPABASE_URL = 'https://kkghaqgdlxomoskrycgp.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y';
 
-let _sbClient = null;
-async function getSupabase(maxWaitMs = 6000) {
+let _sbClient = (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function')
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+async function getSupabase(maxWaitMs = 8000) {
   if (_sbClient) return _sbClient;
+  if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
+    _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return _sbClient;
+  }
   const start = Date.now();
-  while (!window.supabase || typeof window.supabase.createClient !== 'function') {
+  while (typeof window === 'undefined' || !window.supabase || typeof window.supabase.createClient !== 'function') {
     if (Date.now() - start > maxWaitMs) {
       console.error('Supabase CDN load timeout');
       return null;
     }
     await new Promise(r => setTimeout(r, 40));
   }
-  if (!_sbClient) {
-    _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log('✅ Supabase initialized successfully');
-  }
+  _sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  console.log('✅ Supabase initialized successfully');
   return _sbClient;
 }
 
@@ -1388,7 +1393,7 @@ async function api(actionStr, payload = null) {
 // ============================================
 //  SETUP / CONNECT
 // ============================================
-document.addEventListener('DOMContentLoaded', async function() {
+async function initApp() {
   try {
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mobile_sign') === '1') {
@@ -1400,24 +1405,21 @@ document.addEventListener('DOMContentLoaded', async function() {
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
     
-    // Ensure Supabase client is ready
-    await getSupabase(6000);
-
     // Initial navigation
     nav('dashboard');
     
     // Load all data
-    loadAllData().then(function() {
-      var page = document.querySelector('.page.active');
-      if (page) {
-        var pageName = page.id.replace('page-','');
-        nav(pageName);
-      }
-    }).catch(function(err) { console.error('Initial data load error:', err); });
+    await loadAllData();
   } catch (err) {
-    console.error('DOMContentLoaded error:', err);
+    console.error('initApp error:', err);
   }
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 function initSelects() {
   const yr = new Date().getFullYear();
@@ -1456,6 +1458,19 @@ async function loadAllData() {
     if (t && t.success)  STATE.checklistTemplates = t.data || [];
     updateBadges();
     await loadTPMPlans();
+
+    // Re-render currently active page
+    const activePage = document.querySelector('.page.active');
+    if (activePage) {
+      const pName = activePage.id.replace('page-', '');
+      if (pName === 'dashboard') loadDashboard();
+      else if (pName === 'molds') renderMolds();
+      else if (pName === 'machines') renderMachines();
+      else if (pName === 'tpm') renderTPM();
+      else if (pName === 'issues') renderIssues();
+      else if (pName === 'stock') renderStock();
+      else if (pName === 'reports') loadReports();
+    }
   } catch (err) {
     console.error('Error in loadAllData:', err);
   }
@@ -2046,7 +2061,7 @@ async function delMachine(id,name){if(!confirm('\u0e25\u0e1a\u0e40\u0e04\u0e23\u
 //  TPM
 // ============================================
 async function loadTPMPlans(){var fy=v('tpm-year')||(new Date().getMonth()>=3?new Date().getFullYear():new Date().getFullYear()-1);var r=await api('getTPMPlans&fyear='+fy);if(r.success){STATE.tpmPlans=r.data;updateBadges();renderTPM();}}
-function renderTPM(){var view=v('tpm-view')||'calendar';var container=document.getElementById('tpm-container');view==='calendar'?renderTPMCalendar(container):renderTPMList(container);}
+function renderTPM(){var view=v('tpm-view')||'calendar';var container=document.getElementById('tpm-container');if(!container)return;view==='calendar'?renderTPMCalendar(container):renderTPMList(container);}
 function renderTPMCalendar(container){
   var yr=parseInt(v('tpm-year'))||new Date().getFullYear();
   var mo=parseInt(v('tpm-month'))||new Date().getMonth()+1;
