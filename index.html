@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -188,8 +188,121 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 .stock-progress{height:4px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:4px;}
 .stock-progress-bar{height:100%;border-radius:99px;transition:width .5s ease;}
 
+/* MOBILE RESPONSIVE & NAVIGATION */
+#sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(2px);
+  z-index: 940;
+}
+#sidebar-backdrop.show {
+  display: block;
+}
+.header-mobile-nav {
+  display: none;
+}
+.mobile-sidebar-close {
+  display: none;
+}
+#mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--border2);
+  z-index: 900;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 4px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+}
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  gap: 3px;
+  transition: all .15s;
+  position: relative;
+  text-decoration: none;
+}
+.mobile-nav-item .icon {
+  font-size: 18px;
+  line-height: 1;
+}
+.mobile-nav-item.active {
+  color: var(--primary);
+  font-weight: 700;
+}
+.mobile-nav-item.active .icon {
+  transform: scale(1.12);
+}
+.mobile-nav-badge {
+  position: absolute;
+  top: 4px;
+  right: calc(50% - 16px);
+  background: var(--danger);
+  color: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  border-radius: 99px;
+  padding: 1px 5px;
+  line-height: 1.2;
+}
+
 @media(max-width:900px){
-  #sidebar{display:none;}#main{margin-left:0;}
+  #sidebar {
+    display: flex !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    max-width: 85vw;
+    z-index: 950 !important;
+    transform: translateX(-100%);
+    transition: transform .25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.6);
+  }
+  #sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .mobile-sidebar-close {
+    display: block;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px 8px;
+    margin-left: auto;
+  }
+  #main {
+    margin-left: 0 !important;
+    padding-bottom: 70px;
+  }
+  .header-mobile-nav {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 6px;
+    margin-right: 8px;
+  }
+  #mobile-bottom-nav {
+    display: flex !important;
+  }
   .chart-grid,.grid-2{grid-template-columns:1fr;}
   .form-row.col-2,.form-row.col-3{grid-template-columns:1fr;}
 }
@@ -213,11 +326,13 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   </div>
 </div>
 
-<!-- SIDEBAR -->
+<!-- SIDEBAR BACKDROP & SIDEBAR -->
+<div id="sidebar-backdrop" onclick="closeMobileSidebar()"></div>
 <nav id="sidebar">
-  <div class="sidebar-logo">
+  <div class="sidebar-logo" style="display:flex;align-items:center;width:100%;">
     <div class="logo-icon">&#9881;&#65039;</div>
     <div class="logo-text">TPM System<span>Total Productive Maintenance</span></div>
+    <button type="button" class="mobile-sidebar-close" onclick="closeMobileSidebar()" title="เธเธดเธ”เน€เธกเธเธน">&#10005;</button>
   </div>
   <div class="sidebar-nav">
     <div class="nav-section">Main</div>
@@ -245,7 +360,13 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 <!-- MAIN -->
 <main id="main">
   <header id="header">
-    <h1 id="page-title">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
+    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+      <div class="header-mobile-nav">
+        <button type="button" id="mobile-back-btn" class="btn btn-outline btn-sm" onclick="nav('dashboard')" style="display:none;padding:5px 8px;font-size:12px;white-space:nowrap;" title="เธเธฅเธฑเธเธซเธเนเธฒเธซเธฅเธฑเธ">&#11013;&#65039; &#3627;&#3609;&#3657;&#3634;&#3627;&#3621;&#3633;&#3585;</button>
+        <button type="button" id="mobile-menu-btn" class="btn btn-outline btn-sm" onclick="toggleMobileSidebar()" style="padding:5px 9px;font-size:15px;" title="เน€เธเธดเธ”เน€เธกเธเธน">&#9776;</button>
+      </div>
+      <h1 id="page-title" style="margin:0;">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
+    </div>
     <div class="header-actions">
       <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
     </div>
@@ -1352,8 +1473,36 @@ const PAGE_INFO = {
   settings:{title:'ผู้ใช้งาน',sub:'จัดการสิทธิ์ผู้ใช้'},
 };
 
+function toggleMobileSidebar() {
+  var sb = document.getElementById('sidebar');
+  var bd = document.getElementById('sidebar-backdrop');
+  if (!sb) return;
+  var isOpen = sb.classList.contains('mobile-open');
+  if (isOpen) {
+    closeMobileSidebar();
+  } else {
+    sb.classList.add('mobile-open');
+    if (bd) bd.classList.add('show');
+  }
+}
+function closeMobileSidebar() {
+  var sb = document.getElementById('sidebar');
+  var bd = document.getElementById('sidebar-backdrop');
+  if (sb) sb.classList.remove('mobile-open');
+  if (bd) bd.classList.remove('show');
+}
+
 function nav(page) {
   try {
+    closeMobileSidebar();
+    var backBtn = document.getElementById('mobile-back-btn');
+    if (backBtn) {
+      backBtn.style.display = (page === 'dashboard') ? 'none' : 'inline-flex';
+    }
+    document.querySelectorAll('.mobile-nav-item[data-mobile-page]').forEach(function(n) {
+      n.classList.toggle('active', n.getAttribute('data-mobile-page') === page);
+    });
+
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
     const targetPage = document.getElementById('page-' + page);
@@ -1437,6 +1586,12 @@ function updateBadges() {
     const od = (STATE.tpmPlans || []).filter(p => getTPMStatus(p) === 'Overdue').length;
     const bt = document.getElementById('badge-tpm');
     if (bt) { bt.style.display = od>0?'':'none'; bt.textContent = od; }
+    const mbt = document.getElementById('mobile-badge-tpm');
+    if (mbt) { mbt.style.display = od>0?'':'none'; mbt.textContent = od; }
+    
+    const bi2 = document.getElementById('badge-issues');
+    const mbi = document.getElementById('mobile-badge-issues');
+    if (mbi) { mbi.style.display = open>0?'':'none'; mbi.textContent = open; }
   } catch (err) {
     console.error('Badge update error:', err);
   }
@@ -3688,7 +3843,33 @@ async function openPMPrintForm(moldId) {
         '}' +
       '}' +
     '<' + '/script>' +
-    '</body></html>';
+    '<!-- MOBILE BOTTOM NAVIGATION -->
+<nav id="mobile-bottom-nav">
+  <button type="button" class="mobile-nav-item active" onclick="nav('dashboard')" data-mobile-page="dashboard">
+    <div class="icon">&#128202;</div>
+    <span>&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('molds')" data-mobile-page="molds">
+    <div class="icon">&#129513;</div>
+    <span>&#3650;&#3617;&#3621;</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('tpm')" data-mobile-page="tpm">
+    <div class="icon">&#128295;</div>
+    <span>&#3649;&#3612;&#3609; PM</span>
+    <span class="mobile-nav-badge" id="mobile-badge-tpm" style="display:none">0</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('issues')" data-mobile-page="issues">
+    <div class="icon">&#128680;</div>
+    <span>&#3649;&#3592;&#3657;&#3591;&#3591;&#3634;&#3609;</span>
+    <span class="mobile-nav-badge" id="mobile-badge-issues" style="display:none">0</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="toggleMobileSidebar()">
+    <div class="icon">&#9776;</div>
+    <span>&#3648;&#3621;&#3639;&#3629;&#3585;&#3648;&#3621;&#3618;&#3641;</span>
+  </button>
+</nav>
+
+</body></html>';
 
   var w = window.open('', '_blank');
   w.document.write(html);
@@ -3696,5 +3877,31 @@ async function openPMPrintForm(moldId) {
 }
 
 </script>
+<!-- MOBILE BOTTOM NAVIGATION -->
+<nav id="mobile-bottom-nav">
+  <button type="button" class="mobile-nav-item active" onclick="nav('dashboard')" data-mobile-page="dashboard">
+    <div class="icon">&#128202;</div>
+    <span>&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('molds')" data-mobile-page="molds">
+    <div class="icon">&#129513;</div>
+    <span>&#3650;&#3617;&#3621;</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('tpm')" data-mobile-page="tpm">
+    <div class="icon">&#128295;</div>
+    <span>&#3649;&#3612;&#3609; PM</span>
+    <span class="mobile-nav-badge" id="mobile-badge-tpm" style="display:none">0</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('issues')" data-mobile-page="issues">
+    <div class="icon">&#128680;</div>
+    <span>&#3649;&#3592;&#3657;&#3591;&#3591;&#3634;&#3609;</span>
+    <span class="mobile-nav-badge" id="mobile-badge-issues" style="display:none">0</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="toggleMobileSidebar()">
+    <div class="icon">&#9776;</div>
+    <span>&#3648;&#3621;&#3639;&#3629;&#3585;&#3648;&#3621;&#3618;&#3641;</span>
+  </button>
+</nav>
+
 </body>
 </html>
