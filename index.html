@@ -1407,23 +1407,20 @@ async function initApp() {
     initSelects();
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
-    
-    // Show loading state in molds/machines tables
-    var moldsBody = document.getElementById('molds-tbody');
-    if (moldsBody) moldsBody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)">⏳ กำลังเชื่อมต่อ Supabase...</td></tr>';
+
+    // Immediate navigation to dashboard
+    nav('dashboard');
 
     // Wait for Supabase CDN to load (up to 12 seconds)
     var sb = await getSupabase(12000);
-    if (!sb) {
-      if (moldsBody) moldsBody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--danger)">❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้ กรุณา Refresh หน้าเว็บ</td></tr>';
-      return;
+    if (sb) {
+      await loadAllData();
+      var page = document.querySelector('.page.active');
+      if (page) {
+        var pageName = page.id.replace('page-','');
+        nav(pageName);
+      }
     }
-
-    // Load all data first, then navigate
-    await loadAllData();
-
-    // Navigate to dashboard after data is loaded
-    nav('dashboard');
   } catch (err) {
     console.error('initApp error:', err);
   }
@@ -1889,6 +1886,19 @@ function renderMolds() {
   var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
   if(vf){vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  
+  if (!STATE.molds || STATE.molds.length === 0) {
+    var tb = document.getElementById('molds-tbody');
+    if (tb) tb.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดข้อมูลโมล...</td></tr>';
+    api('getMolds').then(function(res) {
+      if (res && res.success && res.data) {
+        STATE.molds = res.data;
+        renderMolds();
+      }
+    });
+    return;
+  }
+  
   filterMolds();
 }
 function filterMolds(){
@@ -2030,7 +2040,20 @@ async function delMold(id,name){
 function renderMachines(){
   var vendors=[]; STATE.machines.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('machines-vendor-filter'); var vfVal=vf?vf.value:'';
-  if(vf){vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  if(vf){vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+
+  if (!STATE.machines || STATE.machines.length === 0) {
+    var tb = document.getElementById('machines-tbody');
+    if (tb) tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดเครื่องจักร...</td></tr>';
+    api('getMachines').then(function(res) {
+      if (res && res.success && res.data) {
+        STATE.machines = res.data;
+        renderMachines();
+      }
+    });
+    return;
+  }
+
   filterMachines();
 }
 function filterMachines(){
