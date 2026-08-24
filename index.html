@@ -1206,11 +1206,19 @@ async function _apiInternal(actionStr, payload = null) {
       }
       case 'saveIssue': {
         const item = Object.assign({}, payload.data);
-        if (!item.ID) item.ID = _uid();
-        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await sb.from('issues').upsert(item);
-        if (error) return { success: false, error: error.message };
-        return { success: true, id: item.ID };
+        if (item.ID) {
+          const editId = item.ID;
+          delete item.ID;
+          const { error } = await sb.from('issues').update(item).eq('ID', editId);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: editId };
+        } else {
+          item.ID = _uid();
+          item.CreatedAt = new Date().toISOString();
+          const { error } = await sb.from('issues').insert(item);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: item.ID };
+        }
       }
       case 'updateIssueStatus': {
         const { error } = await sb.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
@@ -2738,36 +2746,53 @@ function openIssueModal(issueOrId){
 }
 
 async function saveIssue(){
-  var targetId=v('issue-target-id'),desc=v('issue-description');
-  if(!targetId||!desc){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14','error');return;}
-  var type=v('issue-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});
-  showGlobalLoading(true);
-  var imgIds=await uploadPendingPhotos('issue','Issues/Before');
-  var editId = v('issue-id');
-  var existingIssue = editId ? STATE.issues.find(function(x){ return x.ID === editId; }) : null;
+  try {
+    var targetId = v('issue-target-id'), desc = v('issue-description');
+    if (!targetId || !desc) {
+      showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e01\u0e23\u0e2d\u0e01\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14', 'error');
+      return;
+    }
+    var type = v('issue-target-type');
+    var list = type === 'Mold' ? (STATE.molds || []) : (STATE.machines || []);
+    var target = list.find(function(x){ return x.ID === targetId; });
+    var editId = v('issue-id');
+    var existingIssue = editId ? (STATE.issues || []).find(function(x){ return x.ID === editId; }) : null;
 
-  var data={
-    ID: editId || undefined,
-    TargetType: type,
-    TargetID: targetId,
-    TargetName: target ? target.Name : (existingIssue ? existingIssue.TargetName : ''),
-    IssueType: v('issue-type'),
-    Description: desc,
-    OccurredAt: v('issue-occurred'),
-    ReportedBy: v('issue-reporter'),
-    Severity: v('issue-severity'),
-    BeforeImageIds: JSON.stringify(imgIds),
-    Status: existingIssue ? existingIssue.Status : 'Open'
-  };
+    showGlobalLoading(true);
+    var imgIds = await uploadPendingPhotos('issue', 'Issues/Before');
 
-  var r=await api('saveIssue',{data:data});showGlobalLoading(false);
-  if(r.success){
-    showToast(editId ? '\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08' : '\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');
-    closeModal('issue-modal');
-    var res=await api('getIssues');
-    if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}
-  } else {
-    showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+    var data = {
+      ID: editId || undefined,
+      TargetType: type,
+      TargetID: targetId,
+      TargetName: target ? target.Name : (existingIssue ? existingIssue.TargetName : ''),
+      IssueType: v('issue-type'),
+      Description: desc,
+      OccurredAt: v('issue-occurred'),
+      ReportedBy: v('issue-reporter'),
+      Severity: v('issue-severity'),
+      BeforeImageIds: JSON.stringify(imgIds),
+      Status: existingIssue ? existingIssue.Status : 'Open'
+    };
+
+    var r = await api('saveIssue', { data: data });
+    showGlobalLoading(false);
+    if (r && r.success) {
+      showToast(editId ? '\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705' : '\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705', 'success');
+      closeModal('issue-modal');
+      var res = await api('getIssues');
+      if (res && res.success) {
+        STATE.issues = res.data;
+        renderIssues();
+        updateBadges();
+      }
+    } else {
+      showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + ((r && r.error) || '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e44\u0e14\u0e49'), 'error');
+    }
+  } catch (err) {
+    showGlobalLoading(false);
+    console.error('saveIssue error:', err);
+    showToast('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + err.message, 'error');
   }
 }
 
