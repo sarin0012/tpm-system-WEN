@@ -433,11 +433,12 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 <!-- ISSUES -->
 <div class="page" id="page-issues">
   <div class="toolbar">
-    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3611;&#3633;&#3597;&#3627;&#3634;..." oninput="filterTable(this,'issues-table')"/>
-    <select onchange="filterTableByCol(this,'issues-table',5)" style="width:130px"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Open</option><option>In Progress</option><option>Closed</option></select>
-    <select onchange="filterTableByCol(this,'issues-table',4)" style="width:130px"><option value="">Severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
+    <input id="issue-search-input" class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3611;&#3633;&#3597;&#3627;&#3634; / Issue No. / Mold..." oninput="filterIssues()"/>
+    <select id="issue-mold-filter" onchange="filterIssues()" style="width:180px;"><option value="">&#129513; &#3607;&#3640;&#3585; Mold / Machine</option></select>
+    <select id="issue-status-filter" onchange="filterIssues()" style="width:130px;"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Closed">Closed</option></select>
+    <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">&#3607;&#3640;&#3585; Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openIssueModal()">+ แจ้งปัญหา</button>
+    <button class="btn btn-primary" onclick="openIssueModal()">+ &#3648;&#3649;&#3585;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
     <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>✅ รูปหลังซ่อม</th><th>Actions</th></tr></thead>
@@ -2878,7 +2879,7 @@ function openIssueDetailModal(id){
   body.innerHTML = 
     '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
       '<div>' +
-        '<div style="font-size:16px;font-weight:700;">' + iss.ID + ' \u2014 ' + (iss.TargetName||'-') + '</div>' +
+        '<div style="font-size:16px;font-weight:700;">#' + getIssueDisplayCode(iss) + ' \u2014 ' + (iss.TargetName||'-') + ' <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">(' + iss.ID + ')</span></div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | \u0e40\u0e01\u0e34\u0e14\u0e40\u0e21\u0e37\u0e48\u0e2d: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;">' + sevBadge + stBadge + '</div>' +
@@ -2974,7 +2975,7 @@ function printIssueReport(id) {
 
     '<table>' +
       '<tr>' +
-        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>' + iss.ID + '</strong></td>' +
+        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>#' + getIssueDisplayCode(iss) + '</strong> <span style="font-size:9pt;color:#64748b;">(' + iss.ID + ')</span></td>' +
         '<th style="width:18%;">\u0e2a\u0e16\u0e32\u0e19\u0e30 (Status)</th><td style="width:32%;"><span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span></td>' +
       '</tr>' +
       '<tr>' +
