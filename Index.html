@@ -2669,45 +2669,181 @@ function renderIssues(){
     '</tr>';
   }).join('');
 }
-function loadIssueTargets(){
+function loadIssueTargets(selectedTargetId){
   var type=v('issue-target-type');
   var s=document.getElementById('issue-target-id');
   if(!s) return;
   var list=type==='Mold'?STATE.molds:STATE.machines;
   if(!list || !list.length){
-    s.innerHTML='<option value="">กำลังโหลดรายการ...</option>';
+    s.innerHTML='<option value="">\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23...</option>';
     var apiName = type==='Mold' ? 'getMolds' : 'getMachines';
     api(apiName).then(function(res){
       if(res && res.success && res.data){
         if(type==='Mold') STATE.molds = res.data;
         else STATE.machines = res.data;
-        loadIssueTargets();
+        loadIssueTargets(selectedTargetId);
       }
     });
     return;
   }
-  s.innerHTML='<option value="">-- เลือก --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active'||x.ID===selectedTargetId;}).map(function(x){return '<option value="'+x.ID+'"'+(x.ID===selectedTargetId?' selected':'')+'>'+x.Name+'</option>';}).join('');
 }
-function openIssueModal(){['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});document.getElementById('issue-photos-preview').innerHTML='';STATE.pendingPhotos['issue']={files:[]};v_set('issue-occurred',new Date().toISOString().slice(0,16));loadIssueTargets();openModal('issue-modal');}
+
+function openIssueModal(data){
+  ['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});
+  var titleEl = document.getElementById('issue-modal-title');
+  var grid = document.getElementById('issue-photos-preview');
+  if (grid) grid.innerHTML = '';
+  STATE.pendingPhotos['issue'] = { files: [], existing: [] };
+
+  if (data && typeof data === 'object' && data.ID) {
+    if (titleEl) titleEl.textContent = '\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32: ' + data.ID;
+    v_set('issue-id', data.ID);
+    v_set('issue-target-type', data.TargetType || 'Mold');
+    loadIssueTargets(data.TargetID);
+    v_set('issue-type', data.IssueType || 'Breakdown');
+    v_set('issue-severity', data.Severity || 'Medium');
+    v_set('issue-description', data.Description || '');
+    v_set('issue-occurred', data.OccurredAt || new Date().toISOString().slice(0,16));
+    v_set('issue-reporter', data.ReportedBy || '');
+
+    var existingImgs = tryParse(data.BeforeImageIds);
+    STATE.pendingPhotos['issue'].existing = existingImgs.slice();
+    if (grid && existingImgs.length) {
+      existingImgs.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-issue-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'issue\',' + idx + ',\'issue-photos-preview\',true)">\u2715</button>';
+        grid.appendChild(item);
+      });
+    }
+  } else {
+    if (titleEl) titleEl.textContent = '\ud83d\udea8 \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32';
+    v_set('issue-occurred', new Date().toISOString().slice(0,16));
+    loadIssueTargets();
+  }
+  openModal('issue-modal');
+}
+
 async function saveIssue(){
   var targetId=v('issue-target-id'),desc=v('issue-description');
-  if(!targetId||!desc){showToast('กรุณาเลือก Machine/Mold และรายละเอียด','error');return;}
+  if(!targetId||!desc){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14','error');return;}
   var type=v('issue-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});
-  showGlobalLoading(true);var imgIds=await uploadPendingPhotos('issue','Issues/Before');
-  var data={TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',IssueType:v('issue-type'),Description:desc,OccurredAt:v('issue-occurred'),ReportedBy:v('issue-reporter'),Severity:v('issue-severity'),BeforeImageIds:JSON.stringify(imgIds),Status:'Open'};
+  showGlobalLoading(true);
+  var imgIds=await uploadPendingPhotos('issue','Issues/Before');
+  var editId = v('issue-id');
+  var existingIssue = editId ? STATE.issues.find(function(x){ return x.ID === editId; }) : null;
+
+  var data={
+    ID: editId || undefined,
+    TargetType: type,
+    TargetID: targetId,
+    TargetName: target ? target.Name : (existingIssue ? existingIssue.TargetName : ''),
+    IssueType: v('issue-type'),
+    Description: desc,
+    OccurredAt: v('issue-occurred'),
+    ReportedBy: v('issue-reporter'),
+    Severity: v('issue-severity'),
+    BeforeImageIds: JSON.stringify(imgIds),
+    Status: existingIssue ? existingIssue.Status : 'Open'
+  };
+
   var r=await api('saveIssue',{data:data});showGlobalLoading(false);
-  if(r.success){showToast('บันทึกปัญหาสำเร็จ','success');closeModal('issue-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
-  else showToast('ผิดพลาด: '+r.error,'error');
+  if(r.success){
+    showToast(editId ? '\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08' : '\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');
+    closeModal('issue-modal');
+    var res=await api('getIssues');
+    if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}
+  } else {
+    showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  }
 }
+
+function openIssueDetailModal(id){
+  var iss = STATE.issues.find(function(i){ return i.ID === id; });
+  if(!iss) return;
+  var body = document.getElementById('issue-detail-body');
+  var footer = document.getElementById('issue-detail-footer');
+  if(!body) return;
+
+  var beforeImgs = tryParse(iss.BeforeImageIds);
+  var afterImgs = tryParse(iss.AfterImageIds);
+
+  var beforeGallery = beforeImgs.length
+    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+        beforeImgs.map(function(url){
+          return '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e20\u0e32\u0e1e\u0e02\u0e22\u0e32\u0e22" />';
+        }).join('') +
+      '</div>'
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e31\u0e1e\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07</div>';
+
+  var afterGallery = afterImgs.length
+    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+        afterImgs.map(function(url){
+          return '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e20\u0e32\u0e1e\u0e02\u0e22\u0e32\u0e22" />';
+        }).join('') +
+      '</div>'
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</div>';
+
+  var stBadge = '<span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '" style="font-size:12px;padding:4px 10px;">' + (iss.Status||'Open') + '</span>';
+  var sevBadge = '<span class="badge ' + (iss.Severity||'low').toLowerCase() + '" style="font-size:12px;padding:4px 10px;">' + (iss.Severity||'-') + '</span>';
+
+  body.innerHTML = 
+    '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
+      '<div>' +
+        '<div style="font-size:16px;font-weight:700;">' + iss.ID + ' \u2014 ' + (iss.TargetName||'-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | \u0e40\u0e01\u0e34\u0e14\u0e40\u0e21\u0e37\u0e48\u0e2d: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:6px;align-items:center;">' + sevBadge + stBadge + '</div>' +
+    '</div>' +
+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">\ud83d\udea8 \u0e02\u0e49\u0e2d\u0e21\u0e34\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07:</strong> ' + (iss.ReportedBy||'-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px"><strong>\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2d\u0e32\u0e01\u0e32\u0e23:</strong></div>' +
+        '<div style="font-size:13px;line-height:1.4;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);">' + (iss.Description||'-') + '</div>' +
+        '<div style="margin-top:10px;"><strong style="font-size:12px;">\ud83d\udcf7 \u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07 (Before):</strong>' + beforeGallery + '</div>' +
+      '</div>' +
+
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">\u2705 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 & \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</div>' +
+        (iss.Status === 'Closed' ? 
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedBy||'-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Root Cause (\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38):</strong></div>' +
+          '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.RootCause||'-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Corrective Action (\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02):</strong></div>' +
+          '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.CorrectiveAction||'-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e17\u0e35\u0e48\u0e43\u0e0a\u0e49 (Parts Used):</strong> ' + (iss.PartsUsed||'-') + '</div>' +
+          '<div style="margin-top:10px;"><strong style="font-size:12px;">\u2705 \u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02 (After):</strong>' + afterGallery + '</div>'
+        : '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:13px;">\u23f3 \u0e07\u0e32\u0e19\u0e19\u0e35\u0e49\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19<br><span style="font-size:11px;">\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e01\u0e14\u0e1b\u0e38\u0e48\u0e21 "\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19" \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e30\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21</span></div>'
+        ) +
+      '</div>' +
+    '</div>';
+
+  if (footer) {
+    footer.innerHTML = 
+      '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">\u0e1b\u0e34\u0e14</button> ' +
+      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(' + JSON.stringify(iss) + ');">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</button> ' +
+      (iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e19\u0e35\u0e49</button>' : '');
+  }
+
+  openModal('issue-detail-modal');
+}
+
 async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('\u0e2a\u0e16\u0e32\u0e19\u0e30: '+status,'success');}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+
 function openCloseIssueModal(id){
   var iss=STATE.issues.find(function(i){return i.ID===id;});if(!iss)return;
   v_set('close-issue-id',id);['close-root-cause','close-corrective','close-by','close-parts-used'].forEach(function(i){v_set(i,'');});
   v_set('close-date',new Date().toISOString().slice(0,16));
-  document.getElementById('close-photos-preview').innerHTML='';STATE.pendingPhotos['close']={files:[]};
+  document.getElementById('close-photos-preview').innerHTML='';STATE.pendingPhotos['close']={files:[],existing:[]};
   document.getElementById('close-issue-info').innerHTML='<strong>'+iss.ID+'</strong> \u2014 '+(iss.TargetName||'-')+'<br><span style="color:var(--text-muted)">'+(iss.Description||'')+'</span>';
   openModal('issue-close-modal');
 }
+
 async function closeIssue(){
   var id=v('close-issue-id'),rootCause=v('close-root-cause'),corrective=v('close-corrective');
   if(!rootCause||!corrective){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Root Cause \u0e41\u0e25\u0e30\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02','error');return;}
@@ -2717,6 +2853,7 @@ async function closeIssue(){
   if(r.success){showToast('\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');closeModal('issue-close-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
   else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
 }
+
 async function delIssue(id){if(!confirm('\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49?'))return;var r=await api('deleteIssue',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.issues=STATE.issues.filter(function(i){return i.ID!==id;});renderIssues();updateBadges();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
 
 // ============================================
