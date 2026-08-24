@@ -1170,15 +1170,39 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getStockParts': {
         const { data, error } = await sb.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
-        return { success: true, data: data || [] };
+        const mapped = (data || []).map(p => Object.assign({}, p, {
+          CurrentStock: p.Qty,
+          MinStock: p.MinQty,
+          Vendor: p.Category
+        }));
+        return { success: true, data: mapped };
       }
       case 'saveStockPart': {
-        const item = Object.assign({}, payload.data);
-        if (!item.ID) item.ID = _uid();
-        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
-        const { error } = await sb.from('stock_parts').upsert(item);
-        if (error) return { success: false, error: error.message };
-        return { success: true, id: item.ID };
+        const d = payload.data || {};
+        const item = {
+          PartName: d.PartName || '',
+          PartNo: d.PartNo || '',
+          Category: d.Category || d.Vendor || '',
+          Qty: Number(d.Qty ?? d.CurrentStock ?? 0),
+          MinQty: Number(d.MinQty ?? d.MinStock ?? 0),
+          Unit: d.Unit || '',
+          Location: d.Location || '',
+          LinkedType: d.LinkedType || '',
+          LinkedID: d.LinkedID || '',
+          ImageIds: typeof d.ImageIds === 'string' ? d.ImageIds : JSON.stringify(d.ImageIds || [])
+        };
+        if (d.ID) {
+          const editId = d.ID;
+          const { error } = await sb.from('stock_parts').update(item).eq('ID', editId);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: editId };
+        } else {
+          item.ID = _uid();
+          item.CreatedAt = new Date().toISOString();
+          const { error } = await sb.from('stock_parts').insert(item);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: item.ID };
+        }
       }
       case 'deleteStockPart': {
         const { error } = await sb.from('stock_parts').delete().eq('ID', payload.id);
@@ -1188,12 +1212,15 @@ async function _apiInternal(actionStr, payload = null) {
       case 'stockTransaction': {
         if (!payload || !payload.data) return { success: true };
         const { partId, type, quantity } = payload.data;
-        const { data: part } = await sb.from('stock_parts').select('*').eq('ID', partId).single();
+        const { data: part, error: fetchErr } = await sb.from('stock_parts').select('*').eq('ID', partId).single();
+        if (fetchErr) return { success: false, error: fetchErr.message };
         if (part) {
           let newQty = Number(part.Qty) || 0;
           if (type === 'IN') newQty += Number(quantity);
           else if (type === 'OUT') newQty = Math.max(0, newQty - Number(quantity));
-          await sb.from('stock_parts').update({ Qty: newQty }).eq('ID', partId);
+          const { error: updErr } = await sb.from('stock_parts').update({ Qty: newQty }).eq('ID', partId);
+          if (updErr) return { success: false, error: updErr.message };
+          return { success: true, newBalance: newQty };
         }
         return { success: true };
       }
@@ -3021,12 +3048,15 @@ async function delIssue(id){if(!confirm('\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0
 //  STOCK
 // ============================================
 function renderStock(){
-  var vendors=[]; STATE.stockParts.forEach(function(p){if(p.Vendor && vendors.indexOf(p.Vendor)===-1) vendors.push(p.Vendor);});
+  var vendors=[]; (STATE.stockParts||[]).forEach(function(p){
+    var vname = p.Vendor || p.Category;
+    if(vname && vendors.indexOf(vname)===-1) vendors.push(vname);
+  });
   var vf=document.getElementById('stock-vendor-filter');
-  if(vf){var cur=vf.value;vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
-  var allTargets=STATE.molds.map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat(STATE.machines.map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  if(vf){var cur=vf.value;vf.innerHTML='<option value="">๐ข เธ—เธธเธ Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
+  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'๐งฉ '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'๐ญ '+m.Name};}));
   var lf=document.getElementById('stock-link-filter');
-  if(lf){var cur2=lf.value;lf.innerHTML='<option value="">\ud83d\udd17 \u0e17\u0e38\u0e01 Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
+  if(lf){var cur2=lf.value;lf.innerHTML='<option value="">๐”— เธ—เธธเธ Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
   filterStock();
 }
 function filterStock(){
@@ -3034,61 +3064,148 @@ function filterStock(){
   var vendor=(document.getElementById('stock-vendor-filter')||{}).value||'';
   var link=(document.getElementById('stock-link-filter')||{}).value||'';
   var level=(document.getElementById('stock-level-filter')||{}).value||'';
-  var data=STATE.stockParts.filter(function(p){
-    if(vendor&&p.Vendor!==vendor)return false;
-    if(link&&p.LinkedID!==link)return false;
-    if(level==='low'&&!(Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0))return false;
-    if(level==='ok'&&(Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0))return false;
-    if(q&&(p.PartName+(p.PartNo||'')+(p.Vendor||'')).toLowerCase().indexOf(q)===-1)return false;
+  var data=(STATE.stockParts||[]).filter(function(p){
+    var pVendor = p.Vendor || p.Category || '';
+    var curStock = Number(p.CurrentStock ?? p.Qty ?? 0);
+    var minStock = Number(p.MinStock ?? p.MinQty ?? 0);
+    if(vendor && pVendor!==vendor) return false;
+    if(link && p.LinkedID!==link) return false;
+    if(level==='low' && !(curStock<=minStock && minStock>0)) return false;
+    if(level==='ok' && (curStock<=minStock && minStock>0)) return false;
+    if(q && (p.PartName+(p.PartNo||'')+pVendor).toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
   var tb=document.getElementById('stock-tbody');
-  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83d\udce6','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','')+'</td></tr>';return;}
-  var allTargets=STATE.molds.map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat(STATE.machines.map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  if(!tb) return;
+  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('๐“ฆ','เธขเธฑเธเนเธกเนเธกเธตเธฃเธฒเธขเธเธฒเธฃเธญเธฐเนเธซเธฅเน','เธเธฅเธดเธ "+ เน€เธเธดเนเธกเธญเธฐเนเธซเธฅเน"')+'</td></tr>';return;}
+  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'๐งฉ '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'๐ญ '+m.Name};}));
   tb.innerHTML=data.map(function(p){
-    var cur=Number(p.CurrentStock)||0,min=Number(p.MinStock)||0;
+    var cur=Number(p.CurrentStock ?? p.Qty ?? 0), min=Number(p.MinStock ?? p.MinQty ?? 0);
     var pct=min>0?Math.min((cur/min)*100,100):100;
     var color=cur<=min?'var(--danger)':cur<=min*1.5?'var(--warning)':'var(--success)';
     var linked=allTargets.find(function(t){return t.id===p.LinkedID;});
-    return '<tr><td><strong>'+p.PartName+'</strong></td><td>'+(p.PartNo||'-')+'</td><td>'+(p.Vendor||'-')+'</td><td>'+(p.Unit||'-')+'</td><td>'+p.MinStock+'</td><td><div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+p.CurrentStock+'</div><div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+(cur<=min?'<span class="badge overdue" style="font-size:9px;padding:1px 6px">Low</span>':'')+'</td><td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td><td>'+(p.Location||'-')+'</td><td style="white-space:nowrap"><button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">\ud83d\udce6 \u0e23\u0e31\u0e1a/\u0e40\u0e1a\u0e34\u0e01</button> <button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')">&#128465;&#65039;</button></td></tr>';
+    var imgs=tryParse(p.ImageIds);
+    var thumb=imgs.length?'<img src="'+imgs[0]+'" onclick="openLightbox(\''+imgs[0].replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in"/>':'-';
+    return '<tr>'+
+      '<td><strong>'+p.PartName+'</strong></td>'+
+      '<td>'+(p.PartNo||'-')+'</td>'+
+      '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
+      '<td>'+(p.Unit||'-')+'</td>'+
+      '<td>'+min+'</td>'+
+      '<td><div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div><div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+(cur<=min?'<span class="badge overdue" style="font-size:9px;padding:1px 6px">Low</span>':'')+'</td>'+
+      '<td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
+      '<td>'+(p.Location||'-')+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">๐“ฆ เธฃเธฑเธ/เน€เธเธดเธ</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="เนเธเนเนเธ">โ๏ธ</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="เธฅเธ">๐—‘๏ธ</button>'+
+      '</td>'+
+    '</tr>';
   }).join('');
 }
 function loadStockLinkTargets(){
   var type=v('stock-link-type');var s=document.getElementById('stock-link-id');
-  if(!type){s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';return;}
-  var list=type==='Mold'?STATE.molds:STATE.machines;
-  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+  if(!s) return;
+  if(!type){s.innerHTML='<option value="">-- เน€เธฅเธทเธญเธ --</option>';return;}
+  var list=type==='Mold'?(STATE.molds||[]):(STATE.machines||[]);
+  s.innerHTML='<option value="">-- เน€เธฅเธทเธญเธ --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
 }
 function openStockPartModal(data){
-  ['stock-id','stock-name','stock-partno','stock-vendor','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});v_set('stock-min','0');v_set('stock-current','0');
+  ['stock-id','stock-name','stock-partno','stock-vendor','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});
+  v_set('stock-min','0');v_set('stock-current','0');
   v_set('stock-link-type','');v_set('stock-link-id','');
-  document.getElementById('stock-link-id').innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';
-  document.getElementById('stock-photos-preview').innerHTML='';STATE.pendingPhotos['stock-part']={files:[]};
-  document.getElementById('stock-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48';
+  document.getElementById('stock-link-id').innerHTML='<option value="">-- เน€เธฅเธทเธญเธ --</option>';
+  document.getElementById('stock-photos-preview').innerHTML='';
+  STATE.pendingPhotos['stock-part']={files:[], existing:[]};
+  document.getElementById('stock-modal-title').textContent=data?'โ๏ธ เนเธเนเนเธเธญเธฐเนเธซเธฅเน':'+ เน€เธเธดเนเธกเธญเธฐเนเธซเธฅเน';
   if(data){
-    v_set('stock-id',data.ID);v_set('stock-name',data.PartName);v_set('stock-partno',data.PartNo);
-    v_set('stock-vendor',data.Vendor);v_set('stock-unit',data.Unit);v_set('stock-min',data.MinStock);
-    v_set('stock-current',data.CurrentStock);v_set('stock-location',data.Location);v_set('stock-notes',data.Notes);
-    if(data.LinkedType){v_set('stock-link-type',data.LinkedType);loadStockLinkTargets();setTimeout(function(){v_set('stock-link-id',data.LinkedID||'');},50);}
+    v_set('stock-id',data.ID);
+    v_set('stock-name',data.PartName);
+    v_set('stock-partno',data.PartNo||'');
+    v_set('stock-vendor',data.Category||data.Vendor||'');
+    v_set('stock-unit',data.Unit||'');
+    v_set('stock-min',data.MinQty??data.MinStock??0);
+    v_set('stock-current',data.Qty??data.CurrentStock??0);
+    v_set('stock-location',data.Location||'');
+    if(data.LinkedType){
+      v_set('stock-link-type',data.LinkedType);
+      loadStockLinkTargets();
+      setTimeout(function(){v_set('stock-link-id',data.LinkedID||'');},50);
+    }
+    var existingImgs = tryParse(data.ImageIds);
+    STATE.pendingPhotos['stock-part'].existing = existingImgs.slice();
+    var grid = document.getElementById('stock-photos-preview');
+    if (grid && existingImgs.length) {
+      existingImgs.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-stock-part-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'stock-part\',' + idx + ',\'stock-photos-preview\',true)">โ•</button>';
+        grid.appendChild(item);
+      });
+    }
   }
   openModal('stock-part-modal');
 }
 async function saveStockPart(){
-  var name=v('stock-name');if(!name){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','error');return;}
-  showGlobalLoading(true);
-  var imgIds=await uploadPendingPhotos('stock-part','StockParts');
-  var linkType=v('stock-link-type'),linkId=v('stock-link-id');
-  var allT=STATE.molds.concat(STATE.machines);var linkedItem=allT.find(function(t){return t.ID===linkId;});
-  var data={ID:v('stock-id'),PartName:name,PartNo:v('stock-partno'),Vendor:v('stock-vendor'),Unit:v('stock-unit'),MinStock:v('stock-min')||0,CurrentStock:v('stock-current')||0,Location:v('stock-location'),Notes:v('stock-notes'),LinkedType:linkType,LinkedID:linkId,LinkedTo:linkedItem?linkedItem.Name:'',ImageIds:JSON.stringify(imgIds)};
-  var r=await api('saveStockPart',{data:data});
-  showGlobalLoading(false);
-  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('stock-part-modal');var res=await api('getStockParts');if(res.success){STATE.stockParts=res.data;renderStock();updateBadges();}}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  try {
+    var name=v('stock-name');
+    if(!name){showToast('เธเธฃเธธเธ“เธฒเธฃเธฐเธเธธเธเธทเนเธญเธญเธฐเนเธซเธฅเน','error');return;}
+    showGlobalLoading(true);
+    var imgIds=await uploadPendingPhotos('stock-part','StockParts');
+    var linkType=v('stock-link-type'),linkId=v('stock-link-id');
+    var data={
+      ID: v('stock-id') || undefined,
+      PartName: name,
+      PartNo: v('stock-partno'),
+      Category: v('stock-vendor'),
+      Vendor: v('stock-vendor'),
+      Unit: v('stock-unit'),
+      MinQty: Number(v('stock-min')) || 0,
+      MinStock: Number(v('stock-min')) || 0,
+      Qty: Number(v('stock-current')) || 0,
+      CurrentStock: Number(v('stock-current')) || 0,
+      Location: v('stock-location'),
+      LinkedType: linkType,
+      LinkedID: linkId,
+      ImageIds: JSON.stringify(imgIds)
+    };
+    var r=await api('saveStockPart',{data:data});
+    showGlobalLoading(false);
+    if(r && r.success){
+      showToast(data.ID ? 'เนเธเนเนเธเธญเธฐเนเธซเธฅเนเธชเธณเน€เธฃเนเธ โ…' : 'เธเธฑเธเธ—เธถเธเธญเธฐเนเธซเธฅเนเธชเธณเน€เธฃเนเธ โ…','success');
+      closeModal('stock-part-modal');
+      var res=await api('getStockParts');
+      if(res && res.success){
+        STATE.stockParts=res.data;
+        renderStock();
+        updateBadges();
+      }
+    } else {
+      showToast('เธเธดเธ”เธเธฅเธฒเธ”: '+((r && r.error)||'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธเธฑเธเธ—เธถเธเนเธ”เน'),'error');
+    }
+  } catch(err) {
+    showGlobalLoading(false);
+    console.error('saveStockPart error:', err);
+    showToast('เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”: '+err.message, 'error');
+  }
 }
-async function delStockPart(id,name){if(!confirm('\u0e25\u0e1a "'+name+'" ?'))return;var r=await api('deleteStockPart',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.stockParts=STATE.stockParts.filter(function(p){return p.ID!==id;});renderStock();updateBadges();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function delStockPart(id,name){
+  if(!confirm('เธฅเธ "'+name+'" ?')) return;
+  var r=await api('deleteStockPart',{id:id});
+  if(r && r.success){
+    showToast('เธฅเธเธชเธณเน€เธฃเนเธ','success');
+    STATE.stockParts=(STATE.stockParts||[]).filter(function(p){return p.ID!==id;});
+    renderStock();
+    updateBadges();
+  } else {
+    showToast('เธเธดเธ”เธเธฅเธฒเธ”: '+((r && r.error)||'เธฅเธเนเธกเนเธชเธณเน€เธฃเนเธ'),'error');
+  }
+}
 function openStockTxModal(preSelectId){
   var s=document.getElementById('tx-part-id');
-  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+STATE.stockParts.map(function(p){return '<option value="'+p.ID+'"'+(p.ID===preSelectId?' selected':'')+'>'+p.PartName+'</option>';}).join('');
+  if(!s) return;
+  s.innerHTML='<option value="">-- เน€เธฅเธทเธญเธ --</option>'+(STATE.stockParts||[]).map(function(p){return '<option value="'+p.ID+'"'+(p.ID===preSelectId?' selected':'')+'>'+p.PartName+'</option>';}).join('');
   v_set('tx-qty','');v_set('tx-reason','');v_set('tx-by','');
   setTxType('IN');
   if(preSelectId)showTxStockInfo();
@@ -3096,421 +3213,35 @@ function openStockTxModal(preSelectId){
 }
 function setTxType(type){
   v_set('tx-type',type);
-  document.getElementById('tx-btn-in').className='btn '+(type==='IN'?'btn-success':'btn-outline');
-  document.getElementById('tx-btn-out').className='btn '+(type==='OUT'?'btn-danger':'btn-outline');
+  var btnIn = document.getElementById('tx-btn-in');
+  var btnOut = document.getElementById('tx-btn-out');
+  if(btnIn) btnIn.className='btn '+(type==='IN'?'btn-success':'btn-outline');
+  if(btnOut) btnOut.className='btn '+(type==='OUT'?'btn-danger':'btn-outline');
 }
 function showTxStockInfo(){
   var partId=v('tx-part-id');var info=document.getElementById('tx-stock-info');
-  var part=STATE.stockParts.find(function(p){return p.ID===partId;});
+  if(!info) return;
+  var part=(STATE.stockParts||[]).find(function(p){return p.ID===partId;});
   if(!part){info.style.display='none';v_set('tx-unit','');return;}
-  var cur=Number(part.CurrentStock)||0,min=Number(part.MinStock)||0;
+  var cur=Number(part.CurrentStock ?? part.Qty ?? 0), min=Number(part.MinStock ?? part.MinQty ?? 0);
   var color=cur<=min?'var(--danger)':cur<=min*1.5?'var(--warning)':'var(--success)';
+  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:m.Name};}));
+  var linked=allTargets.find(function(t){return t.id===part.LinkedID;});
   info.style.display='block';
-  info.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between"><div><strong>'+part.PartName+'</strong>'+(part.LinkedTo?' <span style="font-size:10px;color:var(--text-muted)">/ '+part.LinkedTo+'</span>':'')+'</div><div style="text-align:right"><div style="font-size:20px;font-weight:700;color:'+color+'">'+cur+' <span style="font-size:12px;font-weight:400">'+(part.Unit||'')+'</span></div><div style="font-size:10px;color:var(--text-muted)">Min: '+min+' '+(part.Unit||'')+'</div></div></div>';
+  info.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between"><div><strong>'+part.PartName+'</strong>'+(linked?' <span style="font-size:10px;color:var(--text-muted)">/ '+linked.name+'</span>':'')+'</div><div style="text-align:right"><div style="font-size:20px;font-weight:700;color:'+color+'">'+cur+' <span style="font-size:12px;font-weight:400">'+(part.Unit||'')+'</span></div><div style="font-size:10px;color:var(--text-muted)">Min: '+min+' '+(part.Unit||'')+'</div></div></div>';
   v_set('tx-unit',part.Unit||'');
 }
 async function doTransaction(){
-  var partId=v('tx-part-id'),type=v('tx-type'),qty=v('tx-qty'),reason=v('tx-reason'),by=v('tx-by')||'\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38';
-  if(!partId||!qty){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e41\u0e25\u0e30\u0e08\u0e33\u0e19\u0e27\u0e19','error');return;}
+  var partId=v('tx-part-id'),type=v('tx-type'),qty=v('tx-qty'),reason=v('tx-reason'),by=v('tx-by')||'เนเธกเนเธฃเธฐเธเธธ';
+  if(!partId||!qty){showToast('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธญเธฐเนเธซเธฅเนเนเธฅเธฐเธเธณเธเธงเธ','error');return;}
   var r=await api('stockTransaction',{data:{partId:partId,type:type,quantity:qty,reason:reason,by:by}});
-  if(r.success){showToast((type==='IN'?'\u0e23\u0e31\u0e1a\u0e40\u0e02\u0e49\u0e32':'\u0e40\u0e1a\u0e34\u0e01\u0e2d\u0e2d\u0e01')+' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 (\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: '+r.newBalance+')','success');closeModal('stock-tx-modal');var res=await api('getStockParts');if(res.success){STATE.stockParts=res.data;renderStock();updateBadges();}}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
-}
-
-// ============================================
-//  REPORTS
-// ============================================
-function loadReports(){
-  var total=STATE.tpmPlans.length,done=STATE.tpmPlans.filter(function(p){return p.Status==='Done';}).length,overdue=STATE.tpmPlans.filter(function(p){return p.Status==='Overdue';}).length;
-  var ti=STATE.issues.length,ci=STATE.issues.filter(function(i){return i.Status==='Closed';}).length;
-  document.getElementById('kpi-summary').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px"><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Completion Rate</div><div style="font-size:28px;font-weight:700;color:var(--success)">'+(total?Math.round(done/total*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Issue Close Rate</div><div style="font-size:28px;font-weight:700;color:var(--primary)">'+(ti?Math.round(ci/ti*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total TPM Plans</div><div style="font-size:28px;font-weight:700">'+total+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total Issues</div><div style="font-size:28px;font-weight:700">'+ti+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Overdue</div><div style="font-size:28px;font-weight:700;color:var(--danger)">'+overdue+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Low Stock</div><div style="font-size:28px;font-weight:700;color:var(--warning)">'+STATE.stockParts.filter(function(p){return Number(p.CurrentStock)<=Number(p.MinStock)&&Number(p.MinStock)>0;}).length+'</div></div></div>';
-}
-async function openGoogleSheet(){var r=await api('getSheetUrl');if(r.success)window.open(r.url,'_blank');else showToast('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e1b\u0e34\u0e14\u0e44\u0e14\u0e49','error');}
-function exportCSV(type){
-  var data=[],headers=[],filename='';
-  if(type==='tpm'){data=STATE.tpmPlans;headers=['TargetType','TargetName','Year','PlannedDate','Status','ActualDate','ActualBy','AssignedTo','Notes'];filename='tpm_plans.csv';}
-  else if(type==='issues'){data=STATE.issues;headers=['ID','TargetType','TargetName','IssueType','Description','Severity','Status','OccurredAt','ReportedBy','ClosedAt','ClosedBy','RootCause','CorrectiveAction'];filename='issues.csv';}
-  else if(type==='stock'){data=STATE.stockParts;headers=['PartName','PartNo','Vendor','Unit','MinStock','CurrentStock','Location'];filename='stock.csv';}
-  var csv=[headers.join(',')].concat(data.map(function(r){return headers.map(function(h){return '"'+((r[h]||'')+'').replace(/"/g,'""')+'"';}).join(',');})).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=filename;a.click();
-}
-
-// ============================================
-//  USERS
-// ============================================
-async function loadUsers(){
-  var r=await api('getUsers');if(!r.success)return;
-  document.getElementById('users-tbody').innerHTML=r.data.map(function(u){return '<tr><td>'+u.Email+'</td><td>'+u.Name+'</td><td><span class="badge planned">'+u.Role+'</span></td><td>'+(u.Department||'-')+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openUserModal('+JSON.stringify(u)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delUser(\''+u.ID+'\')">&#128465;&#65039;</button></td></tr>';}).join('');
-}
-function openUserModal(data){['user-id','user-email','user-name-input','user-dept'].forEach(function(i){v_set(i,'');});document.getElementById('user-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49';if(data){v_set('user-id',data.ID);v_set('user-email',data.Email);v_set('user-name-input',data.Name);v_set('user-role-select',data.Role);v_set('user-dept',data.Department);}openModal('user-modal');}
-async function saveUser(){var email=v('user-email');if(!email){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Email','error');return;}var data={ID:v('user-id'),Email:email,Name:v('user-name-input')||email.split('@')[0],Role:v('user-role-select')||'Viewer',Department:v('user-dept')};var r=await api('saveUser',{data:data});if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('user-modal');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
-async function delUser(id){if(!confirm('\u0e25\u0e1a\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e19\u0e35\u0e49?'))return;var r=await api('deleteUser',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
-
-// ============================================
-//  PHOTO UPLOAD & COMPRESSION
-// ============================================
-function triggerUpload(id){document.getElementById(id).click();}
-
-function compressImage(file, maxDim, quality) {
-  maxDim = maxDim || 1200;
-  quality = quality || 0.75;
-  return new Promise(function(resolve) {
-    if (!file || !file.type || !file.type.startsWith('image/')) {
-      var reader = new FileReader();
-      reader.onload = function(e) { resolve(e.target.result); };
-      reader.readAsDataURL(file);
-      return;
-    }
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      compressDataUrl(e.target.result, maxDim, quality).then(resolve);
-    };
-    reader.onerror = function() { resolve(''); };
-    reader.readAsDataURL(file);
-  });
-}
-
-function compressDataUrl(dataUrl, maxDim, quality) {
-  return new Promise(function(resolve) {
-    if (!dataUrl || typeof dataUrl !== 'string' || dataUrl.indexOf('data:image') !== 0) {
-      resolve(dataUrl);
-      return;
-    }
-    // If it's already a small string (< 200KB), no need to re-render
-    if (dataUrl.length < 250000) {
-      resolve(dataUrl);
-      return;
-    }
-    maxDim = maxDim || 1200;
-    quality = quality || 0.75;
-    var img = new Image();
-    img.onload = function() {
-      var w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
-        else { w = Math.round((w * maxDim) / h); h = maxDim; }
-      }
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      var ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = function() { resolve(dataUrl); };
-    img.src = dataUrl;
-  });
-}
-
-function previewPhotos(input,previewId,key){
-  if(!STATE.pendingPhotos[key])STATE.pendingPhotos[key]={files:[]};
-  Array.from(input.files).forEach(function(file){
-    compressImage(file, 1200, 0.75).then(function(compressedDataUrl) {
-      if (!compressedDataUrl) return;
-      var idx=STATE.pendingPhotos[key].files.length;
-      STATE.pendingPhotos[key].files.push({file:file,dataUrl:compressedDataUrl});
-      var grid=document.getElementById(previewId);
-      if (!grid) return;
-      var item=document.createElement('div');item.className='photo-preview-item';item.id='pi-'+key+'-'+idx;
-      item.innerHTML='<img src="'+compressedDataUrl+'" onclick="openLightbox(\''+compressedDataUrl.replace(/'/g,"\\'")+'\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\''+key+'\','+idx+',\''+previewId+'\')">✕</button>';
-      grid.appendChild(item);
-    });
-  });
-  input.value='';
-}
-function rmPhoto(key, idx, previewId, isExisting) {
-  if (STATE.pendingPhotos[key]) {
-    if (isExisting) {
-      if (STATE.pendingPhotos[key].existing && STATE.pendingPhotos[key].existing[idx] !== undefined) {
-        STATE.pendingPhotos[key].existing[idx] = null;
-      }
-    } else {
-      if (STATE.pendingPhotos[key].files && STATE.pendingPhotos[key].files[idx] !== undefined) {
-        STATE.pendingPhotos[key].files[idx] = null;
-      }
-    }
-  }
-  var el = document.getElementById(isExisting ? 'pi-' + key + '-ex-' + idx : 'pi-' + key + '-' + idx);
-  if (el) el.remove();
-}
-
-async function uploadPendingPhotos(key, folder) {
-  var state = STATE.pendingPhotos[key];
-  if (!state) return [];
-  var rawExisting = (state.existing || []).filter(function(x) { return x !== null && x !== ''; });
-  // Compress any existing large image strings before submitting to database
-  var existing = await Promise.all(rawExisting.map(function(url) {
-    return compressDataUrl(url, 1200, 0.75);
-  }));
-  var toUpload = (state.files || []).filter(function(f) { return f !== null; });
-  var uploadedIds = [];
-  if (toUpload.length) {
-    var results = await Promise.all(toUpload.map(function(f, i) {
-      var fname = key + '_' + Date.now() + '_' + i + '.' + (f.file && f.file.name ? f.file.name.split('.').pop() : 'jpg');
-      return api('uploadFile', { base64Data: f.dataUrl, filename: fname, subFolder: folder });
-    }));
-    uploadedIds = results.filter(function(r) { return r.success; }).map(function(r) { return r.fileId; });
-  }
-  return existing.concat(uploadedIds);
-}
-
-// ============================================
-//  HELPERS
-// ============================================
-function filterTable(input,tableId){var q=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().indexOf(q)>=0?'':'none';});}
-function filterTableByCol(sel,tableId,colIdx){var q=sel.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){var cell=tr.cells[colIdx];tr.style.display=(!q||(cell&&cell.textContent.toLowerCase().indexOf(q)>=0))?'':'none';});}
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
-function v(id){var el=document.getElementById(id);return el?el.value:'';}
-function v_set(id,val){var el=document.getElementById(id);if(el)el.value=val;}
-function showToast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast '+type;var icon={success:'\u2705',error:'\u274c',warning:'\u26a0\ufe0f'}[type]||'\u2139\ufe0f';t.innerHTML='<span style="font-size:16px">'+icon+'</span><span>'+msg+'</span>';document.getElementById('toast-container').appendChild(t);setTimeout(function(){t.remove();},3500);}
-function showGlobalLoading(show){var el=document.getElementById('global-loading');if(show)el.classList.add('show');else el.classList.remove('show');}
-function emptyState(icon,title,sub){return '<div class="empty-state"><div class="empty-icon">'+icon+'</div><h3>'+title+'</h3><p>'+sub+'</p></div>';}
-function tryParse(str){try{return JSON.parse(str)||[];}catch(e){return [];}}
-
-// LIGHTBOX
-function openLightbox(thumbUrl,viewUrl){
-  document.getElementById('lightbox-img').src=thumbUrl;
-  document.getElementById('lightbox-drive-link').href=viewUrl||thumbUrl;
-  document.getElementById('lightbox-drive-link').style.display=viewUrl?'flex':'none';
-  document.getElementById('lightbox-overlay').classList.add('open');
-}
-function closeLightbox(){
-  document.getElementById('lightbox-overlay').classList.remove('open');
-  document.getElementById('lightbox-img').src='';
-}
-
-// ============================================
-//  PM PRINT FORM (Master PDF Spec)
-// ============================================
-// ============================================
-//  SIGNATURE MANAGER (OPTION 4 HYBRID)
-// ============================================
-var MAIN_SIG_STORE = {};
-try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
-var mainCurRole = 'sm';
-var mainCurTab = 'draw';
-var mainUploadedImage = '';
-var mainCanvas, mainCtx, mainIsDrawing = false;
-
-function initMainCanvas() {
-  mainCanvas = document.getElementById('main-sig-canvas');
-  if(!mainCanvas) return;
-  mainCtx = mainCanvas.getContext('2d');
-  mainCtx.strokeStyle = '#000080';
-  mainCtx.lineWidth = 2.5;
-  mainCtx.lineCap = 'round';
-  mainCtx.lineJoin = 'round';
-
-  function getPos(e) {
-    var r = mainCanvas.getBoundingClientRect();
-    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - r.left) * (mainCanvas.width / r.width),
-      y: (clientY - r.top) * (mainCanvas.height / r.height)
-    };
-  }
-  function start(e) { mainIsDrawing = true; var p = getPos(e); mainCtx.beginPath(); mainCtx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }
-  function move(e) { if(!mainIsDrawing) return; var p = getPos(e); mainCtx.lineTo(p.x, p.y); mainCtx.stroke(); if(e.touches) e.preventDefault(); }
-  function end(e) { mainIsDrawing = false; }
-
-  mainCanvas.addEventListener('mousedown', start);
-  mainCanvas.addEventListener('mousemove', move);
-  window.addEventListener('mouseup', end);
-  mainCanvas.addEventListener('touchstart', start, {passive:false});
-  mainCanvas.addEventListener('touchmove', move, {passive:false});
-  mainCanvas.addEventListener('touchend', end);
-}
-
-function clearMainCanvas() {
-  if(mainCtx && mainCanvas) mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-}
-
-function switchMainSigTab(tab) {
-  mainCurTab = tab;
-  ['draw','image','stamp','none'].forEach(function(t){
-    var btn = document.getElementById('main-tab-' + t);
-    var pane = document.getElementById('main-sig-pane-' + t);
-    if(t === tab){
-      btn.className = 'btn btn-primary btn-sm';
-      pane.style.display = 'block';
-    } else {
-      btn.className = 'btn btn-outline btn-sm';
-      pane.style.display = 'none';
-    }
-  });
-}
-
-function openSignatureManagerModal(role) {
-  try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
-  mainCurRole = role || 'sm';
-  document.getElementById('main-sig-role').value = mainCurRole;
-  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || mainCurRole.toUpperCase();
-  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
-  clearMainCanvas();
-  mainUploadedImage = '';
-  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">เธ•เธฑเธงเธญเธขเนเธฒเธเธฃเธนเธเธ เธฒเธเธฅเธฒเธขเน€เธเนเธ (PNG/JPG เธเธทเนเธเธซเธฅเธฑเธเนเธชเธซเธฃเธทเธญเธเธฒเธง)</span>';
-  
-  var existing = MAIN_SIG_STORE[mainCurRole];
-  if(existing && existing.type){
-    switchMainSigTab(existing.type);
-    if(existing.type === 'draw' && existing.data){
-      var img = new Image();
-      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
-      img.src = existing.data;
-    } else if(existing.type === 'image' && existing.data){
-      mainUploadedImage = existing.data;
-      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
-    }
+  if(r && r.success){
+    showToast((type==='IN'?'เธฃเธฑเธเน€เธเนเธฒ':'เน€เธเธดเธเธญเธญเธ')+' เธชเธณเน€เธฃเนเธ โ… (เธเธเน€เธซเธฅเธทเธญ: '+r.newBalance+')','success');
+    closeModal('stock-tx-modal');
+    var res=await api('getStockParts');
+    if(res && res.success){STATE.stockParts=res.data;renderStock();updateBadges();}
   } else {
-    switchMainSigTab('draw');
-  }
-
-  openModal('signature-manager-modal');
-  setTimeout(initMainCanvas, 100);
-}
-
-function onMainSigRoleChange() {
-  var sel = document.getElementById('main-sig-role').value;
-  openSignatureManagerModal(sel);
-}
-
-function handleMainImageUpload(e) {
-  var file = e.target.files[0];
-  if(!file) return;
-  var reader = new FileReader();
-  reader.onload = function(evt) {
-    mainUploadedImage = evt.target.result;
-    document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + mainUploadedImage + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
-  };
-  reader.readAsDataURL(file);
-}
-
-function saveMainSignature() {
-  var role = document.getElementById('main-sig-role').value;
-  if(mainCurTab === 'draw') {
-    var dataUrl = mainCanvas.toDataURL('image/png');
-    MAIN_SIG_STORE[role] = { type: 'draw', data: dataUrl };
-  } else if(mainCurTab === 'image') {
-    if(!mainUploadedImage){ showToast('เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเนเธเธฅเนเธฃเธนเธเธ เธฒเธเธเนเธญเธเธเธฃเธฑเธ','warning'); return; }
-    MAIN_SIG_STORE[role] = { type: 'image', data: mainUploadedImage };
-  } else if(mainCurTab === 'stamp') {
-    var stName = document.getElementById('main-stamp-name').value.trim() || role.toUpperCase();
-    var stDate = document.getElementById('main-stamp-date').value || '';
-    MAIN_SIG_STORE[role] = { type: 'stamp', name: stName, date: stDate };
-  } else if(mainCurTab === 'none') {
-    delete MAIN_SIG_STORE[role];
-  }
-
-  try {
-    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE));
-  } catch(e){}
-
-  showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ' + role.toUpperCase() + ' \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27 \u2705', 'success');
-  closeModal('signature-manager-modal');
-}
-
-// ============================================
-//  MOBILE SIGNING SCREEN
-// ============================================
-var mobCanvas, mobCtx, mobIsDrawing = false;
-var mobCurRole = 'sm';
-var mobCurTab = 'draw';
-var mobUploadedImage = '';
-var mobMoldId = '';
-var mobMoldData = null;
-
-async function initMobileSignPage(moldId, defaultRole) {
-  mobMoldId = moldId || '';
-  mobCurRole = defaultRole || 'sm';
-  
-  // Set clean mobile styling on body
-  document.body.innerHTML = `
-    <div style="font-family:'Sarabun',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:14px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">
-      <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid #334155;">
-        
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid #334155;padding-bottom:12px;">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="font-size:26px;background:rgba(99,102,241,0.2);padding:6px 10px;border-radius:10px;">โ๏ธ</div>
-            <div>
-              <h2 style="margin:0;font-size:16px;color:#fff;font-weight:700;">เน€เธเนเธเธฅเธฒเธขเน€เธเนเธ PM เธเนเธฒเธเธกเธทเธญเธ–เธทเธญ</h2>
-              <div style="font-size:12px;color:#94a3b8;" id="mob-target-title">เธเธณเธฅเธฑเธเนเธซเธฅเธ”เธเนเธญเธกเธนเธฅเนเธกเนเธเธดเธกเธเน...</div>
-            </div>
-          </div>
-          <a href="/" style="color:#94a3b8;font-size:18px;text-decoration:none;padding:4px 8px;">โ•</a>
-        </div>
-
-        <div style="margin-bottom:14px;">
-          <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:600;">เน€เธฅเธทเธญเธเธ•เธณเนเธซเธเนเธเธเธนเนเธฅเธเธเธฒเธก:</label>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-            <button type="button" class="mob-role-btn" id="mob-role-vendor" onclick="setMobRole('vendor')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐ข VENDOR</button>
-            <button type="button" class="mob-role-btn" id="mob-role-sm" onclick="setMobRole('sm')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐‘” SM (Manager)</button>
-            <button type="button" class="mob-role-btn" id="mob-role-sv" onclick="setMobRole('sv')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐‘ท SV (Supervisor)</button>
-            <button type="button" class="mob-role-btn" id="mob-role-st" onclick="setMobRole('st')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">๐“ ST (Staff)</button>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid #334155;padding-bottom:10px;">
-          <button type="button" id="mob-tab-draw" onclick="switchMobTab('draw')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#6366f1;color:#fff;font-size:11.5px;font-weight:bold;cursor:pointer;">โ๏ธ เธงเธฒเธ”เธชเธ”</button>
-          <button type="button" id="mob-tab-stamp" onclick="switchMobTab('stamp')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">๐”ด E-Stamp</button>
-          <button type="button" id="mob-tab-image" onclick="switchMobTab('image')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">๐–ผ๏ธ เธญเธฑเธเนเธซเธฅเธ”เธฃเธนเธ</button>
-        </div>
-
-        <div id="mob-pane-draw" style="display:block;">
-          <div style="background:#fff;border-radius:10px;overflow:hidden;position:relative;margin-bottom:8px;border:2px solid #6366f1;">
-            <canvas id="mob-canvas" width="440" height="180" style="display:block;width:100%;height:180px;cursor:crosshair;touch-action:none;background:#fff;"></canvas>
-            <div style="position:absolute;bottom:6px;left:10px;font-size:10.5px;color:#9ca3af;pointer-events:none;">(เนเธเนเธเธดเนเธงเธฅเธฒเธเน€เธเธทเนเธญเน€เธเนเธเธเธทเนเธญ)</div>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <span style="font-size:11px;color:#94a3b8;">เธงเธฒเธ”เธฅเธฒเธขเน€เธเนเธเนเธเธเธฃเธญเธเธชเธตเธเธฒเธง</span>
-            <button type="button" onclick="clearMobCanvas()" style="padding:4px 12px;background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;">๐งน เธฅเนเธฒเธเน€เธชเนเธเธงเธฒเธ”</button>
-          </div>
-        </div>
-
-        <div id="mob-pane-stamp" style="display:none;padding:6px 0 14px 0;">
-          <div style="margin-bottom:10px;">
-            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">เธเธทเนเธญ-เธเธฒเธกเธชเธเธธเธฅ เธเธเธ•เธฃเธฒเธขเธฒเธ:</label>
-            <input id="mob-stamp-name" placeholder="เน€เธเนเธ SARIN T." style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
-          </div>
-          <div style="margin-bottom:10px;">
-            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">เธงเธฑเธเธ—เธตเนเธญเธเธธเธกเธฑเธ•เธด:</label>
-            <input id="mob-stamp-date" type="date" style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
-          </div>
-        </div>
-
-        <div id="mob-pane-image" style="display:none;padding:10px 0;text-align:center;">
-          <input type="file" id="mob-file-input" accept="image/*" onchange="handleMobImageUpload(event)" style="margin-bottom:10px;color:#94a3b8;font-size:11.5px;" />
-          <div id="mob-image-preview" style="height:100px;border:1px dashed #475569;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0f172a;">
-            <span style="color:#64748b;font-size:11.5px;">เน€เธฅเธทเธญเธเนเธเธฅเนเธฃเธนเธเธ เธฒเธเธฅเธฒเธขเน€เธเนเธ (PNG/JPG)</span>
-          </div>
-        </div>
-
-        <div id="mob-status" style="display:none;margin-bottom:12px;padding:10px;border-radius:8px;font-size:12.5px;text-align:center;"></div>
-
-        <button type="button" id="mob-save-btn" onclick="saveMobSignature()" style="width:100%;padding:13px;border-radius:10px;border:none;background:#10b981;color:#fff;font-size:14.5px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
-          ๐’พ เธเธฑเธเธ—เธถเธเธฅเธฒเธขเน€เธเนเธเธฅเธเธฃเธฐเธเธ
-        </button>
-      </div>
-    </div>
-  `;
-
-  initMobCanvas();
-  setMobRole(mobCurRole);
-
-  // Fetch Mold info from Supabase if moldId is given
-  if (mobMoldId) {
-    try {
-      const res = await api('getMolds');
-      if (res.success && res.data) {
-        mobMoldData = res.data.find(m => m.ID === mobMoldId);
-        if (mobMoldData) {
-          document.getElementById('mob-target-title').innerText = 'เนเธกเนเธเธดเธกเธเน: ' + mobMoldData.Name + ' (' + (mobMoldData.AssetNo || '-') + ')';
-        }
-      }
-    } catch(e){}
-  } else {
-    document.getElementById('mob-target-title').innerText = 'เธฅเธฒเธขเน€เธเนเธเธซเธฑเธงเน€เธญเธเธชเธฒเธฃเธชเนเธงเธเธเธฅเธฒเธ';
+    showToast('เธเธดเธ”เธเธฅเธฒเธ”: '+((r && r.error)||'เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธ—เธณเธฃเธฒเธขเธเธฒเธฃเนเธ”เน'),'error');
   }
 }
 
