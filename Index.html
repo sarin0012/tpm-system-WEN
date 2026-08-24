@@ -943,9 +943,9 @@ async function _apiInternal(actionStr, payload = null) {
       // DASHBOARD
       case 'getDashboard': {
         const [mRes, mcRes, sRes, iRes, tRes] = await Promise.all([
-          sb.from('molds').select('ID, Name, Status, AssetNo, Vendor, Model'),
+          sb.from('molds').select('ID, Name, Status, AssetNo, Vendor'),
           sb.from('machines').select('ID, Name, Status, AssetNo, Vendor, Model'),
-          sb.from('stock_parts').select('ID, Name, PartName, CurrentStock, Qty, MinStock, MinQty, Unit'),
+          sb.from('stock_parts').select('ID, PartName, PartNo, Qty, MinQty, Unit'),
           sb.from('issues').select('ID, TargetType, TargetID, TargetName, IssueType, Description, Severity, Status, OccurredAt, CreatedAt').order('CreatedAt', { ascending: false }),
           sb.from('tpm_plans').select('ID, TargetType, TargetID, TargetName, PlannedDate, Status')
         ]);
