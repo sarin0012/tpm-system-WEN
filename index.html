@@ -678,15 +678,15 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3626;&#3619;&#3655;&#3592;</label><input id="close-date" type="datetime-local"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3649;&#3585;&#3657;&#3652;&#3586;</label><input id="close-by"/></div></div>
     <div class="form-group" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
       <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>&#128230; &#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3651;&#3594;&#3657;&#3595;&#3656;&#3629;&#3617; (Parts Used) &amp; &#3605;&#3633;&#3604;&#3626;&#3605;&#3658;&#3629;&#3585;</span>
-        <span style="font-size:11px;font-weight:400;color:var(--text-muted);">&#3648;&#3621;&#3639;&#3629;&#3585;&#3592;&#3634;&#3585; Stock &#3627;&#3619;&#3639;&#3629;&#3614;&#3636;&#3617;&#3614;&#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3605;&#3636;&#3617;</span>
+        <span>&#128230; &#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3656;&#3651;&#3594;&#3657;&#3595;&#3656;&#3629;&#3617; (Parts Used) &amp; &#3605;&#3633;&#3604;&#3626;&#3605;&#3658;&#3629;&#3585;</span>
+        <span style="font-size:11px;font-weight:400;color:var(--text-muted);">&#3648;&#3621;&#3639;&#3629;&#3585;&#3592;&#3634;&#3585; Stock &#3627;&#3619;&#3639;&#3629;&#3614;&#3636;&#3617;&#3614;&#3660;&#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3605;&#3636;&#3617;</span>
       </label>
       <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
         <select id="close-part-select" onchange="onClosePartSelectChange()" style="flex:2;min-width:200px;">
           <option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3592;&#3634;&#3585;&#3588;&#3621;&#3633;&#3591; Stock --</option>
         </select>
         <div id="close-part-other-wrap" style="display:none;flex:2;min-width:180px;">
-          <input id="close-part-other-name" placeholder="&#3619;&#3638;&#3610;&#3634;&#3594;&#3639;&#3656;&#3629;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3609;&#3629;&#3585;&#3588;&#3621;&#3633;&#3591;..." style="width:100%;" />
+          <input id="close-part-other-name" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3609;&#3629;&#3585;&#3588;&#3621;&#3633;&#3591;..." style="width:100%;" />
         </div>
         <div style="display:flex;gap:4px;align-items:center;width:130px;">
           <input id="close-part-qty" type="number" min="1" value="1" placeholder="&#3592;&#3635;&#3609;&#3623;&#3609;" style="width:70px;" />
@@ -696,7 +696,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
       </div>
       <div id="close-parts-list" style="margin-bottom:8px;"></div>
       <div>
-        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">&#3626;&#3619;&#3641;&#3611;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3656;&#3610;&#3633;&#3609;&#3607;&#3638;&#3585; (&#3648;&#3649;&#3585;&#3657;&#3652;&#3585;&#3585;&#3657;&#3629;&#3588;&#3623;&#3634;&#3617;&#3652;&#3604;&#3657;):</label>
+        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">&#3626;&#3619;&#3641;&#3611;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3656;&#3610;&#3633;&#3609;&#3607;&#3638;&#3585; (&#3648;&#3649;&#3585;&#3657;&#3652;&#3586;&#3586;&#3657;&#3629;&#3588;&#3623;&#3634;&#3617;&#3652;&#3604;&#3657;):</label>
         <input id="close-parts-used" placeholder="&#3648;&#3594;&#3656;&#3609; O-Ring 50mm (x2), &#3595;&#3637;&#3621;&#3618;&#3634;&#3591; (x1)..." style="font-size:12px;background:var(--surface);" />
       </div>
     </div>
