@@ -437,10 +437,10 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select onchange="filterTableByCol(this,'issues-table',5)" style="width:130px"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Open</option><option>In Progress</option><option>Closed</option></select>
     <select onchange="filterTableByCol(this,'issues-table',4)" style="width:130px"><option value="">Severity</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openIssueModal()">+ &#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</button>
+    <button class="btn btn-primary" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
-    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>รูป</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>✅ รูปหลังซ่อม</th><th>Actions</th></tr></thead>
     <tbody id="issues-tbody"></tbody>
   </table></div></div>
 </div>
@@ -640,19 +640,30 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- ISSUE -->
 <div class="modal-overlay" id="issue-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</div><button class="modal-close" onclick="closeModal('issue-modal')">&#10005;</button></div>
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-modal-title">🚨 แจ้งปัญหา</div><button class="modal-close" onclick="closeModal('issue-modal')">✕</button></div>
   <div class="modal-body">
-    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;&#3611;&#3633;&#3597;&#3627;&#3634;</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
-    <div class="form-group"><label>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634; *</label><textarea id="issue-description" placeholder="&#3629;&#3608;&#3636;&#3610;&#3634;&#3618;&#3629;&#3634;&#3585;&#3634;&#3619;/&#3611;&#3633;&#3597;&#3627;&#3634;..."></textarea></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;/&#3648;&#3623;&#3621;&#3634;&#3648;&#3585;&#3636;&#3604;&#3611;&#3633;&#3597;&#3627;&#3634;</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3649;&#3592;&#3657;&#3591;</label><input id="issue-reporter"/></div></div>
-    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3611;&#3633;&#3597;&#3627;&#3634;</label>
-      <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3611;&#3633;&#3597;&#3627;&#3634;</div></div>
+    <input type="hidden" id="issue-id"/>
+    <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- เลือก --</option></select></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+    <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
+    <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
+    <div class="form-group"><label>รูปภาพปัญหา</label>
+      <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปปัญหา</div></div>
       <input type="file" id="issue-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-photos-preview','issue')"/>
       <div class="photo-preview-grid" id="issue-photos-preview"></div>
     </div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveIssue()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveIssue()">💾 บันทึก</button></div>
+  </div>
+</div>
+
+<!-- ISSUE DETAIL / HISTORY -->
+<div class="modal-overlay" id="issue-detail-modal">
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-detail-title">📋 รายละเอียดและประวัติปัญหา</div><button class="modal-close" onclick="closeModal('issue-detail-modal')">✕</button></div>
+  <div class="modal-body" id="issue-detail-body"></div>
+  <div class="modal-footer" id="issue-detail-footer">
+    <button class="btn btn-outline" onclick="closeModal('issue-detail-modal')">ปิด</button>
+  </div>
   </div>
 </div>
 
@@ -2535,7 +2546,7 @@ function openTPMCompleteModal(planId){
         '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+'</div><div style="font-size:11px;color:var(--text-faint)">'+item.en+'</div></td>'+
         '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
         '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+
-          '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
+        '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
             '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">'+
               '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>'+
             '</label>'+
@@ -2544,19 +2555,19 @@ function openTPMCompleteModal(planId){
             '</label>'+
           '</div>'+
         '</td>'+
-        '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="\u0e23\u0e30\u0e1a\u0e38\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38 (\u0e16\u0e49\u0e32 NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
+        '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="ระบุสาเหตุ (ถ้า NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
       '</tr>';
     }).join('');
     document.getElementById('tpm-checklist-items').innerHTML=
       '<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'+
-      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">\u0e25\u0e33\u0e14\u0e31\u0e1a</th>'+
-      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e2b\u0e31\u0e27\u0e02\u0e49\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a</th>'+
-      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19</th>'+
-      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">\u0e1c\u0e25</th>'+
+      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">ลำดับ</th>'+
+      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">หัวข้อการตรวจสอบ</th>'+
+      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">มาตรฐาน</th>'+
+      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">ผล</th>'+
       '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
       '</tr></thead><tbody>'+rows+'</tbody></table></div>';
   } else {
-    document.getElementById('tpm-checklist-items').innerHTML='<div style="color:var(--text-muted);padding:12px">\u0e44\u0e21\u0e48\u0e1e\u0e1a Checklist Template</div>';
+    document.getElementById('tpm-checklist-items').innerHTML='<div style="color:var(--text-muted);padding:12px">ไม่พบ Checklist Template</div>';
   }
   openModal('tpm-complete-modal');
 }
@@ -2573,19 +2584,19 @@ async function completeTPM(){
   var actualBy=(v('tpm-actual-by')||'').trim();
   var coInspector=(v('tpm-co-inspector')||'').trim();
   if(!actualDate){
-    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e17\u0e33\u0e08\u0e23\u0e34\u0e07 (DD/MM/YYYY \u0e40\u0e0a\u0e48\u0e19 20/08/2026)', 'warning');
+    showToast('⚠️ กรุณาระบุวันที่ทำจริง (DD/MM/YYYY เช่น 20/08/2026)', 'warning');
     var elDate = document.getElementById('tpm-actual-date');
     if(elDate) elDate.focus();
     return;
   }
   if(!actualBy){
-    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (WEN/WP)', 'warning');
+    showToast('⚠️ กรุณาระบุชื่อผู้ตรวจสอบ (WEN/WP)', 'warning');
     var elBy = document.getElementById('tpm-actual-by');
     if(elBy) elBy.focus();
     return;
   }
   if(!coInspector){
-    showToast('\u26a0\ufe0f \u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e23\u0e48\u0e27\u0e21 (Vendor)', 'warning');
+    showToast('⚠️ กรุณาระบุชื่อผู้ตรวจสอบร่วม (Vendor)', 'warning');
     var elCo = document.getElementById('tpm-co-inspector');
     if(elCo) elCo.focus();
     return;
@@ -2601,16 +2612,16 @@ async function completeTPM(){
   var tmpl=STATE.checklistTemplates.find(function(t){var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});return plan && t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
   if(tmpl){
     var unchecked=tmpl.items.filter(function(item){return !checks[item.id];});
-    if(unchecked.length>0){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e34\u0e4a\u0e01 OK/NG \u0e43\u0e2b\u0e49\u0e04\u0e23\u0e1a\u0e17\u0e38\u0e01\u0e02\u0e49\u0e2d ('+unchecked.length+' \u0e02\u0e49\u0e2d\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e15\u0e34\u0e4a\u0e01)','warning');return;}
+    if(unchecked.length>0){showToast('กรุณาติ๊ก OK/NG ให้ครบทุกข้อ ('+unchecked.length+' ข้อยังไม่ได้ติ๊ก)','warning');return;}
     // Validate: NG items must have remark
     var ngNoRemark=tmpl.items.filter(function(item){return checks[item.id] && checks[item.id].result==='NG' && !checks[item.id].remark;});
-    if(ngNoRemark.length>0){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Remark \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a\u0e02\u0e49\u0e2d\u0e17\u0e35\u0e48 NG','error');return;}
+    if(ngNoRemark.length>0){showToast('กรุณาระบุ Remark สำหรับข้อที่ NG','error');return;}
   }
   showGlobalLoading(true);var imgIds=await uploadPendingPhotos('tpm-complete','TPM_Records');
   var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,CoInspector:coInspector,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
   var r=await api('completeTPMPlan',{data:data});showGlobalLoading(false);
-  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25 TPM \u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');closeModal('tpm-complete-modal');await loadTPMPlans();}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  if(r.success){showToast('บันทึกผล TPM สำเร็จ ✅','success');closeModal('tpm-complete-modal');await loadTPMPlans();}
+  else showToast('ผิดพลาด: '+r.error,'error');
 }
 
 // ============================================
@@ -2619,7 +2630,7 @@ async function completeTPM(){
 function renderIssues(){
   if (!STATE.issues || STATE.issues.length === 0) {
     var tb=document.getElementById('issues-tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดรายการปัญหา...</td></tr>';
+    if(tb) tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดรายการปัญหา...</td></tr>';
     api('getIssues').then(function(res){
       if(res && res.success && res.data){
         STATE.issues = res.data;
@@ -2631,22 +2642,29 @@ function renderIssues(){
   }
   var tb=document.getElementById('issues-tbody');
   if(!tb) return;
-  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('🚨','ยังไม่มีปัญหา','คลิก "+ แจ้งปัญหา"')+'</td></tr>';return;}
+  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('🚨','ยังไม่มีปัญหา','คลิก "+ แจ้งปัญหา"')+'</td></tr>';return;}
   tb.innerHTML=STATE.issues.slice().reverse().map(function(i){
-    var imgs=tryParse(i.BeforeImageIds);
-    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปปัญหา"/>';}).join('')+(imgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var beforeImgs=tryParse(i.BeforeImageIds);
+    var beforeThumbs=beforeImgs.length?'<div style="display:flex;gap:4px">'+beforeImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปก่อนซ่อม"/>';}).join('')+(beforeImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(beforeImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    
+    var afterImgs=tryParse(i.AfterImageIds);
+    var afterThumbs=i.Status==='Closed'?(afterImgs.length?'<div style="display:flex;gap:4px">'+afterImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปหลังซ่อม"/>';}).join('')+(afterImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(afterImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>'):'<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
+
     return '<tr>'+
       '<td><strong>'+i.ID+'</strong></td>'+
       '<td>'+(i.TargetName||'-')+'</td>'+
       '<td>'+(i.IssueType||'-')+'</td>'+
-      '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(i.Description||'')+'">'+(i.Description||'-')+'</td>'+
+      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(i.Description||'')+'">'+(i.Description||'-')+'</td>'+
       '<td><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span></td>'+
       '<td><span class="badge '+(i.Status||'open').toLowerCase().replace(' ','-')+'">'+(i.Status||'Open')+'</span></td>'+
       '<td>'+((i.OccurredAt||'').substring(0,10)||'-')+'</td>'+
-      '<td>'+thumbs+'</td>'+
+      '<td>'+beforeThumbs+'</td>'+
+      '<td>'+afterThumbs+'</td>'+
       '<td style="white-space:nowrap">'+
-        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')">▶️</button> ':'')+
-        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')">🗑️</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\''+i.ID+'\')" title="ดูรายละเอียด/ประวัติ">🔍</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick=\'openIssueModal('+JSON.stringify(i)+')\' title="แก้ไขปัญหา">✏️</button> '+
+        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ':'')+
+        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')" title="ลบ">🗑️</button>'+
       '</td>'+
     '</tr>';
   }).join('');
@@ -2884,17 +2902,36 @@ function previewPhotos(input,previewId,key){
   });
   input.value='';
 }
-function rmPhoto(key,idx,previewId){if(STATE.pendingPhotos[key]&&STATE.pendingPhotos[key].files[idx])STATE.pendingPhotos[key].files[idx]=null;var el=document.getElementById('pi-'+key+'-'+idx);if(el)el.remove();}
-async function uploadPendingPhotos(key,folder){
-  var state=STATE.pendingPhotos[key];
-  if(!state||!state.files.length)return[];
-  var toUpload=state.files.filter(function(f){return f!==null;});
-  if(!toUpload.length)return[];
-  var results=await Promise.all(toUpload.map(function(f,i){
-    var fname=key+'_'+Date.now()+'_'+i+'.'+f.file.name.split('.').pop();
-    return api('uploadFile',{base64Data:f.dataUrl,filename:fname,subFolder:folder});
-  }));
-  return results.filter(function(r){return r.success;}).map(function(r){return r.fileId;});
+function rmPhoto(key, idx, previewId, isExisting) {
+  if (STATE.pendingPhotos[key]) {
+    if (isExisting) {
+      if (STATE.pendingPhotos[key].existing && STATE.pendingPhotos[key].existing[idx] !== undefined) {
+        STATE.pendingPhotos[key].existing[idx] = null;
+      }
+    } else {
+      if (STATE.pendingPhotos[key].files && STATE.pendingPhotos[key].files[idx] !== undefined) {
+        STATE.pendingPhotos[key].files[idx] = null;
+      }
+    }
+  }
+  var el = document.getElementById(isExisting ? 'pi-' + key + '-ex-' + idx : 'pi-' + key + '-' + idx);
+  if (el) el.remove();
+}
+
+async function uploadPendingPhotos(key, folder) {
+  var state = STATE.pendingPhotos[key];
+  if (!state) return [];
+  var existing = (state.existing || []).filter(function(x) { return x !== null && x !== ''; });
+  var toUpload = (state.files || []).filter(function(f) { return f !== null; });
+  var uploadedIds = [];
+  if (toUpload.length) {
+    var results = await Promise.all(toUpload.map(function(f, i) {
+      var fname = key + '_' + Date.now() + '_' + i + '.' + (f.file && f.file.name ? f.file.name.split('.').pop() : 'jpg');
+      return api('uploadFile', { base64Data: f.dataUrl, filename: fname, subFolder: folder });
+    }));
+    uploadedIds = results.filter(function(r) { return r.success; }).map(function(r) { return r.fileId; });
+  }
+  return existing.concat(uploadedIds);
 }
 
 // ============================================
