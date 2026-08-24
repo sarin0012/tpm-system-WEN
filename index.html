@@ -2630,7 +2630,7 @@ async function completeTPM(){
 function renderIssues(){
   if (!STATE.issues || STATE.issues.length === 0) {
     var tb=document.getElementById('issues-tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดรายการปัญหา...</td></tr>';
+    if(tb) tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32...</td></tr>';
     api('getIssues').then(function(res){
       if(res && res.success && res.data){
         STATE.issues = res.data;
@@ -2642,13 +2642,13 @@ function renderIssues(){
   }
   var tb=document.getElementById('issues-tbody');
   if(!tb) return;
-  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('🚨','ยังไม่มีปัญหา','คลิก "+ แจ้งปัญหา"')+'</td></tr>';return;}
+  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('\ud83d\udea8','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1b\u0e31\u0e0d\u0e2b\u0e32','\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"')+'</td></tr>';return;}
   tb.innerHTML=STATE.issues.slice().reverse().map(function(i){
     var beforeImgs=tryParse(i.BeforeImageIds);
-    var beforeThumbs=beforeImgs.length?'<div style="display:flex;gap:4px">'+beforeImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปก่อนซ่อม"/>';}).join('')+(beforeImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(beforeImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var beforeThumbs=beforeImgs.length?'<div style="display:flex;gap:4px">'+beforeImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e01\u0e48\u0e2d\u0e19\u0e0b\u0e48\u0e2d\u0e21"/>';}).join('')+(beforeImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(beforeImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
     
     var afterImgs=tryParse(i.AfterImageIds);
-    var afterThumbs=i.Status==='Closed'?(afterImgs.length?'<div style="display:flex;gap:4px">'+afterImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปหลังซ่อม"/>';}).join('')+(afterImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(afterImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>'):'<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
+    var afterThumbs=i.Status==='Closed'?(afterImgs.length?'<div style="display:flex;gap:4px">'+afterImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21"/>';}).join('')+(afterImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(afterImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>'):'<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
 
     return '<tr>'+
       '<td><strong>'+i.ID+'</strong></td>'+
@@ -2661,14 +2661,16 @@ function renderIssues(){
       '<td>'+beforeThumbs+'</td>'+
       '<td>'+afterThumbs+'</td>'+
       '<td style="white-space:nowrap">'+
-        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\''+i.ID+'\')" title="ดูรายละเอียด/ประวัติ">🔍</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick=\'openIssueModal('+JSON.stringify(i)+')\' title="แก้ไขปัญหา">✏️</button> '+
-        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ':'')+
-        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')" title="ลบ">🗑️</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\''+i.ID+'\')" title="\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14/\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34">\ud83d\udd0d</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\''+i.ID+'\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32">\u270f\ufe0f</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\''+i.ID+'\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23">\ud83d\udda8\ufe0f</button> '+
+        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')" title="\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')" title="\u0e40\u0e23\u0e34\u0e48\u0e21\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23">\u25b6\ufe0f</button> ':'')+
+        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>'+
       '</td>'+
     '</tr>';
   }).join('');
 }
+
 function loadIssueTargets(selectedTargetId){
   var type=v('issue-target-type');
   var s=document.getElementById('issue-target-id');
@@ -2689,14 +2691,23 @@ function loadIssueTargets(selectedTargetId){
   s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active'||x.ID===selectedTargetId;}).map(function(x){return '<option value="'+x.ID+'"'+(x.ID===selectedTargetId?' selected':'')+'>'+x.Name+'</option>';}).join('');
 }
 
-function openIssueModal(data){
+function openIssueModal(issueOrId){
   ['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});
   var titleEl = document.getElementById('issue-modal-title');
   var grid = document.getElementById('issue-photos-preview');
   if (grid) grid.innerHTML = '';
   STATE.pendingPhotos['issue'] = { files: [], existing: [] };
 
-  if (data && typeof data === 'object' && data.ID) {
+  var data = null;
+  if (issueOrId) {
+    if (typeof issueOrId === 'string') {
+      data = STATE.issues.find(function(x){ return x.ID === issueOrId; });
+    } else if (typeof issueOrId === 'object') {
+      data = issueOrId;
+    }
+  }
+
+  if (data && data.ID) {
     if (titleEl) titleEl.textContent = '\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32: ' + data.ID;
     v_set('issue-id', data.ID);
     v_set('issue-target-type', data.TargetType || 'Mold');
@@ -2776,7 +2787,7 @@ function openIssueDetailModal(id){
           return '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e20\u0e32\u0e1e\u0e02\u0e22\u0e32\u0e22" />';
         }).join('') +
       '</div>'
-    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e31\u0e1e\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07</div>';
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07</div>';
 
   var afterGallery = afterImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
@@ -2800,7 +2811,7 @@ function openIssueDetailModal(id){
 
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
       '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">\ud83d\udea8 \u0e02\u0e49\u0e2d\u0e21\u0e34\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">\ud83d\udea8 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07:</strong> ' + (iss.ReportedBy||'-') + '</div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px"><strong>\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2d\u0e32\u0e01\u0e32\u0e23:</strong></div>' +
         '<div style="font-size:13px;line-height:1.4;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);">' + (iss.Description||'-') + '</div>' +
@@ -2808,7 +2819,7 @@ function openIssueDetailModal(id){
       '</div>' +
 
       '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">\u2705 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 & \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">\u2705 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e44\u0e02 & \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</div>' +
         (iss.Status === 'Closed' ? 
           '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedBy||'-') + '</div>' +
           '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</div>' +
@@ -2826,11 +2837,136 @@ function openIssueDetailModal(id){
   if (footer) {
     footer.innerHTML = 
       '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">\u0e1b\u0e34\u0e14</button> ' +
-      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(' + JSON.stringify(iss) + ');">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</button> ' +
+      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</button> ' +
+      '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">\ud83d\udda8\ufe0f \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23</button> ' +
       (iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e19\u0e35\u0e49</button>' : '');
   }
 
   openModal('issue-detail-modal');
+}
+
+function printIssueReport(id) {
+  var iss = STATE.issues.find(function(i) { return i.ID === id; });
+  if (!iss) {
+    showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e31\u0e0d\u0e2b\u0e32', 'error');
+    return;
+  }
+
+  var beforeImgs = tryParse(iss.BeforeImageIds);
+  var afterImgs = tryParse(iss.AfterImageIds);
+
+  var beforeGallery = beforeImgs.length
+    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
+        beforeImgs.map(function(url) {
+          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
+        }).join('') +
+      '</div>'
+    : '<span style="color:#666;font-style:italic;">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a</span>';
+
+  var afterGallery = afterImgs.length
+    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
+        afterImgs.map(function(url) {
+          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
+        }).join('') +
+      '</div>'
+    : '<span style="color:#666;font-style:italic;">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</span>';
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>\u0e43\u0e1a\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 - ' + iss.ID + '</title>' +
+    '<style>' +
+    '@page { size: A4 portrait; margin: 12mm 15mm; }' +
+    'body { font-family: "Sarabun", "Segoe UI", sans-serif; color: #111; margin: 0; padding: 15px; font-size: 13px; line-height: 1.4; }' +
+    '.no-print { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }' +
+    '@media print { .no-print { display: none !important; } body { padding: 0; } }' +
+    'h2 { margin: 0 0 4px 0; font-size: 18px; text-align: center; color: #1e3a8a; }' +
+    '.sub-title { text-align: center; font-size: 12px; color: #555; margin-bottom: 16px; font-weight: bold; }' +
+    'table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }' +
+    'th, td { border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left; vertical-align: top; }' +
+    'th { background-color: #f1f5f9; font-weight: 600; color: #334155; }' +
+    '.section-hdr { background: #e2e8f0; font-weight: bold; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1; font-size: 13px; margin-top: 10px; }' +
+    '.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }' +
+    '.critical { background: #fee2e2; color: #991b1b; } .high { background: #ffedd5; color: #9a3412; } .medium { background: #fef9c3; color: #854d0e; } .low { background: #f0fdf4; color: #166534; }' +
+    '.open { background: #fee2e2; color: #b91c1c; } .in-progress { background: #eff6ff; color: #1d4ed8; } .closed { background: #ecfdf5; color: #047857; }' +
+    '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 25px; text-align: center; page-break-inside: avoid; }' +
+    '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 12px 8px; min-height: 90px; display: flex; flex-direction: column; justify-content: space-between; }' +
+    '</style></head><body>' +
+    '<div class="no-print">' +
+      '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print Report</button>' +
+      '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">\u2715 \u0e1b\u0e34\u0e14</button>' +
+    '</div>' +
+
+    '<h2>\u0e43\u0e1a\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Issue & Maintenance Report)</h2>' +
+    '<div class="sub-title">\u0e23\u0e30\u0e1a\u0e1a\u0e1a\u0e23\u0e34\u0e2b\u0e32\u0e23\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e41\u0e25\u0e30\u0e1a\u0e33\u0e23\u0e38\u0e07\u0e23\u0e31\u0e01\u0e29\u0e32\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c/\u0e40\u0e08\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 (TPM Management System)</div>' +
+
+    '<table>' +
+      '<tr>' +
+        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>' + iss.ID + '</strong></td>' +
+        '<th style="width:18%;">\u0e2a\u0e16\u0e32\u0e19\u0e30 (Status)</th><td style="width:32%;"><span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22</th><td>' + (iss.TargetType||'Mold') + '</td>' +
+        '<th>\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c / \u0e40\u0e08\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23</th><td><strong>' + (iss.TargetName||'-') + '</strong></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e1b\u0e31\u0e0d\u0e2b\u0e32</th><td>' + (iss.IssueType||'-') + '</td>' +
+        '<th>\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e23\u0e38\u0e19\u0e41\u0e23\u0e07</th><td><span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span></td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48/\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e14\u0e40\u0e2b\u0e15\u0e38</th><td>' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</td>' +
+        '<th>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</th><td>' + (iss.ReportedBy||'-') + '</td>' +
+      '</tr>' +
+    '</table>' +
+
+    '<div class="section-hdr">1. \u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e1e\u0e1a (Problem Description & Initial Photos)</div>' +
+    '<table style="margin-top:0;">' +
+      '<tr>' +
+        '<td>' +
+          '<div style="min-height:40px;white-space:pre-wrap;">' + (iss.Description||'-') + '</div>' +
+          '<div style="margin-top:8px;"><strong>\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32:</strong>' + beforeGallery + '</div>' +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
+
+    '<div class="section-hdr">2. \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e30\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19 (Corrective Action & Resolution Report)</div>' +
+    '<table style="margin-top:0;">' +
+      '<tr>' +
+        '<th style="width:25%;">\u0e1c\u0e39\u0e49\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 / \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</th><td style="width:25%;">' + (iss.ClosedBy||'-') + '</td>' +
+        '<th style="width:25%;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</th><td style="width:25%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e17\u0e35\u0e48\u0e41\u0e17\u0e49\u0e08\u0e23\u0e34\u0e07 (Root Cause)</th>' +
+        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.RootCause||'-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Corrective Action)</th>' +
+        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.CorrectiveAction||'-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e17\u0e35\u0e48\u0e40\u0e1a\u0e34\u0e01\u0e43\u0e0a\u0e49 (Parts Used)</th>' +
+        '<td colspan="3">' + (iss.PartsUsed||'-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td colspan="4">' +
+          '<strong>\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (After Photos):</strong>' + afterGallery +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
+
+    '<div class="sig-grid">' +
+      '<div class="sig-box"><div><strong>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32 (Reporter)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>\u0e1c\u0e39\u0e49\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Technician)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>\u0e2b\u0e31\u0e27\u0e2b\u0e19\u0e49\u0e32\u0e07\u0e32\u0e19/\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (Supervisor)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
+    '</div>' +
+
+    '<' + '/body><' + '/html>';
+
+  var w = window.open('', '_blank');
+  if (w) {
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  } else {
+    showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Pop-up \u0e1a\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23', 'warning');
+  }
 }
 
 async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('\u0e2a\u0e16\u0e32\u0e19\u0e30: '+status,'success');}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
