@@ -440,7 +440,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openIssueModal()">+ &#3649;&#3592;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
-    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</th><th>&#3619;&#3634;&#3618;&#3621;&#3632;&#3648;&#3629;&#3637;&#3618;&#3604;</th><th>Severity</th><th>Status</th><th>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3585;&#3636;&#3604;</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>รูป</th><th>Actions</th></tr></thead>
     <tbody id="issues-tbody"></tbody>
   </table></div></div>
 </div>
@@ -932,11 +932,11 @@ async function _apiInternal(actionStr, payload = null) {
       // DASHBOARD
       case 'getDashboard': {
         const [mRes, mcRes, sRes, iRes, tRes] = await Promise.all([
-          sb.from('molds').select('*'),
-          sb.from('machines').select('*'),
-          sb.from('stock_parts').select('*'),
-          sb.from('issues').select('*'),
-          sb.from('tpm_plans').select('*')
+          sb.from('molds').select('ID, Name, Status, AssetNo, Vendor, Model'),
+          sb.from('machines').select('ID, Name, Status, AssetNo, Vendor, Model'),
+          sb.from('stock_parts').select('ID, Name, PartName, CurrentStock, Qty, MinStock, MinQty, Unit'),
+          sb.from('issues').select('ID, TargetType, TargetID, TargetName, IssueType, Description, Severity, Status, OccurredAt, CreatedAt').order('CreatedAt', { ascending: false }),
+          sb.from('tpm_plans').select('ID, TargetType, TargetID, TargetName, PlannedDate, Status')
         ]);
 
         const molds = mRes.data || [];
@@ -1709,7 +1709,7 @@ async function loadDashboard() {
     const recentIssues = d.recentIssues || [];
     if (issuesEl) {
       issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มี Issue ค้าง', '') :
-        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">' + (i.TargetName||'-') + '</div><div style="font-size:11px;color:var(--text-muted)">' + (i.Description||'').substring(0,50) + '</div></div><span class="badge open">' + (i.Status||'Open') + '</span></div>').join('');
+        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="nav(\'issues\')" title="คลิกเพื่อไปหน้ารายการปัญหา"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">' + (i.TargetName||'-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-faint)">(' + (i.IssueType||'-') + ')</span></div><div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (i.Description||'') + '</div></div><span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span></div>').join('');
     }
 
     const overdueEl = document.getElementById('dash-tpm-overdue');
@@ -2617,21 +2617,69 @@ async function completeTPM(){
 //  ISSUES
 // ============================================
 function renderIssues(){
+  if (!STATE.issues || STATE.issues.length === 0) {
+    var tb=document.getElementById('issues-tbody');
+    if(tb) tb.innerHTML='<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดรายการปัญหา...</td></tr>';
+    api('getIssues').then(function(res){
+      if(res && res.success && res.data){
+        STATE.issues = res.data;
+        renderIssues();
+        updateBadges();
+      }
+    });
+    return;
+  }
   var tb=document.getElementById('issues-tbody');
-  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="8">'+emptyState('\ud83d\udea8','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1b\u0e31\u0e0d\u0e2b\u0e32','\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"')+'</td></tr>';return;}
-  tb.innerHTML=STATE.issues.slice().reverse().map(function(i){return '<tr><td><strong>'+i.ID+'</strong></td><td>'+(i.TargetName||'-')+'</td><td>'+(i.IssueType||'-')+'</td><td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(i.Description||'-')+'</td><td><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span></td><td><span class="badge '+(i.Status||'open').toLowerCase().replace(' ','-')+'">'+(i.Status||'Open')+'</span></td><td>'+((i.OccurredAt||'').substring(0,10)||'-')+'</td><td style="white-space:nowrap">'+(i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button><button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')">\u25b6\ufe0f</button>':'')+'<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')">\ud83d\uddd1\ufe0f</button></td></tr>';}).join('');
+  if(!tb) return;
+  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('🚨','ยังไม่มีปัญหา','คลิก "+ แจ้งปัญหา"')+'</td></tr>';return;}
+  tb.innerHTML=STATE.issues.slice().reverse().map(function(i){
+    var imgs=tryParse(i.BeforeImageIds);
+    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="ดูรูปปัญหา"/>';}).join('')+(imgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    return '<tr>'+
+      '<td><strong>'+i.ID+'</strong></td>'+
+      '<td>'+(i.TargetName||'-')+'</td>'+
+      '<td>'+(i.IssueType||'-')+'</td>'+
+      '<td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(i.Description||'')+'">'+(i.Description||'-')+'</td>'+
+      '<td><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span></td>'+
+      '<td><span class="badge '+(i.Status||'open').toLowerCase().replace(' ','-')+'">'+(i.Status||'Open')+'</span></td>'+
+      '<td>'+((i.OccurredAt||'').substring(0,10)||'-')+'</td>'+
+      '<td>'+thumbs+'</td>'+
+      '<td style="white-space:nowrap">'+
+        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')">▶️</button> ':'')+
+        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')">🗑️</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
 }
-function loadIssueTargets(){var type=v('issue-target-type');var s=document.getElementById('issue-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
+function loadIssueTargets(){
+  var type=v('issue-target-type');
+  var s=document.getElementById('issue-target-id');
+  if(!s) return;
+  var list=type==='Mold'?STATE.molds:STATE.machines;
+  if(!list || !list.length){
+    s.innerHTML='<option value="">กำลังโหลดรายการ...</option>';
+    var apiName = type==='Mold' ? 'getMolds' : 'getMachines';
+    api(apiName).then(function(res){
+      if(res && res.success && res.data){
+        if(type==='Mold') STATE.molds = res.data;
+        else STATE.machines = res.data;
+        loadIssueTargets();
+      }
+    });
+    return;
+  }
+  s.innerHTML='<option value="">-- เลือก --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+}
 function openIssueModal(){['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});document.getElementById('issue-photos-preview').innerHTML='';STATE.pendingPhotos['issue']={files:[]};v_set('issue-occurred',new Date().toISOString().slice(0,16));loadIssueTargets();openModal('issue-modal');}
 async function saveIssue(){
   var targetId=v('issue-target-id'),desc=v('issue-description');
-  if(!targetId||!desc){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14','error');return;}
+  if(!targetId||!desc){showToast('กรุณาเลือก Machine/Mold และรายละเอียด','error');return;}
   var type=v('issue-target-type');var list=type==='Mold'?STATE.molds:STATE.machines;var target=list.find(function(x){return x.ID===targetId;});
   showGlobalLoading(true);var imgIds=await uploadPendingPhotos('issue','Issues/Before');
   var data={TargetType:type,TargetID:targetId,TargetName:target?target.Name:'',IssueType:v('issue-type'),Description:desc,OccurredAt:v('issue-occurred'),ReportedBy:v('issue-reporter'),Severity:v('issue-severity'),BeforeImageIds:JSON.stringify(imgIds),Status:'Open'};
   var r=await api('saveIssue',{data:data});showGlobalLoading(false);
-  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('issue-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  if(r.success){showToast('บันทึกปัญหาสำเร็จ','success');closeModal('issue-modal');var res=await api('getIssues');if(res.success){STATE.issues=res.data;renderIssues();updateBadges();}}
+  else showToast('ผิดพลาด: '+r.error,'error');
 }
 async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('\u0e2a\u0e16\u0e32\u0e19\u0e30: '+status,'success');}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
 function openCloseIssueModal(id){
@@ -2783,22 +2831,56 @@ async function saveUser(){var email=v('user-email');if(!email){showToast('\u0e01
 async function delUser(id){if(!confirm('\u0e25\u0e1a\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e19\u0e35\u0e49?'))return;var r=await api('deleteUser',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
 
 // ============================================
-//  PHOTO UPLOAD
+//  PHOTO UPLOAD & COMPRESSION
 // ============================================
 function triggerUpload(id){document.getElementById(id).click();}
+
+function compressImage(file, maxDim, quality) {
+  maxDim = maxDim || 1200;
+  quality = quality || 0.75;
+  return new Promise(function(resolve) {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(e.target.result); };
+      reader.readAsDataURL(file);
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width, h = img.height;
+        if (w > maxDim || h > maxDim) {
+          if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+          else { w = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = function() { resolve(e.target.result); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function() { resolve(''); };
+    reader.readAsDataURL(file);
+  });
+}
+
 function previewPhotos(input,previewId,key){
   if(!STATE.pendingPhotos[key])STATE.pendingPhotos[key]={files:[]};
   Array.from(input.files).forEach(function(file){
-    var reader=new FileReader();
-    reader.onload=function(e){
+    compressImage(file, 1200, 0.75).then(function(compressedDataUrl) {
+      if (!compressedDataUrl) return;
       var idx=STATE.pendingPhotos[key].files.length;
-      STATE.pendingPhotos[key].files.push({file:file,dataUrl:e.target.result});
+      STATE.pendingPhotos[key].files.push({file:file,dataUrl:compressedDataUrl});
       var grid=document.getElementById(previewId);
+      if (!grid) return;
       var item=document.createElement('div');item.className='photo-preview-item';item.id='pi-'+key+'-'+idx;
-      item.innerHTML='<img src="'+e.target.result+'" onclick="openLightbox(\''+e.target.result.replace(/'/g,"\\'")+"','')\" /><button class=\"photo-remove\" onclick=\"event.stopPropagation();rmPhoto('"+key+"',"+idx+",'"+previewId+"')\">\u2715</button>";
+      item.innerHTML='<img src="'+compressedDataUrl+'" onclick="openLightbox(\''+compressedDataUrl.replace(/'/g,"\\'")+'\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\''+key+'\','+idx+',\''+previewId+'\')">✕</button>';
       grid.appendChild(item);
-    };
-    reader.readAsDataURL(file);
+    });
   });
   input.value='';
 }
