@@ -2428,53 +2428,131 @@ function generateBulkDatesFromMonths(months) {
 }
 
 function renderBulkDatesList() {
-  const container = document.getElementById('bulk-dates-container');
+  var container = document.getElementById('bulk-dates-container');
   if (!container) return;
   if (!BULK_DATES.length) {
     container.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:16px;background:var(--surface2);border-radius:var(--r-sm)">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e01\u0e32\u0e23\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e23\u0e2d\u0e1a\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 \u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e23\u0e2d\u0e1a / \u0e27\u0e31\u0e19\u0e17\u0e35\u0e48" \u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e40\u0e14\u0e37\u0e2d\u0e19\u0e14\u0e49\u0e32\u0e19\u0e1a\u0e19</div>';
     return;
   }
-  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;max-height:260px;overflow-y:auto;padding-right:4px">' +
-    BULK_DATES.map((dateStr, i) => {
-      let monthLabel = '';
-      let ddmmyyyy = '-';
+  var fy = parseInt(v('bulk-year')) || new Date().getFullYear();
+  var yearOptions = [fy - 1, fy, fy + 1, fy + 2];
+
+  container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;max-height:300px;overflow-y:auto;padding-right:4px">' +
+    BULK_DATES.map(function(dateStr, i) {
+      var y = fy, m = 4, d = 15;
+      var monthLabel = '';
       if (dateStr) {
-        const parts = dateStr.split('-');
+        var parts = dateStr.split('-');
         if (parts.length >= 3) {
-          const y = parts[0];
-          const m = parts[1];
-          const d = parts[2];
-          const mIdx = parseInt(m) - 1;
+          y = parseInt(parts[0]);
+          m = parseInt(parts[1]);
+          d = parseInt(parts[2]);
+          var mIdx = m - 1;
           if (mIdx >= 0 && mIdx < 12) monthLabel = ' (' + TH_MONTHS[mIdx] + ')';
-          ddmmyyyy = `${d}/${m}/${y}`;
         }
       }
-      return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;display:flex;flex-direction:column;gap:5px" id="bulk-card-${i}">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;font-weight:700;color:var(--primary)">\u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 ${i + 1}${monthLabel}</span>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <span id="bulk-ddmmyyyy-${i}" class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-size:10px;padding:2px 6px;font-weight:700;" title="\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a DD/MM/YYYY">\ud83d\udcc5 ${ddmmyyyy}</span>
-            <button type="button" onclick="removeBulkDateRow(${i})" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px" title="\u0e25\u0e1a\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button>
-          </div>
-        </div>
-        <input type="date" value="${dateStr}" onchange="updateBulkDate(${i}, this.value)" style="font-size:12px;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--surface);color:var(--text);"/>
-      </div>`;
+      var dStr = String(d).padStart(2, '0');
+      var mStr = String(m).padStart(2, '0');
+      var ddmmyyyy = dStr + '/' + mStr + '/' + y;
+
+      var dayOpts = '';
+      for (var dayNum = 1; dayNum <= 31; dayNum++) {
+        dayOpts += '<option value="' + dayNum + '"' + (d === dayNum ? ' selected' : '') + '>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48 ' + dayNum + '</option>';
+      }
+
+      var monthOpts = '';
+      for (var mIdx = 0; mIdx < 12; mIdx++) {
+        var mn = TH_MONTHS[mIdx];
+        var mNum = mIdx + 1;
+        monthOpts += '<option value="' + mNum + '"' + (m === mNum ? ' selected' : '') + '>' + String(mNum).padStart(2,'0') + ' - ' + mn + '</option>';
+      }
+
+      var yearOpts = '';
+      yearOptions.forEach(function(yr) {
+        yearOpts += '<option value="' + yr + '"' + (y === yr ? ' selected' : '') + '>' + yr + '</option>';
+      });
+
+      return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;display:flex;flex-direction:column;gap:6px" id="bulk-card-' + i + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span id="bulk-card-title-' + i + '" style="font-size:12px;font-weight:700;color:var(--primary)">\u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 ' + (i + 1) + monthLabel + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px;">' +
+            '<span id="bulk-ddmmyyyy-' + i + '" class="badge" style="background:rgba(99,102,241,0.15);color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-size:11px;padding:2px 6px;font-weight:700;" title="\u0e23\u0e39\u0e1b\u0e41\u0e1a\u0e1a \u0e27\u0e31\u0e19/\u0e40\u0e14\u0e37\u0e2d\u0e19/\u0e1b\u0e35 (DD/MM/YYYY)">\ud83d\udcc5 ' + ddmmyyyy + '</span>' +
+            '<button type="button" onclick="removeBulkDateRow(' + i + ')" style="background:transparent;border:none;color:var(--danger);cursor:pointer;font-size:14px;padding:0 2px;line-height:1" title="\u0e25\u0e1a\u0e23\u0e2d\u0e1a\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;">' +
+          '<div style="flex:1;display:flex;flex-direction:column;gap:2px;">' +
+            '<span style="font-size:9px;color:var(--text-muted);font-weight:600;">\u0e27\u0e31\u0e19 (DD)</span>' +
+            '<select onchange="updateBulkDatePart(' + i + ',\'d\',this.value)" style="font-size:12px;padding:5px 4px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;">' +
+              dayOpts +
+            '</select>' +
+          '</div>' +
+          '<div style="flex:1.4;display:flex;flex-direction:column;gap:2px;">' +
+            '<span style="font-size:9px;color:var(--text-muted);font-weight:600;">\u0e40\u0e14\u0e37\u0e2d\u0e19 (MM)</span>' +
+            '<select onchange="updateBulkDatePart(' + i + ',\'m\',this.value)" style="font-size:12px;padding:5px 4px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;">' +
+              monthOpts +
+            '</select>' +
+          '</div>' +
+          '<div style="flex:1.1;display:flex;flex-direction:column;gap:2px;">' +
+            '<span style="font-size:9px;color:var(--text-muted);font-weight:600;">\u0e1b\u0e35 (YYYY)</span>' +
+            '<select onchange="updateBulkDatePart(' + i + ',\'y\',this.value)" style="font-size:12px;padding:5px 4px;font-weight:600;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;">' +
+              yearOpts +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('') + '</div>';
+}
+
+function updateBulkDatePart(idx, part, val) {
+  var cur = BULK_DATES[idx] || new Date().toISOString().substring(0, 10);
+  var p = cur.split('-');
+  var y = p[0] || String(new Date().getFullYear());
+  var m = p[1] || '04';
+  var d = p[2] || '15';
+
+  if (part === 'd') {
+    d = String(val).padStart(2, '0');
+  } else if (part === 'm') {
+    m = String(val).padStart(2, '0');
+  } else if (part === 'y') {
+    y = String(val);
+  }
+
+  var maxDays = new Date(parseInt(y), parseInt(m), 0).getDate();
+  if (parseInt(d) > maxDays) d = String(maxDays).padStart(2, '0');
+
+  var newDateStr = y + '-' + m + '-' + d;
+  BULK_DATES[idx] = newDateStr;
+
+  var mIdx = parseInt(m) - 1;
+  var monthName = (mIdx >= 0 && mIdx < 12) ? TH_MONTHS[mIdx] : '';
+  var cardTitle = document.getElementById('bulk-card-title-' + idx);
+  if (cardTitle) cardTitle.textContent = '\u0e23\u0e2d\u0e1a\u0e17\u0e35\u0e48 ' + (idx + 1) + ' (' + monthName + ')';
+
+  var ddmmyyyyBadge = document.getElementById('bulk-ddmmyyyy-' + idx);
+  if (ddmmyyyyBadge) ddmmyyyyBadge.textContent = '\ud83d\udcc5 ' + d + '/' + m + '/' + y;
+
+  var months = BULK_DATES.map(function(ds) {
+    var pt = (ds||'').split('-');
+    return pt.length >= 2 ? parseInt(pt[1]) : 0;
+  }).filter(function(mn) { return mn >= 1 && mn <= 12; });
+  renderMonthChips([...new Set(months)]);
 }
 
 function updateBulkDate(idx, val) {
   BULK_DATES[idx] = val;
   if (val) {
-    const parts = val.split('-');
+    var parts = val.split('-');
     if (parts.length >= 3) {
-      const el = document.getElementById(`bulk-ddmmyyyy-${idx}`);
-      if (el) el.textContent = `\ud83d\udcc5 ${parts[2]}/${parts[1]}/${parts[0]}`;
+      var el = document.getElementById('bulk-ddmmyyyy-' + idx);
+      if (el) el.textContent = '\ud83d\udcc5 ' + parts[2] + '/' + parts[1] + '/' + parts[0];
     }
   }
-  const months = BULK_DATES.map(d => {
-    const p = (d||'').split('-');
+  var months = BULK_DATES.map(function(d) {
+    var p = (d||'').split('-');
     return p.length >= 2 ? parseInt(p[1]) : 0;
-  }).filter(m => m >= 1 && m <= 12);
+  }).filter(function(m) { return m >= 1 && m <= 12; });
   renderMonthChips([...new Set(months)]);
 }
 
