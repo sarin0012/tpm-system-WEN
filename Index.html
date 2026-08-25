@@ -4013,7 +4013,7 @@ async function initMobileSignPage(moldId, defaultRole) {
   mobMoldId = moldId || '';
   mobCurRole = defaultRole || 'sm';
   
-  document.body.innerHTML = 
+  document.body.innerHTML = `
     <div style="font-family:'Sarabun',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:14px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">
       <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid #334155;">
         
@@ -4080,7 +4080,7 @@ async function initMobileSignPage(moldId, defaultRole) {
         </button>
       </div>
     </div>
-  ;
+  `;
 
   initMobCanvas();
   setMobRole(mobCurRole);
