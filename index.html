@@ -3793,6 +3793,456 @@ async function uploadPendingPhotos(key, folder) {
 // ============================================
 //  OPEN PM PRINT FORM (A4 LANDSCAPE PM SHEET)
 // ============================================
+// ============================================
+//  SIGNATURE MANAGER (HEADER SIGNATURES)
+// ============================================
+var MAIN_SIG_STORE = {};
+var mainCurRole = 'sm';
+var mainCurTab = 'draw';
+var mainUploadedImage = '';
+var mainCanvas, mainCtx, mainIsDrawing = false;
+
+function initMainCanvas() {
+  mainCanvas = document.getElementById('main-sig-canvas');
+  if(!mainCanvas) return;
+  mainCtx = mainCanvas.getContext('2d');
+  mainCtx.strokeStyle = '#000080';
+  mainCtx.lineWidth = 2.5;
+  mainCtx.lineCap = 'round';
+  mainCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var r = mainCanvas.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - r.left) * (mainCanvas.width / r.width),
+      y: (clientY - r.top) * (mainCanvas.height / r.height)
+    };
+  }
+  function start(e) { mainIsDrawing = true; var p = getPos(e); mainCtx.beginPath(); mainCtx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }
+  function move(e) { if(!mainIsDrawing) return; var p = getPos(e); mainCtx.lineTo(p.x, p.y); mainCtx.stroke(); if(e.touches) e.preventDefault(); }
+  function end(e) { mainIsDrawing = false; }
+
+  mainCanvas.addEventListener('mousedown', start);
+  mainCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  mainCanvas.addEventListener('touchstart', start, {passive:false});
+  mainCanvas.addEventListener('touchmove', move, {passive:false});
+  mainCanvas.addEventListener('touchend', end);
+}
+
+function clearMainCanvas() {
+  if(mainCtx && mainCanvas) mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+}
+
+function switchMainSigTab(tab) {
+  mainCurTab = tab;
+  ['draw','image','stamp','none'].forEach(function(t){
+    var btn = document.getElementById('main-tab-' + t);
+    var pane = document.getElementById('main-sig-pane-' + t);
+    if(btn && pane){
+      if(t === tab){
+        btn.className = 'btn btn-primary btn-sm';
+        pane.style.display = 'block';
+      } else {
+        btn.className = 'btn btn-outline btn-sm';
+        pane.style.display = 'none';
+      }
+    }
+  });
+}
+
+function populateMainSigRoleSelect(selectedRole) {
+  var sel = document.getElementById('main-sig-role');
+  if (!sel) return;
+  var vendors = [];
+  (STATE.molds || []).forEach(function(m) {
+    if (m.Vendor && m.Vendor.trim() && vendors.indexOf(m.Vendor.trim()) === -1) {
+      vendors.push(m.Vendor.trim());
+    }
+  });
+
+  var html = '<optgroup label="\uD83C\uDFE2 \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E41\u0E22\u0E01\u0E15\u0E32\u0E21 VENDOR">';
+  if (vendors.length === 0) {
+    html += '<option value="vendor">\uD83C\uDFE2 VENDOR (\u0E17\u0E31\u0E48\u0E27\u0E44\u0E1B)</option>';
+  } else {
+    vendors.forEach(function(v) {
+      html += '<option value="vendor_' + v + '">\uD83C\uDFE2 VENDOR: ' + v + '</option>';
+    });
+    html += '<option value="vendor">\uD83C\uDFE2 VENDOR (\u0E2D\u0E37\u0E48\u0E19\u0E46 / \u0E17\u0E31\u0E48\u0E27\u0E44\u0E1B)</option>';
+  }
+  html += '</optgroup>';
+  html += '<optgroup label="\uD83C\uDFED \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E20\u0E32\u0E22\u0E43\u0E19\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19 (WEN / WP)">';
+  html += '<option value="sm">\uD83D\uDC64 SM (Section Manager - WEN/WP)</option>';
+  html += '<option value="sv">\uD83D\uDC77 SV (Supervisor - WEN/WP)</option>';
+  html += '<option value="st">\uD83D\uDCCB ST (Staff - WEN/WP)</option>';
+  html += '</optgroup>';
+
+  sel.innerHTML = html;
+  if (selectedRole) sel.value = selectedRole;
+  else if (!sel.value) sel.value = 'sm';
+}
+
+function openSignatureManagerModal(role) {
+  try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  
+  populateMainSigRoleSelect(role || 'sm');
+  mainCurRole = document.getElementById('main-sig-role').value || role || 'sm';
+  
+  var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
+  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || roleLabel;
+  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
+  clearMainCanvas();
+  mainUploadedImage = '';
+  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 (PNG/JPG \u0E1E\u0E37\u0E49\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2A\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E32\u0E27)</span>';
+
+  var existing = MAIN_SIG_STORE[mainCurRole];
+  if(existing && existing.type){
+    switchMainSigTab(existing.type);
+    if(existing.type === 'draw' && existing.data){
+      var img = new Image();
+      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
+      img.src = existing.data;
+    } else if(existing.type === 'image' && existing.data){
+      mainUploadedImage = existing.data;
+      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+    }
+  } else {
+    switchMainSigTab('draw');
+  }
+
+  openModal('signature-manager-modal');
+  setTimeout(initMainCanvas, 100);
+}
+
+function onMainSigRoleChange() {
+  var sel = document.getElementById('main-sig-role').value;
+  mainCurRole = sel;
+  var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
+  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || roleLabel;
+  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
+  clearMainCanvas();
+  mainUploadedImage = '';
+  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 (PNG/JPG \u0E1E\u0E37\u0E49\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2A\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E32\u0E27)</span>';
+
+  var existing = MAIN_SIG_STORE[mainCurRole];
+  if(existing && existing.type){
+    switchMainSigTab(existing.type);
+    if(existing.type === 'draw' && existing.data){
+      var img = new Image();
+      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
+      img.src = existing.data;
+    } else if(existing.type === 'image' && existing.data){
+      mainUploadedImage = existing.data;
+      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+    }
+  } else {
+    switchMainSigTab('draw');
+  }
+}
+
+function handleMainImageUpload(e) {
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    mainUploadedImage = evt.target.result;
+    document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + mainUploadedImage + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveMainSignature() {
+  var role = document.getElementById('main-sig-role').value;
+  var sigData = null;
+  if(mainCurTab === 'draw') {
+    if(!mainCanvas) initMainCanvas();
+    var dataUrl = mainCanvas.toDataURL('image/png');
+    sigData = { type: 'draw', data: dataUrl };
+  } else if(mainCurTab === 'image') {
+    if(!mainUploadedImage){ showToast('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E01\u0E48\u0E2D\u0E19\u0E04\u0E23\u0E31\u0E1A','warning'); return; }
+    sigData = { type: 'image', data: mainUploadedImage };
+  } else if(mainCurTab === 'stamp') {
+    var defaultLabel = role.indexOf('vendor_') === 0 ? role.replace('vendor_', '') : role.toUpperCase();
+    var stName = (document.getElementById('main-stamp-name').value || '').trim() || defaultLabel;
+    var stDate = document.getElementById('main-stamp-date').value || '';
+    sigData = { type: 'stamp', name: stName, date: stDate };
+  } else if(mainCurTab === 'none') {
+    sigData = null;
+  }
+
+  if (sigData) {
+    MAIN_SIG_STORE[role] = sigData;
+  } else {
+    delete MAIN_SIG_STORE[role];
+  }
+
+  try {
+    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE));
+  } catch(e){}
+
+  // If saving vendor signature, sync to Supabase for all molds of that vendor
+  if (role.indexOf('vendor_') === 0) {
+    var vendorName = role.replace('vendor_', '');
+    var matchingMolds = (STATE.molds || []).filter(function(m) { return (m.Vendor || '').trim() === vendorName; });
+    if (matchingMolds.length > 0) {
+      showToast('\u0E01\u0E33\u0E25\u0E31\u0E07\u0E0B\u0E34\u0E07\u0E04\u0E4C\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 VENDOR ' + vendorName + ' \u0E44\u0E1B\u0E22\u0E31\u0E07 ' + matchingMolds.length + ' \u0E42\u0E21\u0E25...', 'info');
+      for (var i = 0; i < matchingMolds.length; i++) {
+        await api('saveMoldHeaderSig', { moldId: matchingMolds[i].ID, role: 'vendor', sigData: sigData });
+      }
+    }
+  }
+
+  var displayRole = role.indexOf('vendor_') === 0 ? 'VENDOR (' + role.replace('vendor_', '') + ')' : role.toUpperCase();
+  showToast('\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 ' + displayRole + ' \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27 \u2705', 'success');
+  closeModal('signature-manager-modal');
+}
+
+// ============================================
+//  MOBILE SIGNING SCREEN
+// ============================================
+var mobCanvas, mobCtx, mobIsDrawing = false;
+var mobCurRole = 'sm';
+var mobCurTab = 'draw';
+var mobUploadedImage = '';
+var mobMoldId = '';
+var mobMoldData = null;
+
+async function initMobileSignPage(moldId, defaultRole) {
+  mobMoldId = moldId || '';
+  mobCurRole = defaultRole || 'sm';
+  
+  document.body.innerHTML = 
+    <div style="font-family:'Sarabun',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:14px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">
+      <div style="max-width:480px;margin:0 auto;background:#1e293b;border-radius:16px;padding:18px;box-shadow:0 10px 30px rgba(0,0,0,0.5);border:1px solid #334155;">
+        
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;border-bottom:1px solid #334155;padding-bottom:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:26px;background:rgba(99,102,241,0.2);padding:6px 10px;border-radius:10px;">\u270D\uFE0F</div>
+            <div>
+              <h2 style="margin:0;font-size:16px;color:#fff;font-weight:700;">\u0E40\u0E0B\u0E47\u0E19\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 PM \u0E1c\u0E48\u0E32\u0E19\u0E21\u0E37\u0E2D\u0E16\u0E37\u0E2D</h2>
+              <div style="font-size:12px;color:#94a3b8;" id="mob-target-title">\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C...</div>
+            </div>
+          </div>
+          <a href="/" style="color:#94a3b8;font-size:18px;text-decoration:none;padding:4px 8px;">\u2715</a>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="display:block;font-size:12px;color:#94a3b8;margin-bottom:6px;font-weight:600;">\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E15\u0E33\u0E41\u0E2B\u0E19\u0E48\u0E07\u0E1c\u0E39\u0E49\u0E25\u0E07\u0E19\u0E32\u0E21:</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+            <button type="button" class="mob-role-btn" id="mob-role-vendor" onclick="setMobRole('vendor')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">\uD83C\uDFE2 VENDOR</button>
+            <button type="button" class="mob-role-btn" id="mob-role-sm" onclick="setMobRole('sm')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">\uD83D\uDC64 SM (Manager)</button>
+            <button type="button" class="mob-role-btn" id="mob-role-sv" onclick="setMobRole('sv')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">\uD83D\uDC77 SV (Supervisor)</button>
+            <button type="button" class="mob-role-btn" id="mob-role-st" onclick="setMobRole('st')" style="padding:9px;border-radius:8px;border:1px solid #475569;background:#334155;color:#fff;font-size:11.5px;font-weight:600;cursor:pointer;text-align:center;">\uD83D\uDCCB ST (Staff)</button>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid #334155;padding-bottom:10px;">
+          <button type="button" id="mob-tab-draw" onclick="switchMobTab('draw')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#6366f1;color:#fff;font-size:11.5px;font-weight:bold;cursor:pointer;">\u270D\uFE0F \u0E27\u0E32\u0E14\u0E2A\u0E14</button>
+          <button type="button" id="mob-tab-stamp" onclick="switchMobTab('stamp')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">\uD83D\uDD34 E-Stamp</button>
+          <button type="button" id="mob-tab-image" onclick="switchMobTab('image')" style="flex:1;padding:7px 2px;border-radius:6px;border:none;background:#334155;color:#94a3b8;font-size:11.5px;font-weight:bold;cursor:pointer;">\uD83D\uDDBC\uFE0F \u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E23\u0E39\u0E1B</button>
+        </div>
+
+        <div id="mob-pane-draw" style="display:block;">
+          <div style="background:#fff;border-radius:10px;overflow:hidden;position:relative;margin-bottom:8px;border:2px solid #6366f1;">
+            <canvas id="mob-canvas" width="440" height="180" style="display:block;width:100%;height:180px;cursor:crosshair;touch-action:none;background:#fff;"></canvas>
+            <div style="position:absolute;bottom:6px;left:10px;font-size:10.5px;color:#9ca3af;pointer-events:none;">(\u0E43\u0E0A\u0E49\u0E19\u0E34\u0E49\u0E27\u0E25\u0E32\u0E01\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E37\u0E48\u0E2D)</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <span style="font-size:11px;color:#94a3b8;">\u0E27\u0E32\u0E14\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E43\u0E19\u0E01\u0E23\u0E2D\u0E1A\u0E2A\u0E35\u0E02\u0E32\u0E27</span>
+            <button type="button" onclick="clearMobCanvas()" style="padding:4px 12px;background:#334155;border:1px solid #475569;color:#e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;">\uD83E\uDDF9 \u0E25\u0E49\u0E32\u0E07\u0E40\u0E2A\u0E49\u0E19\u0E27\u0E32\u0E14</button>
+          </div>
+        </div>
+
+        <div id="mob-pane-stamp" style="display:none;padding:6px 0 14px 0;">
+          <div style="margin-bottom:10px;">
+            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">\u0E0A\u0E37\u0E48\u0E2D-\u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25 \u0E1A\u0E19\u0E15\u0E23\u0E32\u0E22\u0E32\u0E07:</label>
+            <input id="mob-stamp-name" placeholder="\u0E40\u0E0A\u0E48\u0E19 SARIN T." style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34:</label>
+            <input id="mob-stamp-date" type="date" style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
+          </div>
+        </div>
+
+        <div id="mob-pane-image" style="display:none;padding:10px 0;text-align:center;">
+          <input type="file" id="mob-file-input" accept="image/*" onchange="handleMobImageUpload(event)" style="margin-bottom:10px;color:#94a3b8;font-size:11.5px;" />
+          <div id="mob-image-preview" style="height:100px;border:1px dashed #475569;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#0f172a;">
+            <span style="color:#64748b;font-size:11.5px;">\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 (PNG/JPG)</span>
+          </div>
+        </div>
+
+        <div id="mob-status" style="display:none;margin-bottom:12px;padding:10px;border-radius:8px;font-size:12.5px;text-align:center;"></div>
+
+        <button type="button" id="mob-save-btn" onclick="saveMobSignature()" style="width:100%;padding:13px;border-radius:10px;border:none;background:#10b981;color:#fff;font-size:14.5px;font-weight:bold;cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);">
+          \uD83D\uDCBE \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E25\u0E07\u0E23\u0E30\u0E1A\u0E1A
+        </button>
+      </div>
+    </div>
+  ;
+
+  initMobCanvas();
+  setMobRole(mobCurRole);
+
+  if (mobMoldId) {
+    try {
+      const res = await api('getMolds');
+      if (res.success && res.data) {
+        mobMoldData = res.data.find(m => m.ID === mobMoldId);
+        if (mobMoldData) {
+          document.getElementById('mob-target-title').innerText = '\u0E41\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C: ' + mobMoldData.Name + ' (' + (mobMoldData.AssetNo || '-') + ')';
+        }
+      }
+    } catch(e){}
+  } else {
+    document.getElementById('mob-target-title').innerText = '\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E2B\u0E31\u0E27\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E2A\u0E48\u0E27\u0E19\u0E01\u0E25\u0E32\u0E07';
+  }
+}
+
+function initMobCanvas() {
+  mobCanvas = document.getElementById('mob-canvas');
+  if (!mobCanvas) return;
+  mobCtx = mobCanvas.getContext('2d');
+  mobCtx.strokeStyle = '#000080';
+  mobCtx.lineWidth = 2.8;
+  mobCtx.lineCap = 'round';
+  mobCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var r = mobCanvas.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - r.left) * (mobCanvas.width / r.width),
+      y: (clientY - r.top) * (mobCanvas.height / r.height)
+    };
+  }
+  function start(e) { mobIsDrawing = true; var p = getPos(e); mobCtx.beginPath(); mobCtx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }
+  function move(e) { if(!mobIsDrawing) return; var p = getPos(e); mobCtx.lineTo(p.x, p.y); mobCtx.stroke(); if(e.touches) e.preventDefault(); }
+  function end(e) { mobIsDrawing = false; }
+
+  mobCanvas.addEventListener('mousedown', start);
+  mobCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  mobCanvas.addEventListener('touchstart', start, {passive:false});
+  mobCanvas.addEventListener('touchmove', move, {passive:false});
+  mobCanvas.addEventListener('touchend', end);
+}
+
+function clearMobCanvas() {
+  if (mobCtx && mobCanvas) mobCtx.clearRect(0, 0, mobCanvas.width, mobCanvas.height);
+}
+
+function setMobRole(role) {
+  mobCurRole = role;
+  ['vendor', 'sm', 'sv', 'st'].forEach(r => {
+    var btn = document.getElementById('mob-role-' + r);
+    if (!btn) return;
+    if (r === role) {
+      btn.style.background = '#6366f1';
+      btn.style.borderColor = '#818cf8';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = '#334155';
+      btn.style.borderColor = '#475569';
+      btn.style.color = '#94a3b8';
+    }
+  });
+
+  var stampName = document.getElementById('mob-stamp-name');
+  if (stampName) stampName.value = role.toUpperCase();
+  var stampDate = document.getElementById('mob-stamp-date');
+  if (stampDate) stampDate.value = new Date().toISOString().substring(0, 10);
+}
+
+function switchMobTab(tab) {
+  mobCurTab = tab;
+  ['draw', 'stamp', 'image'].forEach(t => {
+    var btn = document.getElementById('mob-tab-' + t);
+    var pane = document.getElementById('mob-pane-' + t);
+    if (btn) {
+      btn.style.background = (t === tab) ? '#6366f1' : '#334155';
+      btn.style.color = (t === tab) ? '#fff' : '#94a3b8';
+    }
+    if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
+  });
+}
+
+function handleMobImageUpload(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(evt) {
+    mobUploadedImage = evt.target.result;
+    var prev = document.getElementById('mob-image-preview');
+    if (prev) prev.innerHTML = '<img src="' + mobUploadedImage + '" style="max-height:90px;max-width:90%;object-fit:contain;" />';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function saveMobSignature() {
+  var btn = document.getElementById('mob-save-btn');
+  var statusBox = document.getElementById('mob-status');
+  btn.disabled = true;
+  btn.innerText = '\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19...';
+
+  var sigData = null;
+  if (mobCurTab === 'draw') {
+    if (!mobCanvas) initMobCanvas();
+    var dataUrl = mobCanvas.toDataURL('image/png');
+    sigData = { type: 'draw', data: dataUrl };
+  } else if (mobCurTab === 'image') {
+    if (!mobUploadedImage) {
+      alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E01\u0E48\u0E2D\u0E19\u0E04\u0E23\u0E31\u0E1A');
+      btn.disabled = false;
+      btn.innerText = '\uD83D\uDCBE \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E25\u0E07\u0E23\u0E30\u0E1A\u0E1A';
+      return;
+    }
+    sigData = { type: 'image', data: mobUploadedImage };
+  } else if (mobCurTab === 'stamp') {
+    var stName = (document.getElementById('mob-stamp-name').value || '').trim() || mobCurRole.toUpperCase();
+    var stDate = document.getElementById('mob-stamp-date').value || '';
+    sigData = { type: 'stamp', name: stName, date: stDate };
+  }
+
+  // 1. Save to LocalStorage
+  try {
+    var localSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}');
+    if (mobCurRole === 'vendor' && mobMoldData && mobMoldData.Vendor) {
+      localSigs['vendor_' + mobMoldData.Vendor.trim()] = sigData;
+    } else {
+      localSigs[mobCurRole] = sigData;
+    }
+    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(localSigs));
+  } catch(e){}
+
+  // 2. Save to Supabase (if moldId is provided)
+  if (mobMoldId) {
+    try {
+      await api('saveMoldHeaderSig', {
+        moldId: mobMoldId,
+        role: mobCurRole,
+        sigData: sigData
+      });
+    } catch(err) {
+      console.error('Supabase sig save error:', err);
+    }
+  }
+
+  btn.disabled = false;
+  btn.innerText = '\uD83D\uDCBE \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E25\u0E07\u0E23\u0E30\u0E1A\u0E1A';
+
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = 'rgba(16,185,129,0.2)';
+    statusBox.style.border = '1px solid #10b981';
+    statusBox.style.color = '#34d399';
+    statusBox.innerHTML = '\u2705 <strong>\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 [' + mobCurRole.toUpperCase() + '] \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!</strong><br><span style="font-size:11px;color:#94a3b8;">\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23 PM \u0E1A\u0E19\u0E04\u0E2D\u0E21\u0E1E\u0E34\u0E27\u0E40\u0E15\u0E2D\u0E23\u0E4C\u0E08\u0E32\u0E2D\u0E31\u0E1B\u0E40\u0E14\u0E15\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E19\u0E35\u0E49\u0E17\u0E31\u0E19\u0E17\u0E35</span>';
+  }
+}
+
+
 async function openPMPrintForm(moldId) {
   var mold = STATE.molds.find(function(m){ return m.ID === moldId; });
   if (!mold) { showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e42\u0e21\u0e25', 'error'); return; }
@@ -3820,24 +4270,37 @@ async function openPMPrintForm(moldId) {
 
   var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
 
-  // Load Signatures: LocalStorage + Cloud Notes
+  // Load Signatures: LocalStorage + Cloud Notes (Vendor-Isolated)
   var headerSigs = {};
   try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  var moldSpecificSigs = {};
   if (mold.Notes && mold.Notes.indexOf('[HEADER_SIGS:') !== -1) {
     try {
       var sigMatch = mold.Notes.match(/\[HEADER_SIGS:(.*?)\]/);
       if (sigMatch && sigMatch[1]) {
-        var cloudSigs = JSON.parse(sigMatch[1]);
-        headerSigs = Object.assign({}, headerSigs, cloudSigs);
+        moldSpecificSigs = JSON.parse(sigMatch[1]);
       }
     } catch(e){}
   }
-  if (headerSigs['st_sv'] && !headerSigs['st']) {
-    headerSigs['st'] = headerSigs['st_sv'];
+
+  var moldVendorName = (mold.Vendor || '').trim();
+  var resolvedSigs = {
+    sm: moldSpecificSigs['sm'] || headerSigs['sm'] || null,
+    sv: moldSpecificSigs['sv'] || headerSigs['sv'] || null,
+    st: moldSpecificSigs['st'] || headerSigs['st'] || headerSigs['st_sv'] || null
+  };
+
+  // Vendor resolution: mold specific -> vendor specific (vendor_NAME) -> NULL (NO CROSS-VENDOR FALLBACK!)
+  if (moldSpecificSigs['vendor']) {
+    resolvedSigs['vendor'] = moldSpecificSigs['vendor'];
+  } else if (moldVendorName && headerSigs['vendor_' + moldVendorName]) {
+    resolvedSigs['vendor'] = headerSigs['vendor_' + moldVendorName];
+  } else {
+    resolvedSigs['vendor'] = null;
   }
 
   function getSigHtml(role, defaultName) {
-    var s = headerSigs[role];
+    var s = resolvedSigs[role];
     if(!s) return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>';
     if(s.type === 'draw' || s.type === 'image') {
       if(s.data) return '<img src="' + s.data + '" style="max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
@@ -4292,7 +4755,8 @@ async function openPMPrintForm(moldId) {
     //  SCRIPT INSIDE PRINT WINDOW
     // ============================================
     '<script>' +
-      'var sigStore = ' + JSON.stringify(headerSigs) + ';' +
+      'var sigStore = ' + JSON.stringify(resolvedSigs) + ';' +
+      'var moldVendorName = "' + (mold.Vendor || '').replace(/"/g, '\"') + '";' +
       'var moldIdForSync = "' + mold.ID + '";' +
       'var curRole = "sm";' +
       'var curTab = "draw";' +
@@ -4416,7 +4880,17 @@ async function openPMPrintForm(moldId) {
         '} else if(curTab === "none") {' +
           'delete sigStore[role];' +
         '}' +
-        'try { localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(sigStore)); } catch(e){}' +
+        'try {' +
+          'var rootSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}");' +
+          'if(role === "vendor" && moldVendorName) {' +
+            'if(sigStore[role]) rootSigs["vendor_" + moldVendorName] = sigStore[role];' +
+            'else delete rootSigs["vendor_" + moldVendorName];' +
+          '} else {' +
+            'if(sigStore[role]) rootSigs[role] = sigStore[role];' +
+            'else delete rootSigs[role];' +
+          '}' +
+          'localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(rootSigs));' +
+        '} catch(e){}' +
         'if(window.opener && window.opener.api){' +
           'window.opener.api("saveMoldHeaderSig", { moldId: moldIdForSync, role: role, sigData: sigStore[role] });' +
         '}' +
@@ -4456,10 +4930,11 @@ async function openPMPrintForm(moldId) {
 
       'async function refreshSignatures() {' +
         'try {' +
-          'var localSigs = {};' +
-          'try { localSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}"); } catch(e){}' +
-          'if(localSigs.st_sv && !localSigs.st) localSigs.st = localSigs.st_sv;' +
-          'sigStore = Object.assign({}, sigStore, localSigs);' +
+          'var rootSigs = {};' +
+          'try { rootSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}"); } catch(e){}' +
+          'if(rootSigs.st_sv && !rootSigs.st) rootSigs.st = rootSigs.st_sv;' +
+          '[\"sm\",\"sv\",\"st\"].forEach(function(r){ if(rootSigs[r]) sigStore[r] = rootSigs[r]; });' +
+          'if(moldVendorName && rootSigs[\"vendor_\" + moldVendorName]) sigStore[\"vendor\"] = rootSigs[\"vendor_\" + moldVendorName];' +
           'if(window.opener && window.opener.api) {' +
             'var r = await window.opener.api("getMolds");' +
             'if(r.success && r.data) {' +
