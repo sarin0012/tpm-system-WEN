@@ -397,8 +397,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
-    <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
-    <tbody id="molds-tbody"><tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
+    <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>&#9201; Cycle Time</th><th>&#9889; &#3618;&#3629;&#3604;&#3612;&#3621;&#3636;&#3605;/8&#3594;&#3617;.</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="14" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
@@ -501,7 +501,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="form-row col-2"><div class="form-group"><label>เลข Drawing (DWG. No.)</label><input id="mold-drawing" placeholder="เช่น DWG-2026-001"/></div><div class="form-group"><label>Size Mold (ขนาดแม่พิมพ์)</label><input id="mold-size" placeholder="เช่น 450 x 500 x 400 mm"/></div></div>
     <div class="form-row col-3"><div class="form-group"><label>น้ำหนัก Mold</label><input id="mold-weight" placeholder="เช่น 1,200 kg"/></div><div class="form-group"><label>น้ำหนักชิ้นงาน (Part)</label><input id="mold-part-weight" placeholder="เช่น 45.5 g"/></div><div class="form-group"><label>น้ำหนัก Runner</label><input id="mold-runner-weight" placeholder="เช่น 12.3 g"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor" placeholder="ผู้ผลิต / ผู้ขาย"/></div><div class="form-group"><label>Material</label><input id="mold-material" placeholder="ชนิดพลาสติก / วัตถุดิบ"/></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity" oninput="calcMoldProduction()"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#9201; Cycle Time (วิ/ช็อต) <small style="color:var(--text-muted)">เวลาจับเวลา 1 รอบฟีด</small></label><input id="mold-cycle-time" type="number" step="0.1" min="0" placeholder="เช่น 45.5" oninput="calcMoldProduction()"/></div><div class="form-group"><label>&#9889; ยอดผลิต / 8 ชม. <small style="color:var(--text-muted)">(คำนวณอัตโนมัติ)</small></label><div id="mold-production-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:var(--text-muted);min-height:38px;display:flex;align-items:center;">กรอก Cycle Time เพื่อดูยอดผลิต</div></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Status (สถานะแม่พิมพ์)</label><select id="mold-status"><option value="Active">🟢 Active (ใช้งานอยู่)</option><option value="Inactive">⚪ Inactive (หยุดใช้งาน / ยกเว้น PM)</option></select></div><div class="form-group"><label>หมายเหตุ</label><textarea id="mold-notes" placeholder="ข้อมูลเพิ่มเติม..." style="height:38px"></textarea></div></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
       <div class="photo-upload-area" onclick="triggerUpload('mold-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:13px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
@@ -1079,6 +1080,7 @@ async function _apiInternal(actionStr, payload = null) {
                 if (!m.MoldWeight && specs.MoldWeight) m.MoldWeight = specs.MoldWeight;
                 if (!m.PartWeight && specs.PartWeight) m.PartWeight = specs.PartWeight;
                 if (!m.RunnerWeight && specs.RunnerWeight) m.RunnerWeight = specs.RunnerWeight;
+                if (!m.CycleTime && specs.CycleTime) m.CycleTime = parseFloat(specs.CycleTime);
               }
             } catch(e){}
           }
@@ -1101,7 +1103,8 @@ async function _apiInternal(actionStr, payload = null) {
             MoldSize: item.MoldSize || '',
             MoldWeight: item.MoldWeight || '',
             PartWeight: item.PartWeight || '',
-            RunnerWeight: item.RunnerWeight || ''
+            RunnerWeight: item.RunnerWeight || '',
+            CycleTime: item.CycleTime || ''
           };
           let rawNotes = (item.Notes || '').replace(/\[SPECS:.*?\]/g, '').trim();
           const cleanItem = {
@@ -1959,7 +1962,7 @@ function renderMolds() {
   
   if (!STATE.molds || STATE.molds.length === 0) {
     var tb = document.getElementById('molds-tbody');
-    if (tb) tb.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดข้อมูลโมล...</td></tr>';
+    if (tb) tb.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>กำลังโหลดข้อมูลโมล...</td></tr>';
     api('getMolds').then(function(res) {
       if (res && res.success && res.data) {
         STATE.molds = res.data;
@@ -2008,6 +2011,15 @@ function filterMolds(){
     if(m.RunnerWeight) specs.push('⚡ Runner: '+m.RunnerWeight);
     var specStr = specs.length ? '<div style="font-size:11px;color:var(--text-muted);line-height:1.3">'+specs.join('<br>')+'</div>' : '<span style="color:var(--text-faint);font-size:11px">-</span>';
     var tpmSummary = getMoldTPMSummary(m.ID);
+    var _ct4 = m.CycleTime ? parseFloat(m.CycleTime) : 0;
+    var _cav4 = m.Cavity ? parseInt(m.Cavity) : 1;
+    var _prod = _ct4 > 0 ? Math.floor((8 * 3600 / _ct4) * _cav4) : null;
+    var _cycleCell = _ct4 > 0
+      ? '<div style="text-align:center"><span style="font-family:monospace;font-weight:700;font-size:13px;color:var(--primary)">' + _ct4.toFixed(1) + '</span><br><span style="font-size:10px;color:var(--text-muted)">วิ/ช็อต</span></div>'
+      : '<span style="color:var(--text-faint);font-size:11px">-</span>';
+    var _prodCell = _prod !== null
+      ? '<div style="text-align:center"><span style="font-family:monospace;font-weight:700;font-size:15px;color:#34d399">' + _prod.toLocaleString() + '</span><br><span style="font-size:10px;color:var(--text-muted)">ชิ้น/8ชม.</span><br><span style="font-size:9px;color:var(--text-faint)">(x' + _cav4 + ' Cav)</span></div>'
+      : '<span style="color:var(--text-faint);font-size:11px">-</span>';
     return '<tr>'+
       '<td style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
       '<td><strong>'+m.Name+'</strong></td>'+
@@ -2017,6 +2029,8 @@ function filterMolds(){
       '<td>'+(m.Vendor||'-')+'</td>'+
       '<td>'+(m.Material||'-')+'</td>'+
       '<td>'+specStr+'</td>'+
+      '<td>'+_cycleCell+'</td>'+
+      '<td>'+_prodCell+'</td>'+
       '<td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
       '<td>'+tpmSummary.badgeHtml+'</td>'+
       '<td>'+thumbs+'</td>'+
@@ -2030,7 +2044,8 @@ function filterMolds(){
   }).join('');
 }
 function openMoldModal(data) {
-  ['mold-id','mold-name','mold-model','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes'].forEach(function(id){v_set(id,'');});
+  ['mold-id','mold-name','mold-model','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
+  var _prev0=document.getElementById('mold-production-preview'); if(_prev0) _prev0.innerHTML='กรอก Cycle Time เพื่อดูยอดผลิต';
   v_set('mold-status', 'Active');
   document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
   document.getElementById('mold-modal-title').textContent=data?'✏️ แก้ไขโมล':'+ เพิ่มโมล';
@@ -2050,10 +2065,24 @@ function openMoldModal(data) {
     v_set('mold-location',data.Location);
     v_set('mold-purchase-date',data.PurchaseDate);
     v_set('mold-status', data.Status || 'Active');
+    v_set('mold-cycle-time', data.CycleTime || '');
+    calcMoldProduction();
     var cleanNotes = (data.Notes||'').replace(/\[SPECS:.*?\]/g, '').trim();
     v_set('mold-notes',cleanNotes);
   }
   openModal('mold-modal');
+}
+function calcMoldProduction() {
+  var ct = parseFloat((document.getElementById('mold-cycle-time')||{}).value||0);
+  var cav = parseInt((document.getElementById('mold-cavity')||{}).value||1)||1;
+  var prev = document.getElementById('mold-production-preview');
+  if (!prev) return;
+  if (!ct || ct <= 0) { prev.innerHTML='<span style="color:var(--text-muted)">กรอก Cycle Time เพื่อดูยอดผลิต</span>'; return; }
+  var prod = Math.floor((8 * 3600 / ct) * cav);
+  var shots = Math.floor(8 * 3600 / ct);
+  prev.innerHTML = '<span style="font-size:22px;font-weight:800;color:#34d399;font-family:monospace">' + prod.toLocaleString() + '</span>'+
+    '<span style="font-size:12px;color:var(--text-muted);margin-left:6px">ชิ้น / 8 ชม.</span>'+
+    '<br><span style="font-size:11px;color:var(--text-faint)">(' + shots.toLocaleString() + ' ช็อต × ' + cav + ' Cav)</span>';
 }
 async function saveMold(){
   var name=v('mold-name'),asset=v('mold-asset');
@@ -2076,6 +2105,7 @@ async function saveMold(){
     Location:v('mold-location'),
     PurchaseDate:v('mold-purchase-date'),
     Notes:v('mold-notes'),
+    CycleTime: v('mold-cycle-time') ? parseFloat(v('mold-cycle-time')) : null,
     Status:v('mold-status') || 'Active',
     ImageIds:JSON.stringify(imgIds)
   };
