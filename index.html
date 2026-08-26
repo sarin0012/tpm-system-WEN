@@ -458,7 +458,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openStockPartModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="stock-table">
-    <thead><tr><th>Part Name</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Linked To</th><th>Location</th><th>Actions</th></tr></thead>
+    <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Linked To</th><th>Location</th><th>Actions</th></tr></thead>
     <tbody id="stock-tbody"></tbody>
   </table></div></div>
 </div>
@@ -717,11 +717,23 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="modal"><div class="modal-header"><div class="modal-title" id="stock-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</div><button class="modal-close" onclick="closeModal('stock-part-modal')">&#10005;</button></div>
   <div class="modal-body">
     <input type="hidden" id="stock-id"/>
-    <div class="form-row col-2"><div class="form-group"><label>Part Name *</label><input id="stock-name"/></div><div class="form-group"><label>Part No.</label><input id="stock-partno"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="stock-vendor"/></div><div class="form-group"><label>Unit</label><input id="stock-unit" placeholder="&#3594;&#3636;&#3657;&#3609; / &#3621;&#3636;&#3605;&#3619;..."/></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div><div class="form-group"><label>Current Stock</label><input id="stock-current" type="number" value="0"/></div><div class="form-group"><label>Location</label><input id="stock-location"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#128279; Linked Type</label><select id="stock-link-type" onchange="loadStockLinkTargets()"><option value="">&#3652;&#3617;&#3656;&#3619;&#3632;&#3610;&#3640;</option><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>&#128279; Linked To</label><select id="stock-link-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
-    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="stock-notes"></textarea></div>
+    <div class="form-row col-2"><div class="form-group"><label>Part Name *</label><input id="stock-name" placeholder="ชื่อรายการอะไหล่"/></div><div class="form-group"><label>Part No.</label><input id="stock-partno" placeholder="รหัสอะไหล่ / Drawing"/></div></div>
+    <div class="form-row col-2">
+      <div class="form-group">
+        <label>Vendor (ผู้ผลิต / ผู้ขาย)</label>
+        <div style="display:flex;gap:6px">
+          <select id="stock-vendor-select" onchange="onStockVendorSelectChange()" style="flex:1">
+            <option value="">-- เลือก Vendor --</option>
+          </select>
+          <input id="stock-vendor-custom" placeholder="พิมพ์ชื่อ Vendor อื่นๆ..." style="flex:1;display:none" oninput="v_set('stock-vendor', this.value)"/>
+        </div>
+        <input type="hidden" id="stock-vendor"/>
+      </div>
+      <div class="form-group"><label>Unit (หน่วยนับ)</label><input id="stock-unit" placeholder="ชิ้น / ตัว / ชุด..."/></div>
+    </div>
+    <div class="form-row col-3"><div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div><div class="form-group"><label>Current Stock</label><input id="stock-current" type="number" value="0"/></div><div class="form-group"><label>Location</label><input id="stock-location" placeholder="ตำแหน่งจัดเก็บ"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>🔗 Linked Type</label><select id="stock-link-type" onchange="loadStockLinkTargets()"><option value="">ไม่ระบุ</option><option value="Mold">Mold (แม่พิมพ์)</option><option value="Machine">Machine (เครื่องจักร)</option></select></div><div class="form-group"><label>🔗 Linked To</label><select id="stock-link-id" onchange="onStockLinkedTargetChange()"><option value="">-- เลือก --</option></select></div></div>
+    <div class="form-group"><label>หมายเหตุ</label><textarea id="stock-notes" placeholder="ข้อมูลเพิ่มเติม..."></textarea></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
       <div class="photo-upload-area" onclick="triggerUpload('stock-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
       <input type="file" id="stock-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'stock-photos-preview','stock-part')"/>
@@ -3487,14 +3499,22 @@ function filterStock(){
   });
   var tb=document.getElementById('stock-tbody');
   if(!tb) return;
-  if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83d\udce6','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','\u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48"')+'</td></tr>';return;}
+  if(!data.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('\ud83d\udce6','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','\u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48"')+'</td></tr>';return;}
   var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
   tb.innerHTML=data.map(function(p){
     var cur=Number(p.CurrentStock ?? p.Qty ?? 0), min=Number(p.MinStock ?? p.MinQty ?? 0);
     var pct=min>0?Math.min((cur/min)*100,100):100;
     var color=cur<=min?'var(--danger)':cur<=min*1.5?'var(--warning)':'var(--success)';
     var linked=allTargets.find(function(t){return t.id===p.LinkedID;});
+    
+    var imgs = tryParse(p.ImageIds);
+    var imgThumb = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' +
+      '<img src="' + imgs[0] + '" onclick="openLightbox(\'' + imgs[0].replace(/'/g,"\\'") + '\',\'\')" style="width:38px;height:38px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e" />' +
+      (imgs.length > 1 ? '<span style="font-size:10px;color:var(--text-muted)">+' + (imgs.length - 1) + '</span>' : '') +
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+
     return '<tr>'+
+      '<td>'+imgThumb+'</td>'+
       '<td><strong>'+p.PartName+'</strong></td>'+
       '<td>'+(p.PartNo||'-')+'</td>'+
       '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
@@ -3512,6 +3532,111 @@ function filterStock(){
   }).join('');
 }
 
+function populateStockVendorSelect(currentVal) {
+  var sel = document.getElementById('stock-vendor-select');
+  if (!sel) return;
+
+  var vendors = [];
+  (STATE.molds || []).forEach(function(m) {
+    if (m.Vendor && m.Vendor.trim() && vendors.indexOf(m.Vendor.trim()) === -1) vendors.push(m.Vendor.trim());
+  });
+  (STATE.machines || []).forEach(function(m) {
+    if (m.Vendor && m.Vendor.trim() && vendors.indexOf(m.Vendor.trim()) === -1) vendors.push(m.Vendor.trim());
+  });
+  (STATE.stockParts || []).forEach(function(p) {
+    var pv = p.Vendor || p.Category;
+    if (pv && pv.trim() && vendors.indexOf(pv.trim()) === -1) vendors.push(pv.trim());
+  });
+
+  var html = '<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 Vendor --</option>';
+  vendors.forEach(function(v) {
+    html += '<option value="' + v + '">' + v + '</option>';
+  });
+  html += '<option value="__other__">\u2795 \u0e2d\u0e37\u0e48\u0e19\u0e46 (\u0e23\u0e30\u0e1a\u0e38\u0e40\u0e2d\u0e07 / Other)...</option>';
+  sel.innerHTML = html;
+
+  setStockVendorValue(currentVal || '');
+}
+
+function setStockVendorValue(val) {
+  val = (val || '').trim();
+  var sel = document.getElementById('stock-vendor-select');
+  var customInput = document.getElementById('stock-vendor-custom');
+  var hiddenInput = document.getElementById('stock-vendor');
+
+  if (hiddenInput) hiddenInput.value = val;
+
+  if (!sel) return;
+  
+  var exists = false;
+  for (var i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === val && val !== '__other__') {
+      exists = true;
+      break;
+    }
+  }
+
+  if (exists && val) {
+    sel.value = val;
+    if (customInput) {
+      customInput.style.display = 'none';
+      customInput.value = '';
+    }
+  } else if (val) {
+    sel.value = '__other__';
+    if (customInput) {
+      customInput.style.display = 'block';
+      customInput.value = val;
+    }
+  } else {
+    sel.value = '';
+    if (customInput) {
+      customInput.style.display = 'none';
+      customInput.value = '';
+    }
+  }
+}
+
+function onStockVendorSelectChange() {
+  var sel = document.getElementById('stock-vendor-select');
+  var customInput = document.getElementById('stock-vendor-custom');
+  var hiddenInput = document.getElementById('stock-vendor');
+  if (!sel) return;
+
+  if (sel.value === '__other__') {
+    if (customInput) {
+      customInput.style.display = 'block';
+      customInput.focus();
+      if (hiddenInput) hiddenInput.value = customInput.value.trim();
+    }
+  } else {
+    if (customInput) {
+      customInput.style.display = 'none';
+      customInput.value = '';
+    }
+    if (hiddenInput) hiddenInput.value = sel.value;
+  }
+}
+
+function onStockLinkedTargetChange() {
+  var type = v('stock-link-type');
+  var targetId = v('stock-link-id');
+  if (!targetId) return;
+
+  var vendorName = '';
+  if (type === 'Mold') {
+    var mold = (STATE.molds || []).find(function(m) { return m.ID === targetId; });
+    if (mold && mold.Vendor) vendorName = mold.Vendor.trim();
+  } else if (type === 'Machine') {
+    var machine = (STATE.machines || []).find(function(m) { return m.ID === targetId; });
+    if (machine && machine.Vendor) vendorName = machine.Vendor.trim();
+  }
+
+  if (vendorName) {
+    setStockVendorValue(vendorName);
+  }
+}
+
 function loadStockLinkTargets(){
   var type=v('stock-link-type');var s=document.getElementById('stock-link-id');
   if(!s) return;
@@ -3521,18 +3646,21 @@ function loadStockLinkTargets(){
 }
 
 function openStockPartModal(data){
-  ['stock-id','stock-name','stock-partno','stock-vendor','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});
+  ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});
   v_set('stock-min','0');v_set('stock-current','0');
   v_set('stock-link-type','');v_set('stock-link-id','');
   document.getElementById('stock-link-id').innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';
   document.getElementById('stock-photos-preview').innerHTML='';
   STATE.pendingPhotos['stock-part']={files:[], existing:[]};
   document.getElementById('stock-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48';
+
+  populateStockVendorSelect(data ? (data.Category || data.Vendor || '') : '');
+
   if(data){
     v_set('stock-id',data.ID);
     v_set('stock-name',data.PartName);
     v_set('stock-partno',data.PartNo||'');
-    v_set('stock-vendor',data.Category||data.Vendor||'');
+    setStockVendorValue(data.Category||data.Vendor||'');
     v_set('stock-unit',data.Unit||'');
     v_set('stock-min',data.MinQty??data.MinStock??0);
     v_set('stock-current',data.Qty??data.CurrentStock??0);
@@ -3540,7 +3668,9 @@ function openStockPartModal(data){
     if(data.LinkedType){
       v_set('stock-link-type',data.LinkedType);
       loadStockLinkTargets();
-      setTimeout(function(){v_set('stock-link-id',data.LinkedID||'');},50);
+      setTimeout(function(){
+        v_set('stock-link-id',data.LinkedID||'');
+      },50);
     }
     var existingImgs = tryParse(data.ImageIds);
     STATE.pendingPhotos['stock-part'].existing = existingImgs.slice();
