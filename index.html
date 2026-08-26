@@ -2809,10 +2809,25 @@ async function completeTPM(){
 // ============================================
 //  ISSUES
 // ============================================
+function getIssueDisplayCode(issue) {
+  if (!issue) return '';
+  var list = (STATE.issues || []).slice().sort(function(a, b) {
+    var da = new Date(a.CreatedAt || a.OccurredAt || 0).getTime();
+    var db = new Date(b.CreatedAt || b.OccurredAt || 0).getTime();
+    return da - db;
+  });
+  var idx = list.findIndex(function(x) { return x.ID === issue.ID; });
+  if (idx === -1) idx = 0;
+  var d = new Date(issue.OccurredAt || issue.CreatedAt || Date.now());
+  var yr = String(d.getFullYear()).slice(-2);
+  var num = ('00' + (idx + 1)).slice(-3);
+  return 'ISS-' + yr + '-' + num;
+}
+
 function renderIssues(){
   if (!STATE.issues || STATE.issues.length === 0) {
-    var tb=document.getElementById('issues-tbody');
-    if(tb) tb.innerHTML='<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32...</td></tr>';
+    var tb = document.getElementById('issues-tbody');
+    if(tb) tb.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted)"><div class="spinner" style="display:inline-block;margin-bottom:8px"></div><br>\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32...</td></tr>';
     api('getIssues').then(function(res){
       if(res && res.success && res.data){
         STATE.issues = res.data;
@@ -2822,33 +2837,76 @@ function renderIssues(){
     });
     return;
   }
-  var tb=document.getElementById('issues-tbody');
-  if(!tb) return;
-  if(!STATE.issues.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('\ud83d\udea8','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e1b\u0e31\u0e0d\u0e2b\u0e32','\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"')+'</td></tr>';return;}
-  tb.innerHTML=STATE.issues.slice().reverse().map(function(i){
-    var beforeImgs=tryParse(i.BeforeImageIds);
-    var beforeThumbs=beforeImgs.length?'<div style="display:flex;gap:4px">'+beforeImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e01\u0e48\u0e2d\u0e19\u0e0b\u0e48\u0e2d\u0e21"/>';}).join('')+(beforeImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(beforeImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
-    
-    var afterImgs=tryParse(i.AfterImageIds);
-    var afterThumbs=i.Status==='Closed'?(afterImgs.length?'<div style="display:flex;gap:4px">'+afterImgs.slice(0,2).map(function(id){return '<img src="'+id+'" onclick="openLightbox(\''+id.replace(/'/g,"\\'")+'\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21"/>';}).join('')+(afterImgs.length>2?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(afterImgs.length-2)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>'):'<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
 
-    return '<tr>'+
-      '<td><strong>'+i.ID+'</strong></td>'+
-      '<td>'+(i.TargetName||'-')+'</td>'+
-      '<td>'+(i.IssueType||'-')+'</td>'+
-      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="'+(i.Description||'')+'">'+(i.Description||'-')+'</td>'+
-      '<td><span class="badge '+(i.Severity||'low').toLowerCase()+'">'+(i.Severity||'-')+'</span></td>'+
-      '<td><span class="badge '+(i.Status||'open').toLowerCase().replace(' ','-')+'">'+(i.Status||'Open')+'</span></td>'+
-      '<td>'+((i.OccurredAt||'').substring(0,10)||'-')+'</td>'+
-      '<td>'+beforeThumbs+'</td>'+
-      '<td>'+afterThumbs+'</td>'+
-      '<td style="white-space:nowrap">'+
-        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\''+i.ID+'\')" title="\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14/\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34">\ud83d\udd0d</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\''+i.ID+'\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32">\u270f\ufe0f</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\''+i.ID+'\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23">\ud83d\udda8\ufe0f</button> '+
-        (i.Status!=='Closed'?'<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\''+i.ID+'\')" title="\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\''+i.ID+'\',\'In Progress\')" title="\u0e40\u0e23\u0e34\u0e48\u0e21\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23">\u25b6\ufe0f</button> ':'')+
-        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\''+i.ID+'\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>'+
-      '</td>'+
+  // Populate Mold / Machine filter dropdown
+  var mf = document.getElementById('issue-mold-filter');
+  if (mf) {
+    var curVal = mf.value;
+    var allTargets = (STATE.molds || []).map(function(m){ return { id: m.ID, name: '\ud83e\udde9 ' + m.Name }; })
+      .concat((STATE.machines || []).map(function(m){ return { id: m.ID, name: '\ud83c\udfed ' + m.Name }; }));
+    mf.innerHTML = '<option value="">\ud83e\udde9 \u0e17\u0e38\u0e01 Mold / Machine</option>' +
+      allTargets.map(function(t){
+        return '<option value="' + t.id + '"' + (t.id === curVal ? ' selected' : '') + '>' + t.name + '</option>';
+      }).join('');
+  }
+
+  filterIssues();
+}
+
+function filterIssues() {
+  var q = ((document.getElementById('issue-search-input') || {}).value || '').toLowerCase();
+  var mold = (document.getElementById('issue-mold-filter') || {}).value || '';
+  var status = (document.getElementById('issue-status-filter') || {}).value || '';
+  var severity = (document.getElementById('issue-severity-filter') || {}).value || '';
+
+  var filtered = (STATE.issues || []).filter(function(i) {
+    var code = getIssueDisplayCode(i).toLowerCase();
+    if (mold && i.TargetID !== mold) return false;
+    if (status && i.Status !== status) return false;
+    if (severity && i.Severity !== severity) return false;
+    if (q) {
+      var match = (code + ' ' + (i.TargetName || '') + ' ' + (i.IssueType || '') + ' ' + (i.Description || '') + ' ' + (i.ReportedBy || '') + ' ' + (i.ID || '')).toLowerCase();
+      if (match.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+
+  var tb = document.getElementById('issues-tbody');
+  if (!tb) return;
+  if (!filtered.length) {
+    tb.innerHTML = '<tr><td colspan="10">' + emptyState('\ud83d\udea8', '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32', '\u0e25\u0e2d\u0e07\u0e1b\u0e23\u0e31\u0e1a\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e01\u0e32\u0e23\u0e04\u0e49\u0e19\u0e2b\u0e32 \u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"') + '</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = filtered.slice().reverse().map(function(i) {
+    var displayCode = getIssueDisplayCode(i);
+    var beforeImgs = tryParse(i.BeforeImageIds);
+    var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px">' + beforeImgs.slice(0,2).map(function(id){ return '<img src="' + id + '" onclick="openLightbox(\'' + id.replace(/'/g,"\\'") + '\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e01\u0e48\u0e2d\u0e19\u0e0b\u0e48\u0e2d\u0e21"/>'; }).join('') + (beforeImgs.length > 2 ? '<span style="font-size:10px;color:var(--text-muted);align-self:center">+' + (beforeImgs.length - 2) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+    
+    var afterImgs = tryParse(i.AfterImageIds);
+    var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px">' + afterImgs.slice(0,2).map(function(id){ return '<img src="' + id + '" onclick="openLightbox(\'' + id.replace(/'/g,"\\'") + '\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21"/>'; }).join('') + (afterImgs.length > 2 ? '<span style="font-size:10px;color:var(--text-muted);align-self:center">+' + (afterImgs.length - 2) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>') : '<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
+
+    return '<tr>' +
+      '<td>' +
+        '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14">' +
+          '#' + displayCode +
+        '</span>' +
+      '</td>' +
+      '<td><strong>' + (i.TargetName || '-') + '</strong></td>' +
+      '<td>' + (i.IssueType || '-') + '</td>' +
+      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
+      '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
+      '<td><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
+      '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
+      '<td>' + beforeThumbs + '</td>' +
+      '<td>' + afterThumbs + '</td>' +
+      '<td style="white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14/\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34">\ud83d\udd0d</button> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32">\u270f\ufe0f</button> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23">\ud83d\udda8\ufe0f</button> ' +
+        (i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="\u0e40\u0e23\u0e34\u0e48\u0e21\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23">\u25b6\ufe0f</button> ' : '') +
+        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 }
@@ -3002,7 +3060,7 @@ function openIssueDetailModal(id){
   body.innerHTML = 
     '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
       '<div>' +
-        '<div style="font-size:16px;font-weight:700;">#' + getIssueDisplayCode(iss) + ' \u2014 ' + (iss.TargetName||'-') + ' <span style="font-size:11px;color:var(--text-muted);font-weight:normal;">(' + iss.ID + ')</span></div>' +
+        '<div style="font-size:16px;font-weight:700;">#' + getIssueDisplayCode(iss) + ' \u2014 ' + (iss.TargetName||'-') + '</div>' +
         '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | \u0e40\u0e01\u0e34\u0e14\u0e40\u0e21\u0e37\u0e48\u0e2d: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;">' + sevBadge + stBadge + '</div>' +
@@ -3098,7 +3156,7 @@ function printIssueReport(id) {
 
     '<table>' +
       '<tr>' +
-        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>#' + getIssueDisplayCode(iss) + '</strong> <span style="font-size:9pt;color:#64748b;">(' + iss.ID + ')</span></td>' +
+        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>#' + getIssueDisplayCode(iss) + '</strong></td>' +
         '<th style="width:18%;">\u0e2a\u0e16\u0e32\u0e19\u0e30 (Status)</th><td style="width:32%;"><span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span></td>' +
       '</tr>' +
       '<tr>' +
