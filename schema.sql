@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS machines (
   "AssetNo" TEXT,
   "Vendor" TEXT,
   "Model" TEXT,
+  "Serial" TEXT,
+  "Department" TEXT,
   "Location" TEXT,
   "PurchaseDate" TEXT,
   "Notes" TEXT,
@@ -46,6 +48,11 @@ CREATE TABLE IF NOT EXISTS machines (
   "ImageIds" TEXT DEFAULT '[]',
   "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- เพิ่มคอลัมน์ใหม่สำหรับตาราง machines เดิม
+ALTER TABLE machines ADD COLUMN IF NOT EXISTS "Serial" TEXT;
+ALTER TABLE machines ADD COLUMN IF NOT EXISTS "Department" TEXT;
+ALTER TABLE machines ADD COLUMN IF NOT EXISTS "CreatedAt" TIMESTAMPTZ DEFAULT NOW();
 
 -- 3. STOCK_PARTS (ตารางอะไหล่)
 CREATE TABLE IF NOT EXISTS stock_parts (
