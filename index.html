@@ -1283,14 +1283,43 @@ async function _apiInternal(actionStr, payload = null) {
 
       // MACHINES
       case 'getMachines': {
-        const { data, error } = await sb.from('machines').select('*').order('CreatedAt', { ascending: false });
+        const { data, error } = await sb.from('machines').select('*');
         if (error) return { success: false, error: error.message };
+        (data || []).forEach(m => {
+          if (m.Notes && m.Notes.indexOf('[EXTRA:') !== -1) {
+            const match = m.Notes.match(/\[EXTRA:\s*(\{[\s\S]*?\})\s*\]/);
+            if (match) {
+              try {
+                const extra = JSON.parse(match[1]);
+                if (extra.Serial) m.Serial = extra.Serial;
+                if (extra.Department) m.Department = extra.Department;
+                m.CleanNotes = m.Notes.replace(/\[EXTRA:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+              } catch(e) {}
+            }
+          }
+        });
         return { success: true, data: data || [] };
       }
       case 'saveMachine': {
         const item = Object.assign({}, payload.data);
         if (!item.ID) item.ID = _uid();
-        if (!item.CreatedAt) item.CreatedAt = new Date().toISOString();
+        
+        let cleanNotes = (item.Notes || '').replace(/\[EXTRA:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+        const extraObj = {};
+        if (item.Serial) extraObj.Serial = item.Serial;
+        if (item.Department) extraObj.Department = item.Department;
+        
+        if (Object.keys(extraObj).length > 0) {
+          item.Notes = cleanNotes ? (cleanNotes + '\n\n[EXTRA: ' + JSON.stringify(extraObj) + ']') : ('[EXTRA: ' + JSON.stringify(extraObj) + ']');
+        } else {
+          item.Notes = cleanNotes;
+        }
+
+        delete item.Serial;
+        delete item.Department;
+        delete item.CreatedAt;
+        delete item.CleanNotes;
+
         const { error } = await sb.from('machines').upsert(item);
         if (error) return { success: false, error: error.message };
         return { success: true, id: item.ID };
@@ -2338,21 +2367,79 @@ function filterMachines(){
 }
 function openMachineModal(data){
   ['machine-id','machine-name','machine-asset','machine-vendor','machine-model','machine-serial','machine-dept','machine-location','machine-purchase-date','machine-notes'].forEach(function(id){v_set(id,'');});
-  document.getElementById('machine-photos-preview').innerHTML='';STATE.pendingPhotos['machine']={files:[]};
-  document.getElementById('machine-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23';
-  if(data){v_set('machine-id',data.ID);v_set('machine-name',data.Name);v_set('machine-asset',data.AssetNo);v_set('machine-vendor',data.Vendor);v_set('machine-model',data.Model);v_set('machine-serial',data.Serial);v_set('machine-dept',data.Department);v_set('machine-location',data.Location);v_set('machine-purchase-date',data.PurchaseDate);v_set('machine-notes',data.Notes);v_set('machine-status',data.Status||'Active');}
+  var grid = document.getElementById('machine-photos-preview');
+  if (grid) grid.innerHTML = '';
+  STATE.pendingPhotos['machine'] = { files: [], existing: [] };
+  document.getElementById('machine-modal-title').textContent = data ? '✏️ แก้ไขเครื่องจักร' : '+ เพิ่มเครื่องจักร';
+  if(data){
+    v_set('machine-id', data.ID);
+    v_set('machine-name', data.Name);
+    v_set('machine-asset', data.AssetNo);
+    v_set('machine-vendor', data.Vendor || '');
+    v_set('machine-model', data.Model || '');
+    v_set('machine-serial', data.Serial || '');
+    v_set('machine-dept', data.Department || '');
+    v_set('machine-location', data.Location || '');
+    v_set('machine-purchase-date', data.PurchaseDate || '');
+    v_set('machine-notes', data.CleanNotes || data.Notes || '');
+    v_set('machine-status', data.Status || 'Active');
+
+    var existingImgs = tryParse(data.ImageIds);
+    STATE.pendingPhotos['machine'].existing = existingImgs.slice();
+    if (grid && existingImgs.length) {
+      existingImgs.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-machine-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'machine\',' + idx + ',\'machine-photos-preview\',true)">✕</button>';
+        grid.appendChild(item);
+      });
+    }
+  }
   openModal('machine-modal');
 }
 async function saveMachine(){
-  var name=v('machine-name'),asset=v('machine-asset');
-  if(!name||!asset){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e01\u0e23\u0e2d\u0e01\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e25\u0e30 Asset No.','error');return;}
-  showGlobalLoading(true);
-  var imgIds=await uploadPendingPhotos('machine','Machines');
-  var data={ID:v('machine-id'),Name:name,AssetNo:asset,Vendor:v('machine-vendor'),Model:v('machine-model'),Serial:v('machine-serial'),Department:v('machine-dept'),Location:v('machine-location'),PurchaseDate:v('machine-purchase-date'),Notes:v('machine-notes'),Status:v('machine-status')||'Active',ImageIds:JSON.stringify(imgIds)};
-  var r=await api('saveMachine',{data:data});
-  showGlobalLoading(false);
-  if(r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('machine-modal');var res=await api('getMachines');if(res.success){STATE.machines=res.data;renderMachines();}}
-  else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');
+  try {
+    var name = v('machine-name'), asset = v('machine-asset');
+    if(!name || !asset){
+      showToast('กรุณากรอกชื่อและ Asset No.', 'error');
+      return;
+    }
+    showGlobalLoading(true);
+    var imgIds = await uploadPendingPhotos('machine', 'Machines');
+    var data = {
+      ID: v('machine-id') || undefined,
+      Name: name,
+      AssetNo: asset,
+      Vendor: v('machine-vendor'),
+      Model: v('machine-model'),
+      Serial: v('machine-serial'),
+      Department: v('machine-dept'),
+      Location: v('machine-location'),
+      PurchaseDate: v('machine-purchase-date'),
+      Notes: v('machine-notes'),
+      Status: v('machine-status') || 'Active',
+      ImageIds: JSON.stringify(imgIds)
+    };
+    var r = await api('saveMachine', { data: data });
+    showGlobalLoading(false);
+    if(r && r.success){
+      showToast('บันทึกเครื่องจักรสำเร็จ ✅', 'success');
+      closeModal('machine-modal');
+      var res = await api('getMachines');
+      if(res && res.success){
+        STATE.machines = res.data;
+        renderMachines();
+        updateBadges();
+      }
+    } else {
+      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
+    }
+  } catch(err) {
+    showGlobalLoading(false);
+    console.error('saveMachine error:', err);
+    showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+  }
 }
 async function delMachine(id,name){if(!confirm('\u0e25\u0e1a\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 "'+name+'" ?'))return;var r=await api('deleteMachine',{id:id});if(r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');STATE.machines=STATE.machines.filter(function(m){return m.ID!==id;});renderMachines();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
 
