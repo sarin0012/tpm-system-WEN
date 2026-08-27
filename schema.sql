@@ -64,11 +64,15 @@ CREATE TABLE IF NOT EXISTS stock_parts (
   "MinQty" NUMERIC DEFAULT 0,
   "Unit" TEXT,
   "Location" TEXT,
+  "Notes" TEXT,
   "LinkedType" TEXT,
   "LinkedID" TEXT,
   "ImageIds" TEXT DEFAULT '[]',
   "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- เพิ่มคอลัมน์ใหม่สำหรับตาราง stock_parts เดิม
+ALTER TABLE stock_parts ADD COLUMN IF NOT EXISTS "Notes" TEXT;
 
 -- 4. ISSUES (ตารางแจ้งปัญหา/แจ้งซ่อม)
 CREATE TABLE IF NOT EXISTS issues (
