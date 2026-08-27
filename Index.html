@@ -1336,15 +1336,34 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getStockParts': {
         const { data, error } = await sb.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
-        const mapped = (data || []).map(p => Object.assign({}, p, {
-          CurrentStock: p.Qty,
-          MinStock: p.MinQty,
-          Vendor: p.Category
-        }));
+        const mapped = (data || []).map(p => {
+          let loc = p.Location || '';
+          let note = '';
+          if (loc.indexOf('[NOTE:') !== -1) {
+            const m = loc.match(/\[NOTE:\s*([\s\S]*?)\]/);
+            if (m) {
+              note = m[1].trim();
+              loc = loc.replace(/\[NOTE:\s*[\s\S]*?\]/g, '').trim();
+            }
+          }
+          return Object.assign({}, p, {
+            CurrentStock: p.Qty,
+            MinStock: p.MinQty,
+            Vendor: p.Category,
+            Location: loc,
+            Notes: note
+          });
+        });
         return { success: true, data: mapped };
       }
       case 'saveStockPart': {
         const d = payload.data || {};
+        let cleanLocation = (d.Location || '').replace(/\[NOTE:\s*([\s\S]*?)\]/g, '').trim();
+        let noteText = (d.Notes || '').trim();
+        let finalLocation = cleanLocation;
+        if (noteText) {
+          finalLocation = cleanLocation ? (cleanLocation + ' [NOTE: ' + noteText + ']') : ('[NOTE: ' + noteText + ']');
+        }
         const item = {
           PartName: d.PartName || '',
           PartNo: d.PartNo || '',
@@ -1352,7 +1371,7 @@ async function _apiInternal(actionStr, payload = null) {
           Qty: Number(d.Qty ?? d.CurrentStock ?? 0),
           MinQty: Number(d.MinQty ?? d.MinStock ?? 0),
           Unit: d.Unit || '',
-          Location: d.Location || '',
+          Location: finalLocation,
           LinkedType: d.LinkedType || '',
           LinkedID: d.LinkedID || '',
           ImageIds: typeof d.ImageIds === 'string' ? d.ImageIds : JSON.stringify(d.ImageIds || [])
@@ -4071,6 +4090,7 @@ function openStockPartModal(data){
     v_set('stock-min',data.MinQty??data.MinStock??0);
     v_set('stock-current',data.Qty??data.CurrentStock??0);
     v_set('stock-location',data.Location||'');
+    v_set('stock-notes',data.Notes||'');
     if(data.LinkedType){
       v_set('stock-link-type',data.LinkedType);
       loadStockLinkTargets();
@@ -4086,7 +4106,7 @@ function openStockPartModal(data){
         var item = document.createElement('div');
         item.className = 'photo-preview-item';
         item.id = 'pi-stock-part-ex-' + idx;
-        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'stock-part\',' + idx + ',\'stock-photos-preview\',true)">\u2715</button>';
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'stock-part\',' + idx + ',\'stock-photos-preview\',true)">✕</button>';
         grid.appendChild(item);
       });
     }
@@ -4097,7 +4117,7 @@ function openStockPartModal(data){
 async function saveStockPart(){
   try {
     var name=v('stock-name');
-    if(!name){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','error');return;}
+    if(!name){showToast('กรุณาระบุชื่ออะไหล่','error');return;}
     showGlobalLoading(true);
     var imgIds=await uploadPendingPhotos('stock-part','StockParts');
     var linkType=v('stock-link-type'),linkId=v('stock-link-id');
@@ -4113,6 +4133,7 @@ async function saveStockPart(){
       Qty: Number(v('stock-current')) || 0,
       CurrentStock: Number(v('stock-current')) || 0,
       Location: v('stock-location'),
+      Notes: v('stock-notes'),
       LinkedType: linkType,
       LinkedID: linkId,
       ImageIds: JSON.stringify(imgIds)
@@ -4120,7 +4141,7 @@ async function saveStockPart(){
     var r=await api('saveStockPart',{data:data});
     showGlobalLoading(false);
     if(r && r.success){
-      showToast(data.ID ? '\u0e41\u0e01\u0e49\u0e44\u0e02\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705' : '\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705','success');
+      showToast(data.ID ? 'แก้ไขอะไหล่สำเร็จ ✅' : 'บันทึกอะไหล่สำเร็จ ✅','success');
       closeModal('stock-part-modal');
       var res=await api('getStockParts');
       if(res && res.success){
