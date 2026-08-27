@@ -133,11 +133,15 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 /* LIGHTBOX */
 #lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;align-items:center;justify-content:center;}
 #lightbox-overlay.open{display:flex;}
-#lightbox-overlay img{max-width:90vw;max-height:88vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.8);}
-#lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2001;}
-#lightbox-close:hover{background:rgba(255,255,255,.3);}
-#lightbox-drive-link{position:fixed;top:20px;right:76px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;z-index:2001;}
+#lightbox-overlay img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.8);}
+#lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2001;transition:all .2s;}
+#lightbox-close:hover{background:rgba(255,255,255,.3);transform:scale(1.05);}
+#lightbox-drive-link{position:fixed;top:20px;right:76px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;z-index:2001;transition:all .2s;}
 #lightbox-drive-link:hover{background:rgba(255,255,255,.3);}
+.lightbox-nav-btn{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:none;width:48px;height:48px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2002;user-select:none;}
+.lightbox-nav-btn:hover{background:rgba(255,255,255,.4);transform:translateY(-50%) scale(1.1);}
+#lightbox-prev{left:20px;}
+#lightbox-next{right:20px;}
 
 /* CALENDAR */
 .calendar-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
@@ -642,20 +646,71 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- ISSUE -->
 <div class="modal-overlay" id="issue-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-modal-title">🚨 แจ้งปัญหา</div><button class="modal-close" onclick="closeModal('issue-modal')">✕</button></div>
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-modal-title">🚨 แจ้งปัญหา / แก้ไขข้อมูล</div><button class="modal-close" onclick="closeModal('issue-modal')">✕</button></div>
   <div class="modal-body">
     <input type="hidden" id="issue-id"/>
-    <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- เลือก --</option></select></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
-    <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
-    <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
-    <div class="form-group"><label>รูปภาพปัญหา</label>
-      <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปปัญหา</div></div>
-      <input type="file" id="issue-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-photos-preview','issue')"/>
-      <div class="photo-preview-grid" id="issue-photos-preview"></div>
+    
+    <!-- SECTION 1: ข้อมูลแจ้งปัญหา (BEFORE) -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:10px;">🚨 1. ข้อมูลการแจ้งปัญหา (Before)</div>
+      <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- เลือก --</option></select></div></div>
+      <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+      <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
+      <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
+      <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพตอนแจ้งปัญหา (Before Photos)</label>
+        <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปปัญหา (หลายรูปได้)</div></div>
+        <input type="file" id="issue-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-photos-preview','issue')"/>
+        <div class="photo-preview-grid" id="issue-photos-preview"></div>
+      </div>
     </div>
+
+    <!-- SECTION 2: ข้อมูลการซ่อมและปิดงาน (AFTER) -->
+    <div id="issue-edit-after-section" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;display:none;">
+      <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 2. ข้อมูลการแก้ไข & ปิดงาน (After Repair)</div>
+      <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง)</label><textarea id="issue-edit-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
+      <div class="form-group"><label>Corrective Action (วิธีแก้ไข)</label><textarea id="issue-edit-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
+      <div class="form-row col-2"><div class="form-group"><label>วันที่ปิดงาน</label><input id="issue-edit-closed-date" type="datetime-local"/></div><div class="form-group"><label>ผู้ปิดงาน/ผู้ซ่อม</label><input id="issue-edit-closed-by"/></div></div>
+      <div class="form-group"><label>อะไหล่ที่ใช้ (Parts Used)</label><input id="issue-edit-parts-used" placeholder="เช่น O-Ring 50mm (x2), สปริง (x1)..."/></div>
+      <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพหลังซ่อม (After Photos)</label>
+        <div class="photo-upload-area" onclick="triggerUpload('issue-after-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปภาพหลังซ่อม (หลายรูปได้)</div></div>
+        <input type="file" id="issue-after-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-after-photos-preview','issue-after')"/>
+        <div class="photo-preview-grid" id="issue-after-photos-preview"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: ข้อมูลการทดสอบหลังซ่อม (TRIAL) -->
+    <div id="issue-edit-trial-section" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;display:none;">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 3. ข้อมูลการทดสอบ Trial หลังซ่อม (Trial & Quality Check)</div>
+      <div class="form-row col-2">
+        <div class="form-group">
+          <label>ผลการทดสอบ (Trial Result)</label>
+          <select id="issue-edit-trial-result">
+            <option value="">-- ยังไม่ได้ทดสอบ --</option>
+            <option value="Passed">✅ ผ่านสมบูรณ์ (Passed)</option>
+            <option value="Conditional">⚠️ ผ่านแบบมีเงื่อนไข (Conditional)</option>
+            <option value="Adjusted">🔧 ปรับจูนเพิ่มเติมและผ่าน (Adjusted & Passed)</option>
+            <option value="Failed">❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
+          <input id="issue-edit-trial-shots" type="number" min="0" placeholder="เช่น 20, 50..." />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>บันทึกพารามิเตอร์ / ข้อสังเกตตอน Trial (Trial Notes)</label>
+        <textarea id="issue-edit-trial-notes" placeholder="บันทึกสภาพผิวชิ้นงาน, จุดที่ต้องระวัง, ข้อมูลสำหรับการซ่อมรอบถัดไป..." rows="2"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>📷 รูปภาพชิ้นงานตอน Trial (Trial Photos)</label>
+        <div class="photo-upload-area" onclick="triggerUpload('issue-trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial / ผิวงาน (หลายรูปได้)</div></div>
+        <input type="file" id="issue-trial-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-trial-photos-preview','issue-trial')"/>
+        <div class="photo-preview-grid" id="issue-trial-photos-preview"></div>
+      </div>
+    </div>
+
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveIssue()">💾 บันทึก</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveIssue()">💾 บันทึกการเปลี่ยนแปลง</button></div>
   </div>
 </div>
 
@@ -671,44 +726,81 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- CLOSE ISSUE -->
 <div class="modal-overlay" id="issue-close-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#9989; &#3611;&#3636;&#3604;&#3591;&#3634;&#3609; / Close Issue</div><button class="modal-close" onclick="closeModal('issue-close-modal')">&#10005;</button></div>
+  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">✅ ปิดงาน / Close Issue</div><button class="modal-close" onclick="closeModal('issue-close-modal')">✕</button></div>
   <div class="modal-body">
     <input type="hidden" id="close-issue-id"/>
     <div id="close-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
-    <div class="form-group"><label>Root Cause *</label><textarea id="close-root-cause"></textarea></div>
-    <div class="form-group"><label>Corrective Action *</label><textarea id="close-corrective"></textarea></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3648;&#3626;&#3619;&#3655;&#3592;</label><input id="close-date" type="datetime-local"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3649;&#3585;&#3657;&#3652;&#3586;</label><input id="close-by"/></div></div>
-    <div class="form-group" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
-      <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-        <span>&#128230; &#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3656;&#3651;&#3594;&#3657;&#3595;&#3656;&#3629;&#3617; (Parts Used) &amp; &#3605;&#3633;&#3604;&#3626;&#3605;&#3658;&#3629;&#3585;</span>
-        <span style="font-size:11px;font-weight:400;color:var(--text-muted);">&#3648;&#3621;&#3639;&#3629;&#3585;&#3592;&#3634;&#3585; Stock &#3627;&#3619;&#3639;&#3629;&#3614;&#3636;&#3617;&#3614;&#3660;&#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3605;&#3636;&#3617;</span>
-      </label>
-      <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
-        <select id="close-part-select" onchange="onClosePartSelectChange()" style="flex:2;min-width:200px;">
-          <option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3592;&#3634;&#3585;&#3588;&#3621;&#3633;&#3591; Stock --</option>
-        </select>
-        <div id="close-part-other-wrap" style="display:none;flex:2;min-width:180px;">
-          <input id="close-part-other-name" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3609;&#3629;&#3585;&#3588;&#3621;&#3633;&#3591;..." style="width:100%;" />
+    
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 1. ข้อมูลการแก้ไข (Repair Actions)</div>
+      <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง) *</label><textarea id="close-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
+      <div class="form-group"><label>Corrective Action (วิธีแก้ไข) *</label><textarea id="close-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
+      <div class="form-row col-2"><div class="form-group"><label>วันที่เสร็จ</label><input id="close-date" type="datetime-local"/></div><div class="form-group"><label>ผู้แก้ไข/ผู้ซ่อม</label><input id="close-by"/></div></div>
+      
+      <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
+        <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+          <span>📦 อะไหล่ที่ใช้ซ่อม (Parts Used) &amp; ตัดสต็อก</span>
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เลือกจาก Stock หรือพิมพ์เพิ่มเติม</span>
+        </label>
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
+          <select id="close-part-select" onchange="onClosePartSelectChange()" style="flex:2;min-width:200px;">
+            <option value="">-- เลือกอะไหล่จากคลัง Stock --</option>
+          </select>
+          <div id="close-part-other-wrap" style="display:none;flex:2;min-width:180px;">
+            <input id="close-part-other-name" placeholder="ระบุชื่ออะไหล่นอกคลัง..." style="width:100%;" />
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;width:130px;">
+            <input id="close-part-qty" type="number" min="1" value="1" placeholder="จำนวน" style="width:70px;" />
+            <span id="close-part-unit" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">ชิ้น</span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="addCloseIssuePart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
         </div>
-        <div style="display:flex;gap:4px;align-items:center;width:130px;">
-          <input id="close-part-qty" type="number" min="1" value="1" placeholder="&#3592;&#3635;&#3609;&#3623;&#3609;" style="width:70px;" />
-          <span id="close-part-unit" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">&#3594;&#3636;&#3657;&#3609;</span>
+        <div id="close-parts-list" style="margin-bottom:8px;"></div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่บันทึก (แก้ไขข้อความได้):</label>
+          <input id="close-parts-used" placeholder="เช่น O-Ring 50mm (x2), ซีลยาง (x1)..." style="font-size:12px;background:var(--surface);" />
         </div>
-        <button type="button" class="btn btn-primary" onclick="addCloseIssuePart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</button>
       </div>
-      <div id="close-parts-list" style="margin-bottom:8px;"></div>
-      <div>
-        <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">&#3626;&#3619;&#3641;&#3611;&#3619;&#3634;&#3618;&#3585;&#3634;&#3619;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;&#3607;&#3637;&#3656;&#3610;&#3633;&#3609;&#3607;&#3638;&#3585; (&#3648;&#3649;&#3585;&#3657;&#3652;&#3586;&#3586;&#3657;&#3629;&#3588;&#3623;&#3634;&#3617;&#3652;&#3604;&#3657;):</label>
-        <input id="close-parts-used" placeholder="&#3648;&#3594;&#3656;&#3609; O-Ring 50mm (x2), &#3595;&#3637;&#3621;&#3618;&#3634;&#3591; (x1)..." style="font-size:12px;background:var(--surface);" />
+
+      <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพหลังแก้ไข (After Photos)</label>
+        <div class="photo-upload-area" onclick="triggerUpload('close-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปหลังซ่อม (หลายรูปได้)</div></div>
+        <input type="file" id="close-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-photos-preview','close')"/>
+        <div class="photo-preview-grid" id="close-photos-preview"></div>
       </div>
     </div>
-    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3627;&#3621;&#3633;&#3591;&#3649;&#3585;&#3657;&#3652;&#3586;</label>
-      <div class="photo-upload-area" onclick="triggerUpload('close-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3627;&#3621;&#3633;&#3591;&#3595;&#3656;&#3629;&#3617;</div></div>
-      <input type="file" id="close-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-photos-preview','close')"/>
-      <div class="photo-preview-grid" id="close-photos-preview"></div>
+
+    <!-- TRIAL SECTION IN CLOSE MODAL -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 2. ข้อมูลการทดสอบหลังซ่อม (Trial & Quality Check)</div>
+      <div class="form-row col-2">
+        <div class="form-group">
+          <label>ผลการทดสอบ (Trial Result)</label>
+          <select id="close-trial-result">
+            <option value="Passed">✅ ผ่านสมบูรณ์ (Passed)</option>
+            <option value="Conditional">⚠️ ผ่านแบบมีเงื่อนไข (Conditional)</option>
+            <option value="Adjusted">🔧 มีการปรับจูนเพิ่มเติม (Adjusted & Passed)</option>
+            <option value="Failed">❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
+          <input id="close-trial-shots" type="number" min="0" placeholder="เช่น 20, 50..." />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>บันทึกพารามิเตอร์ / ข้อสังเกตตอน Trial (Trial Notes)</label>
+        <textarea id="close-trial-notes" placeholder="บันทึกสภาพผิวชิ้นงาน, จุดที่ต้องระวัง, ข้อสังเกตสำหรับการซ่อมรอบต่อไป..." rows="2"></textarea>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>📷 รูปถ่ายชิ้นงานตอน Trial (Trial Photos)</label>
+        <div class="photo-upload-area" onclick="triggerUpload('close-trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial / ผิวงาน (หลายรูปได้)</div></div>
+        <input type="file" id="close-trial-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-trial-photos-preview','close-trial')"/>
+        <div class="photo-preview-grid" id="close-trial-photos-preview"></div>
+      </div>
     </div>
+
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-close-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-success" onclick="closeIssue()">&#9989; &#3611;&#3636;&#3604;&#3591;&#3634;&#3609;</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-close-modal')">ยกเลิก</button><button class="btn btn-success" onclick="closeIssue()">✅ บันทึกปิดงาน</button></div>
   </div>
 </div>
 
@@ -873,9 +965,15 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 
 <!-- LIGHTBOX -->
 <div id="lightbox-overlay" onclick="if(event.target===this)closeLightbox()">
-  <button id="lightbox-close" onclick="closeLightbox()">&#10005;</button>
-  <a id="lightbox-drive-link" href="#" target="_blank">&#128279; Open in Drive</a>
-  <img id="lightbox-img" src="" alt=""/>
+  <button id="lightbox-close" onclick="closeLightbox()" title="ปิด (Esc)">&#10005;</button>
+  <a id="lightbox-drive-link" href="#" target="_blank" title="เปิดดูไฟล์">&#128279; Open in Drive</a>
+  <button id="lightbox-prev" class="lightbox-nav-btn" onclick="event.stopPropagation();lightboxPrev()" title="รูปก่อนหน้า (←)">&#10094;</button>
+  <div style="display:flex;flex-direction:column;align-items:center;max-width:92vw;">
+    <img id="lightbox-img" src="" alt=""/>
+    <div id="lightbox-caption" style="color:#e2e8f0;font-size:13px;margin-top:10px;text-align:center;font-weight:500;"></div>
+    <div id="lightbox-counter" style="color:#94a3b8;font-size:11px;margin-top:4px;background:rgba(0,0,0,0.5);padding:2px 10px;border-radius:12px;"></div>
+  </div>
+  <button id="lightbox-next" class="lightbox-nav-btn" onclick="event.stopPropagation();lightboxNext()" title="รูปถัดไป (→)">&#10095;</button>
 </div>
 
 <div id="global-loading"><div class="spinner"></div></div>
@@ -1268,10 +1366,44 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getIssues': {
         const { data, error } = await sb.from('issues').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
+        (data || []).forEach(iss => {
+          if (iss.CorrectiveAction && iss.CorrectiveAction.indexOf('[TRIAL:') !== -1) {
+            const m = iss.CorrectiveAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
+            if (m) {
+              try {
+                const t = JSON.parse(m[1]);
+                iss.TrialResult = t.result || '';
+                iss.TrialShots = t.shots || 0;
+                iss.TrialNotes = t.notes || '';
+                iss.TrialImageIds = JSON.stringify(t.images || []);
+                iss.CleanCorrectiveAction = iss.CorrectiveAction.replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+              } catch(e) {}
+            }
+          }
+        });
         return { success: true, data: data || [] };
       }
       case 'saveIssue': {
         const item = Object.assign({}, payload.data);
+        if (item.TrialResult !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
+          let cleanAction = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+          const trialObj = {
+            result: item.TrialResult || '',
+            shots: Number(item.TrialShots) || 0,
+            notes: item.TrialNotes || '',
+            images: tryParse(item.TrialImageIds)
+          };
+          if (trialObj.result || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+            item.CorrectiveAction = cleanAction ? (cleanAction + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
+          } else {
+            item.CorrectiveAction = cleanAction;
+          }
+          delete item.TrialResult;
+          delete item.TrialShots;
+          delete item.TrialNotes;
+          delete item.TrialImageIds;
+          delete item.CleanCorrectiveAction;
+        }
         if (item.ID) {
           const editId = item.ID;
           delete item.ID;
@@ -1293,12 +1425,22 @@ async function _apiInternal(actionStr, payload = null) {
       }
       case 'closeIssue': {
         const item = Object.assign({}, payload.data);
+        let action = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+        const trialObj = {
+          result: item.TrialResult || '',
+          shots: Number(item.TrialShots) || 0,
+          notes: item.TrialNotes || '',
+          images: tryParse(item.TrialImageIds)
+        };
+        if (trialObj.result || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+          action = action ? (action + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
+        }
         const { error } = await sb.from('issues').update({
           Status: 'Closed',
           ClosedAt: item.ClosedAt,
           ClosedBy: item.ClosedBy,
           RootCause: item.RootCause,
-          CorrectiveAction: item.CorrectiveAction,
+          CorrectiveAction: action,
           PartsUsed: item.PartsUsed,
           AfterImageIds: item.AfterImageIds
         }).eq('ID', item.ID);
@@ -2014,8 +2156,12 @@ function filterMolds(){
   var tb=document.getElementById('molds-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="12">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m, idx){
-    var imgs=tryParse(m.ImageIds);
-    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="คลิกดูรูป"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted);align-self:center">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var rawImgs = tryParse(m.ImageIds);
+    var imgs = rawImgs.map(function(id){ return id.indexOf('http') === 0 ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+    var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
+    var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
+      return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
+    }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
     var specs=[];
     if(m.MoldSize) specs.push('📐 '+m.MoldSize);
     if(m.MoldWeight) specs.push('⚖️ '+m.MoldWeight);
@@ -2181,8 +2327,12 @@ function filterMachines(){
   var tb=document.getElementById('machines-tbody');
   if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83c\udfed','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23','')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m){
-    var imgs=tryParse(m.ImageIds);
-    var thumbs=imgs.length?'<div style="display:flex;gap:4px">'+imgs.slice(0,3).map(function(id){return '<img src="https://drive.google.com/thumbnail?id='+id+'&sz=w80" onclick="openLightbox(\'https://drive.google.com/thumbnail?id='+id+'&sz=w1200\',\'https://drive.google.com/file/d/'+id+'/view\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in"/>';}).join('')+(imgs.length>3?'<span style="font-size:10px;color:var(--text-muted)">+'+(imgs.length-3)+'</span>':'')+'</div>':'<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+    var rawImgs = tryParse(m.ImageIds);
+    var imgs = rawImgs.map(function(id){ return id.indexOf('http') === 0 ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+    var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
+    var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
+      return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
+    }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
     return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')">&#128465;&#65039;</button></td></tr>';
   }).join('');
 }
@@ -2893,10 +3043,18 @@ function filterIssues() {
   tb.innerHTML = filtered.slice().reverse().map(function(i) {
     var displayCode = getIssueDisplayCode(i);
     var beforeImgs = tryParse(i.BeforeImageIds);
-    var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px">' + beforeImgs.slice(0,2).map(function(id){ return '<img src="' + id + '" onclick="openLightbox(\'' + id.replace(/'/g,"\\'") + '\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e01\u0e48\u0e2d\u0e19\u0e0b\u0e48\u0e2d\u0e21"/>'; }).join('') + (beforeImgs.length > 2 ? '<span style="font-size:10px;color:var(--text-muted);align-self:center">+' + (beforeImgs.length - 2) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+    var beforeJsonStr = JSON.stringify(beforeImgs).replace(/"/g, '&quot;');
+    var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+      beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + beforeJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
+      (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + beforeJsonStr + ',2,\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
     
     var afterImgs = tryParse(i.AfterImageIds);
-    var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px">' + afterImgs.slice(0,2).map(function(id){ return '<img src="' + id + '" onclick="openLightbox(\'' + id.replace(/'/g,"\\'") + '\',\'\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in" title="\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21"/>'; }).join('') + (afterImgs.length > 2 ? '<span style="font-size:10px;color:var(--text-muted);align-self:center">+' + (afterImgs.length - 2) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>') : '<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
+    var afterJsonStr = JSON.stringify(afterImgs).replace(/"/g, '&quot;');
+    var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+      afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + afterJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
+      (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + afterJsonStr + ',2,\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>') : '<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
 
     return '<tr>' +
       '<td>' +
@@ -2914,7 +3072,7 @@ function filterIssues() {
       '<td>' + afterThumbs + '</td>' +
       '<td style="white-space:nowrap">' +
         '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14/\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34">\ud83d\udd0d</button> ' +
-        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32">\u270f\ufe0f</button> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e31\u0e0d\u0e2b\u0e32/\u0e0b\u0e48\u0e2d\u0e21/Trial">\u270f\ufe0f</button> ' +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23">\ud83d\udda8\ufe0f</button> ' +
         (i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="\u0e40\u0e23\u0e34\u0e48\u0e21\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23">\u25b6\ufe0f</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>' +
@@ -2944,11 +3102,22 @@ function loadIssueTargets(selectedTargetId){
 }
 
 function openIssueModal(issueOrId){
-  ['issue-id','issue-description','issue-reporter'].forEach(function(i){v_set(i,'');});
+  ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
+  v_set('issue-edit-closed-date','');
   var titleEl = document.getElementById('issue-modal-title');
-  var grid = document.getElementById('issue-photos-preview');
-  if (grid) grid.innerHTML = '';
+  var gridBefore = document.getElementById('issue-photos-preview');
+  var gridAfter = document.getElementById('issue-after-photos-preview');
+  var gridTrial = document.getElementById('issue-trial-photos-preview');
+  if (gridBefore) gridBefore.innerHTML = '';
+  if (gridAfter) gridAfter.innerHTML = '';
+  if (gridTrial) gridTrial.innerHTML = '';
+  
   STATE.pendingPhotos['issue'] = { files: [], existing: [] };
+  STATE.pendingPhotos['issue-after'] = { files: [], existing: [] };
+  STATE.pendingPhotos['issue-trial'] = { files: [], existing: [] };
+
+  var secAfter = document.getElementById('issue-edit-after-section');
+  var secTrial = document.getElementById('issue-edit-trial-section');
 
   var data = null;
   if (issueOrId) {
@@ -2960,7 +3129,8 @@ function openIssueModal(issueOrId){
   }
 
   if (data && data.ID) {
-    if (titleEl) titleEl.textContent = '\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32: ' + data.ID;
+    var code = getIssueDisplayCode(data);
+    if (titleEl) titleEl.textContent = '✏️ แก้ไขข้อมูลปัญหา: #' + code + ' (' + (data.TargetName || data.ID) + ')';
     v_set('issue-id', data.ID);
     v_set('issue-target-type', data.TargetType || 'Mold');
     loadIssueTargets(data.TargetID);
@@ -2970,21 +3140,63 @@ function openIssueModal(issueOrId){
     v_set('issue-occurred', data.OccurredAt || new Date().toISOString().slice(0,16));
     v_set('issue-reporter', data.ReportedBy || '');
 
+    // Before Photos
     var existingImgs = tryParse(data.BeforeImageIds);
     STATE.pendingPhotos['issue'].existing = existingImgs.slice();
-    if (grid && existingImgs.length) {
+    if (gridBefore && existingImgs.length) {
       existingImgs.forEach(function(url, idx) {
         var item = document.createElement('div');
         item.className = 'photo-preview-item';
         item.id = 'pi-issue-ex-' + idx;
-        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'issue\',' + idx + ',\'issue-photos-preview\',true)">\u2715</button>';
-        grid.appendChild(item);
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'issue\',' + idx + ',\'issue-photos-preview\',true)">✕</button>';
+        gridBefore.appendChild(item);
+      });
+    }
+
+    // Always enable After & Trial sections for existing issues so technician can edit after-repair / trial data
+    if (secAfter) secAfter.style.display = 'block';
+    if (secTrial) secTrial.style.display = 'block';
+
+    v_set('issue-edit-root-cause', data.RootCause || '');
+    v_set('issue-edit-corrective', data.CleanCorrectiveAction || data.CorrectiveAction || '');
+    v_set('issue-edit-closed-date', data.ClosedAt || '');
+    v_set('issue-edit-closed-by', data.ClosedBy || '');
+    v_set('issue-edit-parts-used', data.PartsUsed || '');
+    v_set('issue-edit-trial-result', data.TrialResult || '');
+    v_set('issue-edit-trial-shots', data.TrialShots || '');
+    v_set('issue-edit-trial-notes', data.TrialNotes || '');
+
+    // After Photos
+    var existingAfter = tryParse(data.AfterImageIds);
+    STATE.pendingPhotos['issue-after'].existing = existingAfter.slice();
+    if (gridAfter && existingAfter.length) {
+      existingAfter.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-issue-after-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'issue-after\',' + idx + ',\'issue-after-photos-preview\',true)">✕</button>';
+        gridAfter.appendChild(item);
+      });
+    }
+
+    // Trial Photos
+    var existingTrial = tryParse(data.TrialImageIds);
+    STATE.pendingPhotos['issue-trial'].existing = existingTrial.slice();
+    if (gridTrial && existingTrial.length) {
+      existingTrial.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-issue-trial-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'issue-trial\',' + idx + ',\'issue-trial-photos-preview\',true)">✕</button>';
+        gridTrial.appendChild(item);
       });
     }
   } else {
-    if (titleEl) titleEl.textContent = '\ud83d\udea8 \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32';
+    if (titleEl) titleEl.textContent = '🚨 แจ้งปัญหา';
     v_set('issue-occurred', new Date().toISOString().slice(0,16));
     loadIssueTargets();
+    if (secAfter) secAfter.style.display = 'none';
+    if (secTrial) secTrial.style.display = 'none';
   }
   openModal('issue-modal');
 }
@@ -2993,7 +3205,7 @@ async function saveIssue(){
   try {
     var targetId = v('issue-target-id'), desc = v('issue-description');
     if (!targetId || !desc) {
-      showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e01\u0e23\u0e2d\u0e01\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14', 'error');
+      showToast('กรุณาเลือก Machine/Mold และกรอกรายละเอียด', 'error');
       return;
     }
     var type = v('issue-target-type');
@@ -3003,7 +3215,12 @@ async function saveIssue(){
     var existingIssue = editId ? (STATE.issues || []).find(function(x){ return x.ID === editId; }) : null;
 
     showGlobalLoading(true);
-    var imgIds = await uploadPendingPhotos('issue', 'Issues/Before');
+    var beforeImgIds = await uploadPendingPhotos('issue', 'Issues/Before');
+    var afterImgIds = await uploadPendingPhotos('issue-after', 'Issues/After');
+    var trialImgIds = await uploadPendingPhotos('issue-trial', 'Issues/Trial');
+
+    var secAfter = document.getElementById('issue-edit-after-section');
+    var hasAfter = secAfter && secAfter.style.display !== 'none';
 
     var data = {
       ID: editId || undefined,
@@ -3015,14 +3232,38 @@ async function saveIssue(){
       OccurredAt: v('issue-occurred'),
       ReportedBy: v('issue-reporter'),
       Severity: v('issue-severity'),
-      BeforeImageIds: JSON.stringify(imgIds),
+      BeforeImageIds: JSON.stringify(beforeImgIds),
       Status: existingIssue ? existingIssue.Status : 'Open'
     };
+
+    if (hasAfter || editId) {
+      var rootCause = v('issue-edit-root-cause');
+      var corrective = v('issue-edit-corrective');
+      var closedDate = v('issue-edit-closed-date');
+      var closedBy = v('issue-edit-closed-by');
+      var partsUsed = v('issue-edit-parts-used');
+      var trialResult = v('issue-edit-trial-result');
+      var trialShots = Number(v('issue-edit-trial-shots')) || 0;
+      var trialNotes = v('issue-edit-trial-notes');
+
+      if (rootCause || corrective || closedBy || afterImgIds.length || trialResult || trialNotes || trialImgIds.length) {
+        data.RootCause = rootCause;
+        data.CorrectiveAction = corrective;
+        data.ClosedAt = closedDate || (existingIssue ? existingIssue.ClosedAt : undefined);
+        data.ClosedBy = closedBy || (existingIssue ? existingIssue.ClosedBy : undefined);
+        data.PartsUsed = partsUsed;
+        data.AfterImageIds = JSON.stringify(afterImgIds);
+        data.TrialResult = trialResult;
+        data.TrialShots = trialShots;
+        data.TrialNotes = trialNotes;
+        data.TrialImageIds = JSON.stringify(trialImgIds);
+      }
+    }
 
     var r = await api('saveIssue', { data: data });
     showGlobalLoading(false);
     if (r && r.success) {
-      showToast(editId ? '\u0e41\u0e01\u0e49\u0e44\u0e02\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705' : '\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u2705', 'success');
+      showToast(editId ? 'แก้ไขข้อมูลปัญหาสำเร็จ ✅' : 'บันทึกปัญหาสำเร็จ ✅', 'success');
       closeModal('issue-modal');
       var res = await api('getIssues');
       if (res && res.success) {
@@ -3031,98 +3272,134 @@ async function saveIssue(){
         updateBadges();
       }
     } else {
-      showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + ((r && r.error) || '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e44\u0e14\u0e49'), 'error');
+      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
     }
   } catch (err) {
     showGlobalLoading(false);
     console.error('saveIssue error:', err);
-    showToast('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + err.message, 'error');
+    showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
   }
 }
 
 function openIssueDetailModal(id){
-  var iss = STATE.issues.find(function(i){ return i.ID === id; });
+  var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   var body = document.getElementById('issue-detail-body');
   var footer = document.getElementById('issue-detail-footer');
   if(!body) return;
 
-  var beforeImgs = tryParse(iss.BeforeImageIds);
-  var afterImgs = tryParse(iss.AfterImageIds);
+  var displayCode = getIssueDisplayCode(iss);
 
+  var beforeImgs = tryParse(iss.BeforeImageIds);
+  var beforeJsonStr = JSON.stringify(beforeImgs).replace(/"/g, '&quot;');
   var beforeGallery = beforeImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-        beforeImgs.map(function(url){
-          return '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e20\u0e32\u0e1e\u0e02\u0e22\u0e32\u0e22" />';
+        beforeImgs.map(function(url, idx){
+          return '<img src="' + url + '" onclick="openLightbox(' + beforeJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + beforeImgs.length + ')" />';
         }).join('') +
       '</div>'
-    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07</div>';
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพตอนแจ้ง</div>';
 
+  var afterImgs = tryParse(iss.AfterImageIds);
+  var afterJsonStr = JSON.stringify(afterImgs).replace(/"/g, '&quot;');
   var afterGallery = afterImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-        afterImgs.map(function(url){
-          return '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e20\u0e32\u0e1e\u0e02\u0e22\u0e32\u0e22" />';
+        afterImgs.map(function(url, idx){
+          return '<img src="' + url + '" onclick="openLightbox(' + afterJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปหลังซ่อม (After)\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + afterImgs.length + ')" />';
         }).join('') +
       '</div>'
-    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</div>';
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพหลังแก้ไข</div>';
+
+  var trialImgs = tryParse(iss.TrialImageIds);
+  var trialJsonStr = JSON.stringify(trialImgs).replace(/"/g, '&quot;');
+  var trialGallery = trialImgs.length
+    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
+        trialImgs.map(function(url, idx){
+          return '<img src="' + url + '" onclick="openLightbox(' + trialJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปตอน Trial\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + trialImgs.length + ')" />';
+        }).join('') +
+      '</div>'
+    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพชิ้นงานตอน Trial</div>';
 
   var stBadge = '<span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '" style="font-size:12px;padding:4px 10px;">' + (iss.Status||'Open') + '</span>';
   var sevBadge = '<span class="badge ' + (iss.Severity||'low').toLowerCase() + '" style="font-size:12px;padding:4px 10px;">' + (iss.Severity||'-') + '</span>';
 
+  var trialResultBadge = '';
+  if (iss.TrialResult === 'Passed') trialResultBadge = '<span class="badge success" style="font-size:12px;padding:3px 8px;">✅ ผ่านสมบูรณ์ (Passed)</span>';
+  else if (iss.TrialResult === 'Conditional') trialResultBadge = '<span class="badge warning" style="font-size:12px;padding:3px 8px;">⚠️ ผ่านแบบมีเงื่อนไข (Conditional)</span>';
+  else if (iss.TrialResult === 'Adjusted') trialResultBadge = '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-size:12px;padding:3px 8px;">🔧 ปรับจูนและผ่าน</span>';
+  else if (iss.TrialResult === 'Failed') trialResultBadge = '<span class="badge danger" style="font-size:12px;padding:3px 8px;">❌ ไม่ผ่าน / ต้องแก้ไขต่อ</span>';
+  else trialResultBadge = '<span style="color:var(--text-muted);font-size:12px;">-</span>';
+
   body.innerHTML = 
     '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
       '<div>' +
-        '<div style="font-size:16px;font-weight:700;">#' + getIssueDisplayCode(iss) + ' \u2014 ' + (iss.TargetName||'-') + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | \u0e40\u0e01\u0e34\u0e14\u0e40\u0e21\u0e37\u0e48\u0e2d: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
+        '<div style="font-size:16px;font-weight:700;">#' + displayCode + ' — ' + (iss.TargetName||'-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | เกิดเมื่อ: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;">' + sevBadge + stBadge + '</div>' +
     '</div>' +
 
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">' +
+      '<!-- BEFORE CARD -->' +
       '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">\ud83d\udea8 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07:</strong> ' + (iss.ReportedBy||'-') + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px"><strong>\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e2d\u0e32\u0e01\u0e32\u0e23:</strong></div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:8px;">🚨 1. ข้อมูลการแจ้งปัญหา (Before)</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>ผู้แจ้ง:</strong> ' + (iss.ReportedBy||'-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px"><strong>รายละเอียดอาการ:</strong></div>' +
         '<div style="font-size:13px;line-height:1.4;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);">' + (iss.Description||'-') + '</div>' +
-        '<div style="margin-top:10px;"><strong style="font-size:12px;">\ud83d\udcf7 \u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07 (Before):</strong>' + beforeGallery + '</div>' +
+        '<div style="margin-top:10px;"><strong style="font-size:12px;">📷 รูปภาพตอนแจ้ง (Before):</strong>' + beforeGallery + '</div>' +
       '</div>' +
 
+      '<!-- AFTER CARD -->' +
       '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">\u2705 \u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e44\u0e02 & \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</div>' +
-        (iss.Status === 'Closed' ? 
-          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e1c\u0e39\u0e49\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedBy||'-') + '</div>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19:</strong> ' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</div>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Root Cause (\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38):</strong></div>' +
+        '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">🔧 2. ข้อมูลการแก้ไข & ปิดงาน (After)</div>' +
+        (iss.Status === 'Closed' || iss.RootCause || iss.CorrectiveAction ? 
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>ผู้ปิดงาน/ผู้ซ่อม:</strong> ' + (iss.ClosedBy||'-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>วันที่ปิดงาน:</strong> ' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Root Cause (สาเหตุ):</strong></div>' +
           '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.RootCause||'-') + '</div>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Corrective Action (\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02):</strong></div>' +
-          '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.CorrectiveAction||'-') + '</div>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e17\u0e35\u0e48\u0e43\u0e0a\u0e49 (Parts Used):</strong> ' + (iss.PartsUsed||'-') + '</div>' +
-          '<div style="margin-top:10px;"><strong style="font-size:12px;">\u2705 \u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02 (After):</strong>' + afterGallery + '</div>'
-        : '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:13px;">\u23f3 \u0e07\u0e32\u0e19\u0e19\u0e35\u0e49\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e23\u0e31\u0e1a\u0e01\u0e32\u0e23\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19<br><span style="font-size:11px;">\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e01\u0e14\u0e1b\u0e38\u0e48\u0e21 "\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19" \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e30\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e0b\u0e48\u0e2d\u0e21</span></div>'
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Corrective Action (วิธีแก้ไข):</strong></div>' +
+          '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.CleanCorrectiveAction||iss.CorrectiveAction||'-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>อะไหล่ที่ใช้ (Parts Used):</strong> ' + (iss.PartsUsed||'-') + '</div>' +
+          '<div style="margin-top:10px;"><strong style="font-size:12px;">✅ รูปภาพหลังแก้ไข (After):</strong>' + afterGallery + '</div>'
+        : '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:13px;">⏳ งานนี้ยังไม่ได้รับการปิดงาน<br><span style="font-size:11px;">สามารถกดปุ่ม "ปิดงาน" เพื่อบันทึกวิธีแก้ไขและรูปภาพหลังซ่อม</span></div>'
         ) +
       '</div>' +
+    '</div>' +
+
+    '<!-- TRIAL CARD -->' +
+    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">🧪 3. ข้อมูลการทดสอบแม่พิมพ์ / ชิ้นงานหลังซ่อม (Trial & Quality Check)</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">' +
+        '<div style="font-size:12px;"><strong>ผลการทดสอบ:</strong> ' + trialResultBadge + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);"><strong>จำนวน Shot ที่ลองฉีด:</strong> ' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"><strong>บันทึกข้อสังเกต / พารามิเตอร์ตอน Trial:</strong></div>' +
+      '<div style="font-size:12px;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);min-height:36px;white-space:pre-wrap;">' + (iss.TrialNotes || '-') + '</div>' +
+      '<div style="margin-top:10px;"><strong style="font-size:12px;">📷 รูปภาพชิ้นงานตอน Trial (Trial Photos):</strong>' + trialGallery + '</div>' +
     '</div>';
 
   if (footer) {
     footer.innerHTML = 
-      '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">\u0e1b\u0e34\u0e14</button> ' +
-      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25</button> ' +
-      '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">\ud83d\udda8\ufe0f \u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23</button> ' +
-      (iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e19\u0e35\u0e49</button>' : '');
+      '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">ปิด</button> ' +
+      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">✏️ แก้ไขข้อมูล (Before/After/Trial)</button> ' +
+      '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร</button> ' +
+      (iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">✅ ปิดงานนี้</button>' : '');
   }
 
   openModal('issue-detail-modal');
 }
 
 function printIssueReport(id) {
-  var iss = STATE.issues.find(function(i) { return i.ID === id; });
+  var iss = (STATE.issues || []).find(function(i) { return i.ID === id; });
   if (!iss) {
-    showToast('\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e31\u0e0d\u0e2b\u0e32', 'error');
+    showToast('ไม่พบข้อมูลปัญหา', 'error');
     return;
   }
 
+  var displayCode = getIssueDisplayCode(iss);
   var beforeImgs = tryParse(iss.BeforeImageIds);
   var afterImgs = tryParse(iss.AfterImageIds);
+  var trialImgs = tryParse(iss.TrialImageIds);
 
   var beforeGallery = beforeImgs.length
     ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
@@ -3130,7 +3407,7 @@ function printIssueReport(id) {
           return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
         }).join('') +
       '</div>'
-    : '<span style="color:#666;font-style:italic;">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e1b\u0e23\u0e30\u0e01\u0e2d\u0e1a</span>';
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพประกอบ</span>';
 
   var afterGallery = afterImgs.length
     ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
@@ -3138,92 +3415,123 @@ function printIssueReport(id) {
           return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
         }).join('') +
       '</div>'
-    : '<span style="color:#666;font-style:italic;">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e41\u0e01\u0e49\u0e44\u0e02</span>';
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพหลังแก้ไข</span>';
 
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>\u0e43\u0e1a\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 - ' + iss.ID + '</title>' +
+  var trialGallery = trialImgs.length
+    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
+        trialImgs.map(function(url) {
+          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
+        }).join('') +
+      '</div>'
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพชิ้นงานตอน Trial</span>';
+
+  var trialResText = iss.TrialResult === 'Passed' ? '✅ ผ่านสมบูรณ์ (Passed)' :
+                     iss.TrialResult === 'Conditional' ? '⚠️ ผ่านแบบมีเงื่อนไข (Conditional)' :
+                     iss.TrialResult === 'Adjusted' ? '🔧 มีการปรับจูนเพิ่มเติม (Adjusted & Passed)' :
+                     iss.TrialResult === 'Failed' ? '❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)' : (iss.TrialResult || '-');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ใบแจ้งปัญหาและรายงานผลการแก้ไข - #' + displayCode + '</title>' +
     '<style>' +
-    '@page { size: A4 portrait; margin: 12mm 15mm; }' +
-    'body { font-family: "Sarabun", "Segoe UI", sans-serif; color: #111; margin: 0; padding: 15px; font-size: 13px; line-height: 1.4; }' +
-    '.no-print { display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }' +
+    '@page { size: A4 portrait; margin: 10mm 12mm; }' +
+    'body { font-family: "Sarabun", "Segoe UI", sans-serif; color: #111; margin: 0; padding: 12px; font-size: 12px; line-height: 1.35; }' +
+    '.no-print { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }' +
     '@media print { .no-print { display: none !important; } body { padding: 0; } }' +
-    'h2 { margin: 0 0 4px 0; font-size: 18px; text-align: center; color: #1e3a8a; }' +
-    '.sub-title { text-align: center; font-size: 12px; color: #555; margin-bottom: 16px; font-weight: bold; }' +
-    'table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }' +
-    'th, td { border: 1px solid #cbd5e1; padding: 7px 10px; text-align: left; vertical-align: top; }' +
+    'h2 { margin: 0 0 2px 0; font-size: 16px; text-align: center; color: #1e3a8a; }' +
+    '.sub-title { text-align: center; font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; }' +
+    'table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }' +
+    'th, td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: left; vertical-align: top; }' +
     'th { background-color: #f1f5f9; font-weight: 600; color: #334155; }' +
-    '.section-hdr { background: #e2e8f0; font-weight: bold; color: #0f172a; padding: 6px 10px; border: 1px solid #cbd5e1; font-size: 13px; margin-top: 10px; }' +
-    '.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }' +
+    '.section-hdr { background: #e2e8f0; font-weight: bold; color: #0f172a; padding: 5px 8px; border: 1px solid #cbd5e1; font-size: 12px; margin-top: 8px; }' +
+    '.badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }' +
     '.critical { background: #fee2e2; color: #991b1b; } .high { background: #ffedd5; color: #9a3412; } .medium { background: #fef9c3; color: #854d0e; } .low { background: #f0fdf4; color: #166534; }' +
     '.open { background: #fee2e2; color: #b91c1c; } .in-progress { background: #eff6ff; color: #1d4ed8; } .closed { background: #ecfdf5; color: #047857; }' +
-    '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 25px; text-align: center; page-break-inside: avoid; }' +
-    '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 12px 8px; min-height: 90px; display: flex; flex-direction: column; justify-content: space-between; }' +
+    '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-top: 16px; text-align: center; page-break-inside: avoid; }' +
+    '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 6px; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }' +
     '</style></head><body>' +
     '<div class="no-print">' +
-      '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print Report</button>' +
-      '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">\u2715 \u0e1b\u0e34\u0e14</button>' +
+      '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์ / Print Report</button>' +
+      '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">✕ ปิด</button>' +
     '</div>' +
 
-    '<h2>\u0e43\u0e1a\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Issue & Maintenance Report)</h2>' +
-    '<div class="sub-title">\u0e23\u0e30\u0e1a\u0e1a\u0e1a\u0e23\u0e34\u0e2b\u0e32\u0e23\u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e41\u0e25\u0e30\u0e1a\u0e33\u0e23\u0e38\u0e07\u0e23\u0e31\u0e01\u0e29\u0e32\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c/\u0e40\u0e08\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23 (TPM Management System)</div>' +
+    '<h2>ใบแจ้งปัญหาและรายงานผลการแก้ไข (Issue & Maintenance Report)</h2>' +
+    '<div class="sub-title">ระบบบริหารจัดการและบำรุงรักษาแม่พิมพ์/เครื่องจักร (TPM Management System)</div>' +
 
     '<table>' +
       '<tr>' +
-        '<th style="width:18%;">\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23 (Issue No.)</th><td style="width:32%;"><strong>#' + getIssueDisplayCode(iss) + '</strong></td>' +
-        '<th style="width:18%;">\u0e2a\u0e16\u0e32\u0e19\u0e30 (Status)</th><td style="width:32%;"><span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span></td>' +
+        '<th style="width:18%;">เลขที่เอกสาร (Issue No.)</th><td style="width:32%;"><strong>#' + displayCode + '</strong></td>' +
+        '<th style="width:18%;">สถานะ (Status)</th><td style="width:32%;"><span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span></td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e40\u0e1b\u0e49\u0e32\u0e2b\u0e21\u0e32\u0e22</th><td>' + (iss.TargetType||'Mold') + '</td>' +
-        '<th>\u0e0a\u0e37\u0e48\u0e2d\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c / \u0e40\u0e08\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23</th><td><strong>' + (iss.TargetName||'-') + '</strong></td>' +
+        '<th>ประเภทเป้าหมาย</th><td>' + (iss.TargetType||'Mold') + '</td>' +
+        '<th>ชื่อแม่พิมพ์ / เครื่องจักร</th><td><strong>' + (iss.TargetName||'-') + '</strong></td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e1b\u0e31\u0e0d\u0e2b\u0e32</th><td>' + (iss.IssueType||'-') + '</td>' +
-        '<th>\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e23\u0e38\u0e19\u0e41\u0e23\u0e07</th><td><span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span></td>' +
+        '<th>ประเภทปัญหา</th><td>' + (iss.IssueType||'-') + '</td>' +
+        '<th>ระดับความรุนแรง</th><td><span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span></td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48/\u0e40\u0e27\u0e25\u0e32\u0e40\u0e01\u0e34\u0e14\u0e40\u0e2b\u0e15\u0e38</th><td>' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</td>' +
-        '<th>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32</th><td>' + (iss.ReportedBy||'-') + '</td>' +
+        '<th>วันที่/เวลาเกิดเหตุ</th><td>' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</td>' +
+        '<th>ผู้แจ้งปัญหา</th><td>' + (iss.ReportedBy||'-') + '</td>' +
       '</tr>' +
     '</table>' +
 
-    '<div class="section-hdr">1. \u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e01\u0e32\u0e23\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e41\u0e25\u0e30\u0e2d\u0e32\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e1e\u0e1a (Problem Description & Initial Photos)</div>' +
+    '<div class="section-hdr">1. รายละเอียดการแจ้งปัญหาและอาการที่พบ (Problem Description & Initial Photos)</div>' +
     '<table style="margin-top:0;">' +
       '<tr>' +
         '<td>' +
-          '<div style="min-height:40px;white-space:pre-wrap;">' + (iss.Description||'-') + '</div>' +
-          '<div style="margin-top:8px;"><strong>\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e15\u0e2d\u0e19\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32:</strong>' + beforeGallery + '</div>' +
+          '<div style="min-height:30px;white-space:pre-wrap;">' + (iss.Description||'-') + '</div>' +
+          '<div style="margin-top:6px;"><strong>รูปภาพตอนแจ้งปัญหา:</strong>' + beforeGallery + '</div>' +
         '</td>' +
       '</tr>' +
     '</table>' +
 
-    '<div class="section-hdr">2. \u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02\u0e41\u0e25\u0e30\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19 (Corrective Action & Resolution Report)</div>' +
+    '<div class="section-hdr">2. รายงานผลการแก้ไขและปิดงาน (Corrective Action & Resolution Report)</div>' +
     '<table style="margin-top:0;">' +
       '<tr>' +
-        '<th style="width:25%;">\u0e1c\u0e39\u0e49\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 / \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</th><td style="width:25%;">' + (iss.ClosedBy||'-') + '</td>' +
-        '<th style="width:25%;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</th><td style="width:25%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
+        '<th style="width:25%;">ผู้ดำเนินการแก้ไข / ปิดงาน</th><td style="width:25%;">' + (iss.ClosedBy||'-') + '</td>' +
+        '<th style="width:25%;">วันที่ปิดงาน</th><td style="width:25%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e2a\u0e32\u0e40\u0e2b\u0e15\u0e38\u0e17\u0e35\u0e48\u0e41\u0e17\u0e49\u0e08\u0e23\u0e34\u0e07 (Root Cause)</th>' +
+        '<th>สาเหตุที่แท้จริง (Root Cause)</th>' +
         '<td colspan="3" style="white-space:pre-wrap;">' + (iss.RootCause||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e27\u0e34\u0e18\u0e35\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Corrective Action)</th>' +
-        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.CorrectiveAction||'-') + '</td>' +
+        '<th>วิธีการแก้ไข (Corrective Action)</th>' +
+        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.CleanCorrectiveAction||iss.CorrectiveAction||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
-        '<th>\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e17\u0e35\u0e48\u0e40\u0e1a\u0e34\u0e01\u0e43\u0e0a\u0e49 (Parts Used)</th>' +
+        '<th>อะไหล่ที่เบิกใช้ (Parts Used)</th>' +
         '<td colspan="3">' + (iss.PartsUsed||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
         '<td colspan="4">' +
-          '<strong>\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e2b\u0e25\u0e31\u0e07\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (After Photos):</strong>' + afterGallery +
+          '<strong>รูปภาพหลังการแก้ไข (After Photos):</strong>' + afterGallery +
+        '</td>' +
+      '</tr>' +
+    '</table>' +
+
+    '<div class="section-hdr">3. ผลการทดสอบแม่พิมพ์/ชิ้นงานหลังซ่อม (Mold & Part Trial Report)</div>' +
+    '<table style="margin-top:0;">' +
+      '<tr>' +
+        '<th style="width:25%;">ผลการทดสอบ Trial</th><td style="width:25%;"><strong>' + trialResText + '</strong></td>' +
+        '<th style="width:25%;">จำนวน Shot ที่ลองฉีด</th><td style="width:25%;">' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>บันทึกข้อสังเกต / พารามิเตอร์</th>' +
+        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.TrialNotes||'-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<td colspan="4">' +
+          '<strong>รูปภาพชิ้นงานตอน Trial (Trial Photos):</strong>' + trialGallery +
         '</td>' +
       '</tr>' +
     '</table>' +
 
     '<div class="sig-grid">' +
-      '<div class="sig-box"><div><strong>\u0e1c\u0e39\u0e49\u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32 (Reporter)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
-      '<div class="sig-box"><div><strong>\u0e1c\u0e39\u0e49\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23\u0e41\u0e01\u0e49\u0e44\u0e02 (Technician)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
-      '<div class="sig-box"><div><strong>\u0e2b\u0e31\u0e27\u0e2b\u0e19\u0e49\u0e32\u0e07\u0e32\u0e19/\u0e1c\u0e39\u0e49\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a (Supervisor)</strong></div><div style="font-size:11px;color:#666;">\u0e25\u0e07\u0e0a\u0e37\u0e48\u0e2d: ...........................................<br>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>ผู้แจ้งปัญหา<br>(Reporter)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>ผู้ดำเนินการแก้ไข<br>(Technician)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>ผู้ทดสอบ Trial/QC<br>(Inspector)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
+      '<div class="sig-box"><div><strong>หัวหน้างาน/อนุมัติ<br>(Supervisor)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
     '</div>' +
 
     '<' + '/body><' + '/html>';
@@ -3234,11 +3542,11 @@ function printIssueReport(id) {
     w.document.write(html);
     w.document.close();
   } else {
-    showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e19\u0e38\u0e0d\u0e32\u0e15 Pop-up \u0e1a\u0e19\u0e40\u0e1a\u0e23\u0e32\u0e27\u0e4c\u0e40\u0e0b\u0e2d\u0e23\u0e4c\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23', 'warning');
+    showToast('กรุณาอนุญาต Pop-up บนเบราว์เซอร์เพื่อพิมพ์เอกสาร', 'warning');
   }
 }
 
-async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('\u0e2a\u0e16\u0e32\u0e19\u0e30: '+status,'success');}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+r.error,'error');}
+async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('สถานะ: '+status,'success');}else showToast('ผิดพลาด: '+r.error,'error');}
 
 function onClosePartSelectChange() {
   var sel = document.getElementById('close-part-select');
@@ -3247,11 +3555,11 @@ function onClosePartSelectChange() {
   if (!sel) return;
   if (sel.value === '__OTHER__') {
     if (otherWrap) otherWrap.style.display = 'block';
-    if (unitEl) unitEl.textContent = '\u0e0a\u0e34\u0e49\u0e19';
+    if (unitEl) unitEl.textContent = 'ชิ้น';
   } else {
     if (otherWrap) otherWrap.style.display = 'none';
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
-    if (unitEl) unitEl.textContent = (p && p.Unit) ? p.Unit : '\u0e0a\u0e34\u0e49\u0e19';
+    if (unitEl) unitEl.textContent = (p && p.Unit) ? p.Unit : 'ชิ้น';
   }
 }
 
@@ -3261,23 +3569,23 @@ function renderCloseIssuePartsList() {
   if (!container) return;
   var parts = STATE.closeIssueParts || [];
   if (!parts.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48 (\u0e16\u0e49\u0e32\u0e44\u0e21\u0e48\u0e21\u0e35\u0e01\u0e32\u0e23\u0e43\u0e0a\u0e49\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48 \u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1b\u0e25\u0e48\u0e2d\u0e22\u0e27\u0e48\u0e32\u0e07\u0e44\u0e14\u0e49)</div>';
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถปล่อยว่างได้)</div>';
     if (summaryInput) summaryInput.value = '';
     return;
   }
   container.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
     parts.map(function(p, idx) {
       var badgeStyle = p.isStock ? 'background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#818cf8;' : 'background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;';
-      var tag = p.isStock ? '\ud83d\udce6 ' : '\u270f\ufe0f ';
+      var tag = p.isStock ? '📦 ' : '✏️ ';
       return '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;font-size:12px;' + badgeStyle + '">' +
-        '<strong>' + tag + p.partName + '</strong> (x' + p.qty + ' ' + (p.unit || '\u0e0a\u0e34\u0e49\u0e19') + ')' +
-        '<button type="button" onclick="removeCloseIssuePart(' + idx + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23">\u2715</button>' +
+        '<strong>' + tag + p.partName + '</strong> (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + ')' +
+        '<button type="button" onclick="removeCloseIssuePart(' + idx + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="ลบรายการ">✕</button>' +
       '</div>';
     }).join('') +
   '</div>';
 
   var summaryText = parts.map(function(p) {
-    return p.partName + ' (x' + p.qty + ' ' + (p.unit || '\u0e0a\u0e34\u0e49\u0e19') + (p.isStock ? '' : ' - Other') + ')';
+    return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + (p.isStock ? '' : ' - Other') + ')';
   }).join(', ');
 
   if (summaryInput) {
@@ -3296,7 +3604,7 @@ function addCloseIssuePart() {
   if (sel.value === '__OTHER__') {
     var otherName = (otherNameInput ? otherNameInput.value : '').trim();
     if (!otherName) {
-      showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e19\u0e2d\u0e01\u0e04\u0e25\u0e31\u0e01', 'error');
+      showToast('กรุณาระบุชื่ออะไหล่นอกคลัง', 'error');
       return;
     }
     STATE.closeIssueParts = STATE.closeIssueParts || [];
@@ -3304,7 +3612,7 @@ function addCloseIssuePart() {
       partId: null,
       partName: otherName,
       partNo: '',
-      unit: '\u0e0a\u0e34\u0e49\u0e19',
+      unit: 'ชิ้น',
       qty: qty,
       isStock: false
     });
@@ -3321,13 +3629,13 @@ function addCloseIssuePart() {
         partId: p.ID,
         partName: p.PartName,
         partNo: p.PartNo || '',
-        unit: p.Unit || '\u0e0a\u0e34\u0e49\u0e19',
+        unit: p.Unit || 'ชิ้น',
         qty: qty,
         isStock: true
       });
     }
   } else {
-    showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48', 'warning');
+    showToast('กรุณาเลือกอะไหล่', 'warning');
     return;
   }
   if (qtyInput) qtyInput.value = '1';
@@ -3345,7 +3653,8 @@ function openCloseIssueModal(id){
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   v_set('close-issue-id', id);
-  ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name'].forEach(function(i){ v_set(i,''); });
+  ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name','close-trial-shots','close-trial-notes'].forEach(function(i){ v_set(i,''); });
+  v_set('close-trial-result', 'Passed');
   v_set('close-date', new Date().toISOString().slice(0,16));
   v_set('close-part-qty', '1');
   var otherWrap = document.getElementById('close-part-other-wrap');
@@ -3361,32 +3670,35 @@ function openCloseIssueModal(id){
     var linkedParts = stockList.filter(function(p) { return p.LinkedID === iss.TargetID && iss.TargetID; });
     var otherStock = stockList.filter(function(p) { return p.LinkedID !== iss.TargetID || !iss.TargetID; });
 
-    var html = '<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e08\u0e32\u0e01\u0e04\u0e25\u0e31\u0e07 Stock --</option>';
+    var html = '<option value="">-- เลือกอะไหล่จากคลัง Stock --</option>';
     if (linkedParts.length) {
-      html += '<optgroup label="\u2b50 \u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a ' + (iss.TargetName || iss.TargetID) + '">';
+      html += '<optgroup label="⭐ อะไหล่สำหรับ ' + (iss.TargetName || iss.TargetID) + '">';
       linkedParts.forEach(function(p) {
         var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
       });
       html += '</optgroup>';
     }
     if (otherStock.length) {
-      html += '<optgroup label="\ud83d\udce6 \u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e2d\u0e37\u0e48\u0e19\u0e46 \u0e43\u0e19\u0e04\u0e25\u0e31\u0e07 Stock">';
+      html += '<optgroup label="📦 อะไหล่อื่นๆ ในคลัง Stock">';
       otherStock.forEach(function(p) {
         var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [\u0e04\u0e07\u0e40\u0e2b\u0e25\u0e37\u0e2d: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
       });
       html += '</optgroup>';
     }
-    html += '<optgroup label="\u270f\ufe0f \u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e19\u0e2d\u0e01\u0e04\u0e25\u0e31\u0e07">';
-    html += '<option value="__OTHER__">\u2795 \u0e2d\u0e37\u0e48\u0e19\u0e46 / Other (\u0e44\u0e21\u0e48\u0e2d\u0e22\u0e39\u0e48\u0e43\u0e19 Stock)</option>';
+    html += '<optgroup label="✏️ อะไหล่นอกคลัง">';
+    html += '<option value="__OTHER__">➕ อื่นๆ / Other (ไม่อยู่ใน Stock)</option>';
     html += '</optgroup>';
     sel.innerHTML = html;
   }
 
   document.getElementById('close-photos-preview').innerHTML = '';
+  document.getElementById('close-trial-photos-preview').innerHTML = '';
   STATE.pendingPhotos['close'] = { files: [], existing: [] };
-  document.getElementById('close-issue-info').innerHTML = '<strong>' + iss.ID + '</strong> \u2014 ' + (iss.TargetName || '-') + '<br><span style="color:var(--text-muted)">' + (iss.Description || '') + '</span>';
+  STATE.pendingPhotos['close-trial'] = { files: [], existing: [] };
+
+  document.getElementById('close-issue-info').innerHTML = '<strong>' + (getIssueDisplayCode(iss) || iss.ID) + '</strong> — ' + (iss.TargetName || '-') + '<br><span style="color:var(--text-muted)">' + (iss.Description || '') + '</span>';
   openModal('issue-close-modal');
 }
 
@@ -3399,11 +3711,13 @@ async function closeIssue(){
     var partsUsed = v('close-parts-used');
 
     if(!rootCause || !corrective){
-      showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Root Cause \u0e41\u0e25\u0e30\u0e27\u0e34\u0e18\u0e35\u0e41\u0e01\u0e49\u0e44\u0e02', 'error');
+      showToast('กรุณาระบุ Root Cause และวิธีแก้ไข', 'error');
       return;
     }
     showGlobalLoading(true);
     var imgIds = await uploadPendingPhotos('close', 'Issues/After');
+    var trialImgIds = await uploadPendingPhotos('close-trial', 'Issues/Trial');
+
     var data = {
       ID: id,
       RootCause: rootCause,
@@ -3411,7 +3725,11 @@ async function closeIssue(){
       ClosedAt: v('close-date'),
       ClosedBy: closedBy,
       PartsUsed: partsUsed,
-      AfterImageIds: JSON.stringify(imgIds)
+      AfterImageIds: JSON.stringify(imgIds),
+      TrialResult: v('close-trial-result'),
+      TrialShots: Number(v('close-trial-shots')) || 0,
+      TrialNotes: v('close-trial-notes'),
+      TrialImageIds: JSON.stringify(trialImgIds)
     };
     var r = await api('closeIssue', { data: data });
 
@@ -3424,8 +3742,8 @@ async function closeIssue(){
             partId: p.partId,
             type: 'OUT',
             quantity: p.qty,
-            reason: '\u0e0b\u0e48\u0e2d\u0e21\u0e41\u0e25\u0e30\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e1b\u0e31\u0e0d\u0e2b\u0e32: ' + id,
-            by: closedBy || '\u0e1c\u0e39\u0e49\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19'
+            reason: 'ซ่อมและปิดงานปัญหา: ' + id,
+            by: closedBy || 'ผู้ปิดงาน'
           }
         });
       }));
@@ -3433,7 +3751,7 @@ async function closeIssue(){
 
     showGlobalLoading(false);
     if(r && r.success){
-      showToast('\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08 \u0e41\u0e25\u0e30\u0e15\u0e31\u0e14\u0e2a\u0e15\u0e47\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22 \u2705', 'success');
+      showToast('ปิดงานสำเร็จ และตัดสต็อกอะไหล่เรียบร้อย ✅', 'success');
       closeModal('issue-close-modal');
       var resIss = await api('getIssues');
       var resStock = await api('getStockParts');
@@ -3443,12 +3761,12 @@ async function closeIssue(){
       renderStock();
       updateBadges();
     } else {
-      showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + ((r && r.error) || '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19\u0e44\u0e14\u0e49'), 'error');
+      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถปิดงานได้'), 'error');
     }
   } catch(err) {
     showGlobalLoading(false);
     console.error('closeIssue error:', err);
-    showToast('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: ' + err.message, 'error');
+    showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
   }
 }
 
@@ -3508,10 +3826,11 @@ function filterStock(){
     var linked=allTargets.find(function(t){return t.id===p.LinkedID;});
     
     var imgs = tryParse(p.ImageIds);
+    var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
     var imgThumb = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' +
-      '<img src="' + imgs[0] + '" onclick="openLightbox(\'' + imgs[0].replace(/'/g,"\\'") + '\',\'\')" style="width:38px;height:38px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e" />' +
-      (imgs.length > 1 ? '<span style="font-size:10px;color:var(--text-muted)">+' + (imgs.length - 1) + '</span>' : '') +
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+      '<img src="' + imgs[0] + '" onclick="openLightbox(' + imgsJsonStr + ', 0, \'' + (p.PartName || '').replace(/'/g,"\\'") + '\')" style="width:38px;height:38px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูปภาพ (1/' + imgs.length + ')" />' +
+      (imgs.length > 1 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 1, \'' + (p.PartName || '').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 1) + ')">+' + (imgs.length - 1) + '</span>' : '') +
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
 
     return '<tr>'+
       '<td>'+imgThumb+'</td>'+
@@ -3806,21 +4125,92 @@ function showGlobalLoading(show){var el=document.getElementById('global-loading'
 function emptyState(icon,title,sub){return '<div class="empty-state"><div class="empty-icon">'+icon+'</div><h3>'+title+'</h3><p>'+sub+'</p></div>';}
 function tryParse(str){try{return JSON.parse(str)||[];}catch(e){return [];}}
 
-// LIGHTBOX
-function openLightbox(thumbUrl,viewUrl){
-  var limg=document.getElementById('lightbox-img');
-  if(limg) limg.src=thumbUrl;
-  var llink=document.getElementById('lightbox-drive-link');
-  if(llink){llink.href=viewUrl||thumbUrl;llink.style.display=viewUrl?'flex':'none';}
-  var lover=document.getElementById('lightbox-overlay');
-  if(lover) lover.classList.add('open');
+// LIGHTBOX (MULTI-IMAGE GALLERY)
+var LIGHTBOX_DATA = { images: [], index: 0, title: '' };
+
+function openLightbox(listOrUrl, index, title){
+  if (!listOrUrl) return;
+  if (typeof listOrUrl === 'string') {
+    LIGHTBOX_DATA.images = [listOrUrl];
+    LIGHTBOX_DATA.index = 0;
+  } else if (Array.isArray(listOrUrl)) {
+    LIGHTBOX_DATA.images = listOrUrl.filter(function(u){ return !!u; });
+    LIGHTBOX_DATA.index = Number(index) || 0;
+  } else {
+    LIGHTBOX_DATA.images = [];
+    LIGHTBOX_DATA.index = 0;
+  }
+  LIGHTBOX_DATA.title = title || '';
+  if (!LIGHTBOX_DATA.images.length) return;
+  if (LIGHTBOX_DATA.index >= LIGHTBOX_DATA.images.length) LIGHTBOX_DATA.index = 0;
+  if (LIGHTBOX_DATA.index < 0) LIGHTBOX_DATA.index = LIGHTBOX_DATA.images.length - 1;
+
+  updateLightboxView();
+
+  var lover = document.getElementById('lightbox-overlay');
+  if (lover) lover.classList.add('open');
 }
+
+function updateLightboxView(){
+  if (!LIGHTBOX_DATA.images.length) return;
+  var curUrl = LIGHTBOX_DATA.images[LIGHTBOX_DATA.index];
+  var limg = document.getElementById('lightbox-img');
+  if (limg) limg.src = curUrl;
+
+  var llink = document.getElementById('lightbox-drive-link');
+  if (llink) {
+    llink.href = curUrl;
+    llink.style.display = (curUrl && curUrl.indexOf('http') === 0) ? 'flex' : 'none';
+  }
+
+  var counter = document.getElementById('lightbox-counter');
+  var prevBtn = document.getElementById('lightbox-prev');
+  var nextBtn = document.getElementById('lightbox-next');
+  var total = LIGHTBOX_DATA.images.length;
+
+  if (counter) {
+    counter.textContent = total > 1 ? ('รูปที่ ' + (LIGHTBOX_DATA.index + 1) + ' / ' + total) : '';
+    counter.style.display = total > 1 ? 'block' : 'none';
+  }
+  if (prevBtn) prevBtn.style.display = total > 1 ? 'flex' : 'none';
+  if (nextBtn) nextBtn.style.display = total > 1 ? 'flex' : 'none';
+
+  var cap = document.getElementById('lightbox-caption');
+  if (cap) {
+    cap.textContent = LIGHTBOX_DATA.title || '';
+    cap.style.display = LIGHTBOX_DATA.title ? 'block' : 'none';
+  }
+}
+
+function lightboxPrev(){
+  if (LIGHTBOX_DATA.images.length <= 1) return;
+  LIGHTBOX_DATA.index = (LIGHTBOX_DATA.index - 1 + LIGHTBOX_DATA.images.length) % LIGHTBOX_DATA.images.length;
+  updateLightboxView();
+}
+
+function lightboxNext(){
+  if (LIGHTBOX_DATA.images.length <= 1) return;
+  LIGHTBOX_DATA.index = (LIGHTBOX_DATA.index + 1) % LIGHTBOX_DATA.images.length;
+  updateLightboxView();
+}
+
 function closeLightbox(){
-  var lover=document.getElementById('lightbox-overlay');
-  if(lover) lover.classList.remove('open');
-  var limg=document.getElementById('lightbox-img');
-  if(limg) limg.src='';
+  var lover = document.getElementById('lightbox-overlay');
+  if (lover) lover.classList.remove('open');
+  var limg = document.getElementById('lightbox-img');
+  if (limg) limg.src = '';
+  LIGHTBOX_DATA.images = [];
 }
+
+// Lightbox keyboard navigation
+document.addEventListener('keydown', function(e) {
+  var lover = document.getElementById('lightbox-overlay');
+  if (lover && lover.classList.contains('open')) {
+    if (e.key === 'Escape') closeLightbox();
+    else if (e.key === 'ArrowLeft') lightboxPrev();
+    else if (e.key === 'ArrowRight') lightboxNext();
+  }
+});
 
 // ============================================
 //  REPORTS
