@@ -1301,28 +1301,40 @@ async function _apiInternal(actionStr, payload = null) {
         return { success: true, data: data || [] };
       }
       case 'saveMachine': {
-        const item = Object.assign({}, payload.data);
-        if (!item.ID) item.ID = _uid();
-        
-        let cleanNotes = (item.Notes || '').replace(/\[EXTRA:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+        const d = payload.data || {};
+        let cleanNotes = (d.Notes || '').replace(/\[EXTRA:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
         const extraObj = {};
-        if (item.Serial) extraObj.Serial = item.Serial;
-        if (item.Department) extraObj.Department = item.Department;
+        if (d.Serial) extraObj.Serial = d.Serial;
+        if (d.Department) extraObj.Department = d.Department;
         
+        let finalNotes = cleanNotes;
         if (Object.keys(extraObj).length > 0) {
-          item.Notes = cleanNotes ? (cleanNotes + '\n\n[EXTRA: ' + JSON.stringify(extraObj) + ']') : ('[EXTRA: ' + JSON.stringify(extraObj) + ']');
-        } else {
-          item.Notes = cleanNotes;
+          finalNotes = cleanNotes ? (cleanNotes + '\n\n[EXTRA: ' + JSON.stringify(extraObj) + ']') : ('[EXTRA: ' + JSON.stringify(extraObj) + ']');
         }
 
-        delete item.Serial;
-        delete item.Department;
-        delete item.CreatedAt;
-        delete item.CleanNotes;
+        const item = {
+          Name: d.Name || '',
+          AssetNo: d.AssetNo || '',
+          Vendor: d.Vendor || '',
+          Model: d.Model || '',
+          Location: d.Location || '',
+          PurchaseDate: d.PurchaseDate || null,
+          Notes: finalNotes,
+          Status: d.Status || 'Active',
+          ImageIds: typeof d.ImageIds === 'string' ? d.ImageIds : JSON.stringify(d.ImageIds || [])
+        };
 
-        const { error } = await sb.from('machines').upsert(item);
-        if (error) return { success: false, error: error.message };
-        return { success: true, id: item.ID };
+        if (d.ID) {
+          const editId = d.ID;
+          const { error } = await sb.from('machines').update(item).eq('ID', editId);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: editId };
+        } else {
+          item.ID = _uid();
+          const { error } = await sb.from('machines').insert(item);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: item.ID };
+        }
       }
       case 'deleteMachine': {
         const id = payload.id;
