@@ -437,15 +437,15 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 <!-- ISSUES -->
 <div class="page" id="page-issues">
   <div class="toolbar">
-    <input id="issue-search-input" class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3611;&#3633;&#3597;&#3627;&#3634; / Issue No. / Mold..." oninput="filterIssues()"/>
-    <select id="issue-mold-filter" onchange="filterIssues()" style="width:180px;"><option value="">&#129513; &#3607;&#3640;&#3585; Mold / Machine</option></select>
-    <select id="issue-status-filter" onchange="filterIssues()" style="width:130px;"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option value="Open">Open</option><option value="In Progress">In Progress</option><option value="Closed">Closed</option></select>
-    <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">&#3607;&#3640;&#3585; Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+    <input id="issue-search-input" class="search-input" type="text" placeholder="🔍 ค้นหาปัญหา / Issue No. / Mold..." oninput="filterIssues()"/>
+    <select id="issue-mold-filter" onchange="filterIssues()" style="width:180px;"><option value="">🧩 ทุก Mold / Machine</option></select>
+    <select id="issue-status-filter" onchange="filterIssues()" style="width:170px;"><option value="Active" selected>⚡ ค้างอยู่ (Open + In Progress)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open</option><option value="In Progress">🟡 In Progress</option><option value="Closed">🟢 Closed (จบแล้ว)</option></select>
+    <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">ทุก Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openIssueModal()">+ &#3648;&#3649;&#3585;&#3657;&#3591;&#3611;&#3633;&#3597;&#3627;&#3634;</button>
+    <button class="btn btn-primary" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
-    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>✅ รูปหลังซ่อม</th><th>Actions</th></tr></thead>
+    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
     <tbody id="issues-tbody"></tbody>
   </table></div></div>
 </div>
@@ -681,7 +681,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <!-- SECTION 3: ข้อมูลการทดสอบหลังซ่อม (TRIAL) -->
     <div id="issue-edit-trial-section" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;display:none;">
       <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 3. ข้อมูลการทดสอบ Trial หลังซ่อม (Trial & Quality Check)</div>
-      <div class="form-row col-2">
+      <div class="form-row col-3">
         <div class="form-group">
           <label>ผลการทดสอบ (Trial Result)</label>
           <select id="issue-edit-trial-result">
@@ -691,6 +691,10 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
             <option value="Adjusted">🔧 ปรับจูนเพิ่มเติมและผ่าน (Adjusted & Passed)</option>
             <option value="Failed">❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>วันที่ทดสอบ (Trial Date)</label>
+          <input id="issue-edit-trial-date" type="datetime-local"/>
         </div>
         <div class="form-group">
           <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
@@ -772,7 +776,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <!-- TRIAL SECTION IN CLOSE MODAL -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
       <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 2. ข้อมูลการทดสอบหลังซ่อม (Trial & Quality Check)</div>
-      <div class="form-row col-2">
+      <div class="form-row col-3">
         <div class="form-group">
           <label>ผลการทดสอบ (Trial Result)</label>
           <select id="close-trial-result">
@@ -781,6 +785,10 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
             <option value="Adjusted">🔧 มีการปรับจูนเพิ่มเติม (Adjusted & Passed)</option>
             <option value="Failed">❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label>วันที่ทดสอบ (Trial Date)</label>
+          <input id="close-trial-date" type="datetime-local"/>
         </div>
         <div class="form-group">
           <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
@@ -1433,9 +1441,10 @@ async function _apiInternal(actionStr, payload = null) {
               try {
                 const t = JSON.parse(m[1]);
                 iss.TrialResult = t.result || '';
+                iss.TrialDate = t.trialDate || t.date || '';
                 iss.TrialShots = t.shots || 0;
                 iss.TrialNotes = t.notes || '';
-                iss.TrialImageIds = JSON.stringify(t.images || []);
+                iss.TrialImageIds = Array.isArray(t.images) ? JSON.stringify(t.images) : (t.images || '[]');
                 iss.CleanCorrectiveAction = iss.CorrectiveAction.replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
               } catch(e) {}
             }
@@ -1445,20 +1454,22 @@ async function _apiInternal(actionStr, payload = null) {
       }
       case 'saveIssue': {
         const item = Object.assign({}, payload.data);
-        if (item.TrialResult !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
+        if (item.TrialResult !== undefined || item.TrialDate !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
           let cleanAction = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
           const trialObj = {
             result: item.TrialResult || '',
+            trialDate: item.TrialDate || '',
             shots: Number(item.TrialShots) || 0,
             notes: item.TrialNotes || '',
             images: tryParse(item.TrialImageIds)
           };
-          if (trialObj.result || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+          if (trialObj.result || trialObj.trialDate || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
             item.CorrectiveAction = cleanAction ? (cleanAction + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
           } else {
             item.CorrectiveAction = cleanAction;
           }
           delete item.TrialResult;
+          delete item.TrialDate;
           delete item.TrialShots;
           delete item.TrialNotes;
           delete item.TrialImageIds;
@@ -1488,11 +1499,12 @@ async function _apiInternal(actionStr, payload = null) {
         let action = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
         const trialObj = {
           result: item.TrialResult || '',
+          trialDate: item.TrialDate || '',
           shots: Number(item.TrialShots) || 0,
           notes: item.TrialNotes || '',
           images: tryParse(item.TrialImageIds)
         };
-        if (trialObj.result || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+        if (trialObj.result || trialObj.trialDate || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
           action = action ? (action + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
         }
         const { error } = await sb.from('issues').update({
@@ -3136,13 +3148,18 @@ function renderIssues(){
 function filterIssues() {
   var q = ((document.getElementById('issue-search-input') || {}).value || '').toLowerCase();
   var mold = (document.getElementById('issue-mold-filter') || {}).value || '';
-  var status = (document.getElementById('issue-status-filter') || {}).value || '';
+  var statusEl = document.getElementById('issue-status-filter');
+  var status = statusEl ? statusEl.value : 'Active';
   var severity = (document.getElementById('issue-severity-filter') || {}).value || '';
 
   var filtered = (STATE.issues || []).filter(function(i) {
     var code = getIssueDisplayCode(i).toLowerCase();
     if (mold && i.TargetID !== mold) return false;
-    if (status && i.Status !== status) return false;
+    if (status === 'Active') {
+      if ((i.Status || 'Open') === 'Closed') return false;
+    } else if (status) {
+      if (i.Status !== status) return false;
+    }
     if (severity && i.Severity !== severity) return false;
     if (q) {
       var match = (code + ' ' + (i.TargetName || '') + ' ' + (i.IssueType || '') + ' ' + (i.Description || '') + ' ' + (i.ReportedBy || '') + ' ' + (i.ID || '')).toLowerCase();
@@ -3154,7 +3171,7 @@ function filterIssues() {
   var tb = document.getElementById('issues-tbody');
   if (!tb) return;
   if (!filtered.length) {
-    tb.innerHTML = '<tr><td colspan="10">' + emptyState('\ud83d\udea8', '\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e1b\u0e31\u0e0d\u0e2b\u0e32', '\u0e25\u0e2d\u0e07\u0e1b\u0e23\u0e31\u0e1a\u0e40\u0e1b\u0e25\u0e35\u0e48\u0e22\u0e19\u0e40\u0e07\u0e37\u0e48\u0e2d\u0e19\u0e44\u0e02\u0e01\u0e32\u0e23\u0e04\u0e49\u0e19\u0e2b\u0e32 \u0e2b\u0e23\u0e37\u0e2d\u0e04\u0e25\u0e34\u0e01 "+ \u0e41\u0e08\u0e49\u0e07\u0e1b\u0e31\u0e0d\u0e2b\u0e32"') + '</td></tr>';
+    tb.innerHTML = '<tr><td colspan="11">' + emptyState('🚨', 'ไม่พบรายการปัญหา', 'ลองปรับเปลี่ยนเงื่อนไขการค้นหา หรือคลิก "+ แจ้งปัญหา"') + '</td></tr>';
     return;
   }
 
@@ -3165,18 +3182,25 @@ function filterIssues() {
     var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
       beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + beforeJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
       (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + beforeJsonStr + ',2,\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>';
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
     
     var afterImgs = tryParse(i.AfterImageIds);
     var afterJsonStr = JSON.stringify(afterImgs).replace(/"/g, '&quot;');
     var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
       afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + afterJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
       (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + afterJsonStr + ',2,\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e39\u0e1b</span>') : '<span style="color:var(--text-muted);font-size:11px">\u23f3 \u0e23\u0e2d\u0e0b\u0e48\u0e2d\u0e21</span>';
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>') : '<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
+
+    var trialImgs = tryParse(i.TrialImageIds);
+    var trialJsonStr = JSON.stringify(trialImgs).replace(/"/g, '&quot;');
+    var trialThumbs = trialImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+      trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + trialJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปผลทดสอบ Trial\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
+      (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + trialJsonStr + ',2,\'#' + displayCode + ' - รูปผลทดสอบ Trial\')" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
+      '</div>' : '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
 
     return '<tr>' +
       '<td>' +
-        '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="\u0e04\u0e25\u0e34\u0e01\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14">' +
+        '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกดูรายละเอียด">' +
           '#' + displayCode +
         '</span>' +
       '</td>' +
@@ -3188,12 +3212,13 @@ function filterIssues() {
       '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
       '<td>' + beforeThumbs + '</td>' +
       '<td>' + afterThumbs + '</td>' +
+      '<td>' + trialThumbs + '</td>' +
       '<td style="white-space:nowrap">' +
-        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="\u0e14\u0e39\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14/\u0e1b\u0e23\u0e30\u0e27\u0e31\u0e15\u0e34">\ud83d\udd0d</button> ' +
-        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="\u0e41\u0e01\u0e49\u0e44\u0e02\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e1b\u0e31\u0e0d\u0e2b\u0e32/\u0e0b\u0e48\u0e2d\u0e21/Trial">\u270f\ufe0f</button> ' +
-        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e40\u0e2d\u0e01\u0e2a\u0e32\u0e23">\ud83d\udda8\ufe0f</button> ' +
-        (i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="\u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19">\u2705 \u0e1b\u0e34\u0e14\u0e07\u0e32\u0e19</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="\u0e40\u0e23\u0e34\u0e48\u0e21\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23">\u25b6\ufe0f</button> ' : '') +
-        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' +
+        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
+        (i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ' : '') +
+        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' +
       '</td>' +
     '</tr>';
   }).join('');
@@ -3281,6 +3306,7 @@ function openIssueModal(issueOrId){
     v_set('issue-edit-closed-by', data.ClosedBy || '');
     v_set('issue-edit-parts-used', data.PartsUsed || '');
     v_set('issue-edit-trial-result', data.TrialResult || '');
+    v_set('issue-edit-trial-date', data.TrialDate || (data.ClosedAt ? data.ClosedAt.slice(0,16) : new Date().toISOString().slice(0,16)));
     v_set('issue-edit-trial-shots', data.TrialShots || '');
     v_set('issue-edit-trial-notes', data.TrialNotes || '');
 
@@ -3361,10 +3387,11 @@ async function saveIssue(){
       var closedBy = v('issue-edit-closed-by');
       var partsUsed = v('issue-edit-parts-used');
       var trialResult = v('issue-edit-trial-result');
+      var trialDate = v('issue-edit-trial-date');
       var trialShots = Number(v('issue-edit-trial-shots')) || 0;
       var trialNotes = v('issue-edit-trial-notes');
 
-      if (rootCause || corrective || closedBy || afterImgIds.length || trialResult || trialNotes || trialImgIds.length) {
+      if (rootCause || corrective || closedBy || afterImgIds.length || trialResult || trialDate || trialNotes || trialImgIds.length) {
         data.RootCause = rootCause;
         data.CorrectiveAction = corrective;
         data.ClosedAt = closedDate || (existingIssue ? existingIssue.ClosedAt : undefined);
@@ -3372,6 +3399,7 @@ async function saveIssue(){
         data.PartsUsed = partsUsed;
         data.AfterImageIds = JSON.stringify(afterImgIds);
         data.TrialResult = trialResult;
+        data.TrialDate = trialDate;
         data.TrialShots = trialShots;
         data.TrialNotes = trialNotes;
         data.TrialImageIds = JSON.stringify(trialImgIds);
@@ -3487,9 +3515,10 @@ function openIssueDetailModal(id){
     '<!-- TRIAL CARD -->' +
     '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">' +
       '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">🧪 3. ข้อมูลการทดสอบแม่พิมพ์ / ชิ้นงานหลังซ่อม (Trial & Quality Check)</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px;">' +
         '<div style="font-size:12px;"><strong>ผลการทดสอบ:</strong> ' + trialResultBadge + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);"><strong>จำนวน Shot ที่ลองฉีด:</strong> ' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);"><strong>วันที่ทดสอบ:</strong> ' + (iss.TrialDate ? iss.TrialDate.replace('T', ' ') : '-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);"><strong>จำนวน Shot:</strong> ' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</div>' +
       '</div>' +
       '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"><strong>บันทึกข้อสังเกต / พารามิเตอร์ตอน Trial:</strong></div>' +
       '<div style="font-size:12px;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);min-height:36px;white-space:pre-wrap;">' + (iss.TrialNotes || '-') + '</div>' +
@@ -3533,7 +3562,7 @@ function printIssueReport(id) {
           return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
         }).join('') +
       '</div>'
-    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพหลังแก้ไข</span>';
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพหลังการแก้ไข</span>';
 
   var trialGallery = trialImgs.length
     ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
@@ -3631,8 +3660,11 @@ function printIssueReport(id) {
     '<div class="section-hdr">3. ผลการทดสอบแม่พิมพ์/ชิ้นงานหลังซ่อม (Mold & Part Trial Report)</div>' +
     '<table style="margin-top:0;">' +
       '<tr>' +
-        '<th style="width:25%;">ผลการทดสอบ Trial</th><td style="width:25%;"><strong>' + trialResText + '</strong></td>' +
-        '<th style="width:25%;">จำนวน Shot ที่ลองฉีด</th><td style="width:25%;">' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</td>' +
+        '<th style="width:20%;">ผลการทดสอบ Trial</th><td style="width:30%;"><strong>' + trialResText + '</strong></td>' +
+        '<th style="width:20%;">วันที่ทดสอบ Trial</th><td style="width:30%;">' + (iss.TrialDate ? iss.TrialDate.replace('T', ' ') : '-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th>จำนวน Shot ที่ลองฉีด</th><td colspan="3">' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</td>' +
       '</tr>' +
       '<tr>' +
         '<th>บันทึกข้อสังเกต / พารามิเตอร์</th>' +
@@ -3774,6 +3806,7 @@ function openCloseIssueModal(id){
   ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name','close-trial-shots','close-trial-notes'].forEach(function(i){ v_set(i,''); });
   v_set('close-trial-result', 'Passed');
   v_set('close-date', new Date().toISOString().slice(0,16));
+  v_set('close-trial-date', new Date().toISOString().slice(0,16));
   v_set('close-part-qty', '1');
   var otherWrap = document.getElementById('close-part-other-wrap');
   if(otherWrap) otherWrap.style.display = 'none';
@@ -3845,6 +3878,7 @@ async function closeIssue(){
       PartsUsed: partsUsed,
       AfterImageIds: JSON.stringify(imgIds),
       TrialResult: v('close-trial-result'),
+      TrialDate: v('close-trial-date') || v('close-date'),
       TrialShots: Number(v('close-trial-shots')) || 0,
       TrialNotes: v('close-trial-notes'),
       TrialImageIds: JSON.stringify(trialImgIds)
@@ -4242,8 +4276,22 @@ function v(id){var el=document.getElementById(id);return el?el.value:'';}
 function v_set(id,val){var el=document.getElementById(id);if(el)el.value=val;}
 function showToast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast '+type;var icon={success:'\u2705',error:'\u274c',warning:'\u26a0\ufe0f'}[type]||'\u2139\ufe0f';t.innerHTML='<span style="font-size:16px">'+icon+'</span><span>'+msg+'</span>';document.getElementById('toast-container').appendChild(t);setTimeout(function(){t.remove();},3500);}
 function showGlobalLoading(show){var el=document.getElementById('global-loading');if(el){if(show)el.classList.add('show');else el.classList.remove('show');}}
-function emptyState(icon,title,sub){return '<div class="empty-state"><div class="empty-icon">'+icon+'</div><h3>'+title+'</h3><p>'+sub+'</p></div>';}
-function tryParse(str){try{return JSON.parse(str)||[];}catch(e){return [];}}
+function tryParse(str){
+  if(!str) return [];
+  if(Array.isArray(str)) return str;
+  try{
+    var res = JSON.parse(str);
+    if(typeof res === 'string'){
+      try{ res = JSON.parse(res); }catch(e){}
+    }
+    if(Array.isArray(res)) return res;
+    if(typeof res === 'string' && res.trim().length > 0) return [res];
+    return [];
+  }catch(e){
+    if(typeof str === 'string' && (str.indexOf('http') === 0 || str.indexOf('data:') === 0)) return [str];
+    return [];
+  }
+}
 
 // LIGHTBOX (MULTI-IMAGE GALLERY)
 var LIGHTBOX_DATA = { images: [], index: 0, title: '' };
