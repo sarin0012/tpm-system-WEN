@@ -462,7 +462,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openStockPartModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="stock-table">
-    <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Linked To</th><th>Location</th><th>Actions</th></tr></thead>
+    <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
     <tbody id="stock-tbody"></tbody>
   </table></div></div>
 </div>
@@ -3987,17 +3987,17 @@ function filterStock(){
     return '<tr>'+
       '<td>'+imgThumb+'</td>'+
       '<td><strong>'+p.PartName+'</strong></td>'+
+      '<td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
       '<td>'+(p.PartNo||'-')+'</td>'+
       '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
       '<td>'+(p.Unit||'-')+'</td>'+
       '<td>'+min+'</td>'+
       '<td><div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div><div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+(cur<=min?'<span class="badge overdue" style="font-size:9px;padding:1px 6px">Low</span>':'')+'</td>'+
-      '<td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
       '<td>'+(p.Location||'-')+'</td>'+
       '<td style="white-space:nowrap">'+
-        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">\ud83d\udce6 \u0e23\u0e31\u0e1a/\u0e40\u0e1a\u0e34\u0e01</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="\u0e41\u0e01\u0e49\u0e44\u0e02">\u270f\ufe0f</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="\u0e25\u0e1a">\ud83d\uddd1\ufe0f</button>'+
+        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">📦 รับ/เบิก</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '+
+        '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>'+
       '</td>'+
     '</tr>';
   }).join('');
