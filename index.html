@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -401,8 +401,8 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
-    <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>&#9201; Cycle Time</th><th>&#9889; &#3618;&#3629;&#3604;&#3612;&#3621;&#3636;&#3605;/8&#3594;&#3617;.</th><th>Status</th><th>&#128295; &#3626;&#3606;&#3634;&#3609;&#3632; PM</th><th>รูป</th><th>Actions</th></tr></thead>
-    <tbody id="molds-tbody"><tr><td colspan="14" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
+    <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>ขนาดเครื่อง (Ton)</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>⏱ Cycle Time</th><th>⚡ ยอดผลิต/8ชม.</th><th>Status</th><th>🔧 สถานะ PM</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="molds-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
@@ -502,7 +502,11 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="modal-body">
     <input type="hidden" id="mold-id"/>
     <div class="form-row col-3"><div class="form-group"><label>Mold Name *</label><input id="mold-name" placeholder="ชื่อโมล"/></div><div class="form-group"><label>Model (รุ่น)</label><input id="mold-model" placeholder="เช่น WP-85-405, EP-505"/></div><div class="form-group"><label>Asset No. *</label><input id="mold-asset" placeholder="ASS-0001"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>เลข Drawing (DWG. No.)</label><input id="mold-drawing" placeholder="เช่น DWG-2026-001"/></div><div class="form-group"><label>Size Mold (ขนาดแม่พิมพ์)</label><input id="mold-size" placeholder="เช่น 450 x 500 x 400 mm"/></div></div>
+    <div class="form-row col-3">
+      <div class="form-group"><label>🏗️ ขนาดเครื่องฉีด (Ton)</label><input id="mold-machine-ton" placeholder="เช่น 100 Ton, 180 Ton, 250 Ton" style="font-weight:600;color:var(--primary);"/></div>
+      <div class="form-group"><label>เลข Drawing (DWG. No.)</label><input id="mold-drawing" placeholder="เช่น DWG-2026-001"/></div>
+      <div class="form-group"><label>Size Mold (ขนาดแม่พิมพ์)</label><input id="mold-size" placeholder="เช่น 450 x 500 x 400 mm"/></div>
+    </div>
     <div class="form-row col-3"><div class="form-group"><label>น้ำหนัก Mold</label><input id="mold-weight" placeholder="เช่น 1,200 kg"/></div><div class="form-group"><label>น้ำหนักชิ้นงาน (Part)</label><input id="mold-part-weight" placeholder="เช่น 45.5 g"/></div><div class="form-group"><label>น้ำหนัก Runner</label><input id="mold-runner-weight" placeholder="เช่น 12.3 g"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor" placeholder="ผู้ผลิต / ผู้ขาย"/></div><div class="form-group"><label>Material</label><input id="mold-material" placeholder="ชนิดพลาสติก / วัตถุดิบ"/></div></div>
     <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity" oninput="calcMoldProduction()"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
@@ -2399,6 +2403,7 @@ function filterMolds(){
       '<td style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
       '<td><strong>'+m.Name+'</strong></td>'+
       '<td><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
+      '<td>'+(m.MachineTon ? ('<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;">🏗️ ' + m.MachineTon + '</span>') : '<span style="color:var(--text-faint);font-size:11px">-</span>')+'</td>'+
       '<td>'+(m.AssetNo||'-')+'</td>'+
       '<td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
       '<td>'+(m.Vendor||'-')+'</td>'+
