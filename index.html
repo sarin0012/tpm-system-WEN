@@ -3440,16 +3440,34 @@ async function saveIssue(){
     }
 
     var r = await api('saveIssue', { data: data });
+
+    // Auto-deduct stock for each stock part used in issue edit/create
+    var partsToDeduct = (STATE.issueEditParts || []).filter(function(p) { return p.isStock && p.partId && p.qty > 0; });
+    if (partsToDeduct.length) {
+      await Promise.all(partsToDeduct.map(function(p) {
+        return api('stockTransaction', {
+          data: {
+            partId: p.partId,
+            type: 'OUT',
+            quantity: p.qty,
+            reason: 'ซ่อมปัญหา: ' + (editId || data.TargetName || 'Issue'),
+            by: closedBy || v('issue-reporter') || 'ผู้แจ้ง/ผู้ซ่อม'
+          }
+        });
+      }));
+    }
+
     showGlobalLoading(false);
     if (r && r.success) {
-      showToast(editId ? 'แก้ไขข้อมูลปัญหาสำเร็จ ✅' : 'บันทึกปัญหาสำเร็จ ✅', 'success');
+      showToast(partsToDeduct.length ? 'บันทึกข้อมูลและตัดสต็อกอะไหล่เรียบร้อย ✅' : (editId ? 'แก้ไขข้อมูลปัญหาสำเร็จ ✅' : 'บันทึกปัญหาสำเร็จ ✅'), 'success');
       closeModal('issue-modal');
-      var res = await api('getIssues');
-      if (res && res.success) {
-        STATE.issues = res.data;
-        renderIssues();
-        updateBadges();
-      }
+      var resIss = await api('getIssues');
+      var resStock = await api('getStockParts');
+      if (resIss && resIss.success) STATE.issues = resIss.data;
+      if (resStock && resStock.success) STATE.stockParts = resStock.data;
+      renderIssues();
+      renderStock();
+      updateBadges();
     } else {
       showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
     }
