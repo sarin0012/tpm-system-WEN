@@ -3276,8 +3276,19 @@ function openIssueModal(issueOrId){
   var otherWrap = document.getElementById('issue-edit-part-other-wrap');
   if(otherWrap) otherWrap.style.display = 'none';
 
+  var data = null;
+  if (issueOrId) {
+    if (typeof issueOrId === 'string') {
+      data = STATE.issues.find(function(x){ return x.ID === issueOrId; });
+    } else if (typeof issueOrId === 'object') {
+      data = issueOrId;
+    }
+  }
+
   STATE.issueEditParts = [];
-  renderIssueEditPartsList();
+  var existingParts = data ? (data.PartsUsed || '') : '';
+  STATE.existingPartsHistory = existingParts;
+  renderIssueEditPartsList(existingParts);
 
   var titleEl = document.getElementById('issue-modal-title');
   var gridBefore = document.getElementById('issue-photos-preview');
@@ -3293,15 +3304,6 @@ function openIssueModal(issueOrId){
 
   var secAfter = document.getElementById('issue-edit-after-section');
   var secTrial = document.getElementById('issue-edit-trial-section');
-
-  var data = null;
-  if (issueOrId) {
-    if (typeof issueOrId === 'string') {
-      data = STATE.issues.find(function(x){ return x.ID === issueOrId; });
-    } else if (typeof issueOrId === 'object') {
-      data = issueOrId;
-    }
-  }
 
   if (data && data.ID) {
     var code = getIssueDisplayCode(data);
@@ -3414,29 +3416,17 @@ async function saveIssue(){
     };
 
     if (hasAfter || editId) {
-      var rootCause = v('issue-edit-root-cause');
-      var corrective = v('issue-edit-corrective');
-      var closedDate = v('issue-edit-closed-date');
-      var closedBy = v('issue-edit-closed-by');
-      var partsUsed = v('issue-edit-parts-used');
-      var trialResult = v('issue-edit-trial-result');
-      var trialDate = v('issue-edit-trial-date');
-      var trialShots = Number(v('issue-edit-trial-shots')) || 0;
-      var trialNotes = v('issue-edit-trial-notes');
-
-      if (rootCause || corrective || closedBy || afterImgIds.length || trialResult || trialDate || trialNotes || trialImgIds.length) {
-        data.RootCause = rootCause;
-        data.CorrectiveAction = corrective;
-        data.ClosedAt = closedDate || (existingIssue ? existingIssue.ClosedAt : undefined);
-        data.ClosedBy = closedBy || (existingIssue ? existingIssue.ClosedBy : undefined);
-        data.PartsUsed = partsUsed;
-        data.AfterImageIds = JSON.stringify(afterImgIds);
-        data.TrialResult = trialResult;
-        data.TrialDate = trialDate;
-        data.TrialShots = trialShots;
-        data.TrialNotes = trialNotes;
-        data.TrialImageIds = JSON.stringify(trialImgIds);
-      }
+      data.RootCause = v('issue-edit-root-cause');
+      data.CorrectiveAction = v('issue-edit-corrective');
+      data.ClosedAt = v('issue-edit-closed-date') || (existingIssue ? existingIssue.ClosedAt : undefined);
+      data.ClosedBy = v('issue-edit-closed-by') || (existingIssue ? existingIssue.ClosedBy : undefined);
+      data.PartsUsed = v('issue-edit-parts-used');
+      data.AfterImageIds = JSON.stringify(afterImgIds);
+      data.TrialResult = v('issue-edit-trial-result');
+      data.TrialDate = v('issue-edit-trial-date');
+      data.TrialShots = Number(v('issue-edit-trial-shots')) || 0;
+      data.TrialNotes = v('issue-edit-trial-notes');
+      data.TrialImageIds = JSON.stringify(trialImgIds);
     }
 
     var r = await api('saveIssue', { data: data });
@@ -3451,7 +3441,7 @@ async function saveIssue(){
             type: 'OUT',
             quantity: p.qty,
             reason: 'ซ่อมปัญหา: ' + (editId || data.TargetName || 'Issue'),
-            by: closedBy || v('issue-reporter') || 'ผู้แจ้ง/ผู้ซ่อม'
+            by: v('issue-edit-closed-by') || v('issue-reporter') || 'ผู้แจ้ง/ผู้ซ่อม'
           }
         });
       }));
@@ -3699,7 +3689,7 @@ function printIssueReport(id) {
       '</tr>' +
       '<tr>' +
         '<th>อะไหล่ที่เบิกใช้ (Parts Used)</th>' +
-        '<td colspan="3">' + (iss.PartsUsed||'-') + '</td>' +
+        '<td colspan="3" style="white-space:pre-wrap;font-weight:600;color:#1e40af;">' + (iss.PartsUsed||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
         '<td colspan="4">' +
@@ -3794,16 +3784,27 @@ function onIssueEditPartSelectChange() {
   }
 }
 
-function renderIssueEditPartsList() {
+function renderIssueEditPartsList(existingHistory) {
   var container = document.getElementById('issue-edit-parts-list');
   var summaryInput = document.getElementById('issue-edit-parts-used');
   if (!container) return;
   var parts = STATE.issueEditParts || [];
+  var hist = (existingHistory !== undefined) ? existingHistory : (STATE.existingPartsHistory || '');
+  var html = '';
+
+  if (hist) {
+    html += '<div style="font-size:12px;color:var(--primary);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);padding:6px 10px;border-radius:4px;margin-bottom:8px;">🕒 <strong>ประวัติอะไหล่เดิมที่เคยบันทึกไว้:</strong> ' + hist + '</div>';
+  }
+
   if (!parts.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถพิมพ์ระบุเองด้านล่าง หรือปล่อยว่างได้)</div>';
+    if (!hist) {
+      html += '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถพิมพ์ระบุเองด้านล่าง หรือปล่อยว่างได้)</div>';
+    }
+    container.innerHTML = html;
     return;
   }
-  container.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
     parts.map(function(p, idx) {
       var badgeStyle = p.isStock ? 'background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#818cf8;' : 'background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;';
       var tag = p.isStock ? '📦 ' : '✏️ ';
@@ -3813,13 +3814,18 @@ function renderIssueEditPartsList() {
       '</div>';
     }).join('') +
   '</div>';
+  container.innerHTML = html;
 
-  var summaryText = parts.map(function(p) {
+  var newPartsText = parts.map(function(p) {
     return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + (p.isStock ? '' : ' - Other') + ')';
   }).join(', ');
 
   if (summaryInput) {
-    summaryInput.value = summaryText;
+    if (hist) {
+      summaryInput.value = hist + (newPartsText ? (', ' + newPartsText) : '');
+    } else {
+      summaryInput.value = newPartsText;
+    }
   }
 }
 
@@ -3869,13 +3875,13 @@ function addIssueEditPart() {
     return;
   }
   if (qtyInput) qtyInput.value = '1';
-  renderIssueEditPartsList();
+  renderIssueEditPartsList(STATE.existingPartsHistory);
 }
 
 function removeIssueEditPart(idx) {
   if (STATE.issueEditParts && STATE.issueEditParts[idx] !== undefined) {
     STATE.issueEditParts.splice(idx, 1);
-    renderIssueEditPartsList();
+    renderIssueEditPartsList(STATE.existingPartsHistory);
   }
 }
 
