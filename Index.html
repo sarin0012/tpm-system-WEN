@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -1268,6 +1268,7 @@ async function _apiInternal(actionStr, payload = null) {
               if (match && match[1]) {
                 const specs = JSON.parse(match[1]);
                 if (!m.Model && specs.Model) m.Model = specs.Model;
+                if (!m.MachineTon && specs.MachineTon) m.MachineTon = specs.MachineTon;
                 if (!m.DrawingNo && specs.DrawingNo) m.DrawingNo = specs.DrawingNo;
                 if (!m.MoldSize && specs.MoldSize) m.MoldSize = specs.MoldSize;
                 if (!m.MoldWeight && specs.MoldWeight) m.MoldWeight = specs.MoldWeight;
@@ -1289,9 +1290,10 @@ async function _apiInternal(actionStr, payload = null) {
         let { error } = await sb.from('molds').upsert(item);
         
         // Fallback: If DB columns don't exist yet in Supabase, pack specs into Notes
-        if (error && (error.message.indexOf('column') !== -1 || error.code === 'PGRST204' || error.message.indexOf('DrawingNo') !== -1)) {
+        if (error && (error.message.indexOf('column') !== -1 || error.code === 'PGRST204' || error.message.indexOf('DrawingNo') !== -1 || error.message.indexOf('MachineTon') !== -1)) {
           const specs = {
             Model: item.Model || '',
+            MachineTon: item.MachineTon || '',
             DrawingNo: item.DrawingNo || '',
             MoldSize: item.MoldSize || '',
             MoldWeight: item.MoldWeight || '',
@@ -2417,7 +2419,7 @@ function filterMolds(){
   }).join('');
 }
 function openMoldModal(data) {
-  ['mold-id','mold-name','mold-model','mold-asset','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
+  ['mold-id','mold-name','mold-model','mold-asset','mold-machine-ton','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
   var _prev0=document.getElementById('mold-production-preview'); if(_prev0) _prev0.innerHTML='กรอก Cycle Time เพื่อดูยอดผลิต';
   v_set('mold-status', 'Active');
   document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
@@ -2426,6 +2428,7 @@ function openMoldModal(data) {
     v_set('mold-id',data.ID);
     v_set('mold-name',data.Name);
     v_set('mold-model',data.Model || '');
+    v_set('mold-machine-ton',data.MachineTon || '');
     v_set('mold-asset',data.AssetNo);
     v_set('mold-drawing',data.DrawingNo);
     v_set('mold-size',data.MoldSize);
@@ -2466,6 +2469,7 @@ async function saveMold(){
     ID:v('mold-id'),
     Name:name,
     Model:v('mold-model'),
+    MachineTon:v('mold-machine-ton'),
     AssetNo:asset,
     DrawingNo:v('mold-drawing'),
     MoldSize:v('mold-size'),
@@ -5783,7 +5787,7 @@ async function openPMPrintForm(moldId) {
               '<strong>MOLD &nbsp;:</strong> ' + mold.Name + '<br>' +
               '<strong>DWG.NO. :</strong> ' + (mold.DrawingNo || '-') + '<br>' +
               '<strong>MODEL. :</strong> ' + (mold.Model || mold.Material || mold.Name || '-') + '<br>' +
-              '<strong>ASSET. :</strong> ' + (mold.AssetNo || '-') +
+              '<strong>ASSET. :</strong> ' + (mold.AssetNo || '-') + (mold.MachineTon ? ' &nbsp;|&nbsp; <strong>TON :</strong> ' + mold.MachineTon : '') +
             '</td>' +
             '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 9pt;">\u2713</td>' +
             '<td rowspan="2" style="border: 1px solid #333; text-align: center;"></td>' +
