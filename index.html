@@ -653,7 +653,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <!-- SECTION 1: ข้อมูลแจ้งปัญหา (BEFORE) -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
       <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:10px;">🚨 1. ข้อมูลการแจ้งปัญหา (Before)</div>
-      <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id"><option value="">-- เลือก --</option></select></div></div>
+      <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id" onchange="populateIssueEditPartSelect(this.value)"><option value="">-- เลือก --</option></select></div></div>
       <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
       <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
       <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
@@ -670,7 +670,31 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
       <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง)</label><textarea id="issue-edit-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
       <div class="form-group"><label>Corrective Action (วิธีแก้ไข)</label><textarea id="issue-edit-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
       <div class="form-row col-2"><div class="form-group"><label>วันที่ปิดงาน</label><input id="issue-edit-closed-date" type="datetime-local"/></div><div class="form-group"><label>ผู้ปิดงาน/ผู้ซ่อม</label><input id="issue-edit-closed-by"/></div></div>
-      <div class="form-group"><label>อะไหล่ที่ใช้ (Parts Used)</label><input id="issue-edit-parts-used" placeholder="เช่น O-Ring 50mm (x2), สปริง (x1)..."/></div>
+      
+      <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
+        <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+          <span>📦 อะไหล่ที่ใช้ซ่อม (Parts Used)</span>
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เลือกจาก Stock หรือพิมพ์เพิ่มเติม</span>
+        </label>
+        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
+          <select id="issue-edit-part-select" onchange="onIssueEditPartSelectChange()" style="flex:2;min-width:200px;">
+            <option value="">-- เลือกอะไหล่จากคลัง Stock --</option>
+          </select>
+          <div id="issue-edit-part-other-wrap" style="display:none;flex:2;min-width:180px;">
+            <input id="issue-edit-part-other-name" placeholder="ระบุชื่ออะไหล่นอกคลัง..." style="width:100%;" />
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;width:130px;">
+            <input id="issue-edit-part-qty" type="number" min="1" value="1" placeholder="จำนวน" style="width:70px;" />
+            <span id="issue-edit-part-unit" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">ชิ้น</span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="addIssueEditPart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
+        </div>
+        <div id="issue-edit-parts-list" style="margin-bottom:8px;"></div>
+        <div>
+          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่ใช้ (Parts Used):</label>
+          <input id="issue-edit-parts-used" placeholder="เช่น O-Ring 50mm (x2), ซีลยาง (x1)..." style="font-size:12px;background:var(--surface);" />
+        </div>
+      </div>
       <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพหลังซ่อม (After Photos)</label>
         <div class="photo-upload-area" onclick="triggerUpload('issue-after-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปภาพหลังซ่อม (หลายรูปได้)</div></div>
         <input type="file" id="issue-after-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-after-photos-preview','issue-after')"/>
@@ -3230,7 +3254,7 @@ function loadIssueTargets(selectedTargetId){
   if(!s) return;
   var list=type==='Mold'?STATE.molds:STATE.machines;
   if(!list || !list.length){
-    s.innerHTML='<option value="">\u0e01\u0e33\u0e25\u0e31\u0e07\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23...</option>';
+    s.innerHTML='<option value="">กำลังโหลดรายการ...</option>';
     var apiName = type==='Mold' ? 'getMolds' : 'getMachines';
     api(apiName).then(function(res){
       if(res && res.success && res.data){
@@ -3241,12 +3265,20 @@ function loadIssueTargets(selectedTargetId){
     });
     return;
   }
-  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active'||x.ID===selectedTargetId;}).map(function(x){return '<option value="'+x.ID+'"'+(x.ID===selectedTargetId?' selected':'')+'>'+x.Name+'</option>';}).join('');
+  s.innerHTML='<option value="">-- เลือก --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active'||x.ID===selectedTargetId;}).map(function(x){return '<option value="'+x.ID+'"'+(x.ID===selectedTargetId?' selected':'')+'>'+x.Name+'</option>';}).join('');
+  populateIssueEditPartSelect(selectedTargetId || s.value);
 }
 
 function openIssueModal(issueOrId){
-  ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
+  ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
   v_set('issue-edit-closed-date','');
+  v_set('issue-edit-part-qty','1');
+  var otherWrap = document.getElementById('issue-edit-part-other-wrap');
+  if(otherWrap) otherWrap.style.display = 'none';
+
+  STATE.issueEditParts = [];
+  renderIssueEditPartsList();
+
   var titleEl = document.getElementById('issue-modal-title');
   var gridBefore = document.getElementById('issue-photos-preview');
   var gridAfter = document.getElementById('issue-after-photos-preview');
@@ -3277,6 +3309,7 @@ function openIssueModal(issueOrId){
     v_set('issue-id', data.ID);
     v_set('issue-target-type', data.TargetType || 'Mold');
     loadIssueTargets(data.TargetID);
+    populateIssueEditPartSelect(data.TargetID);
     v_set('issue-type', data.IssueType || 'Breakdown');
     v_set('issue-severity', data.Severity || 'Medium');
     v_set('issue-description', data.Description || '');
@@ -3696,7 +3729,137 @@ function printIssueReport(id) {
   }
 }
 
-async function updIssueStatus(id,status){var r=await api('updateIssueStatus',{id:id,status:status});if(r.success){var iss=STATE.issues.find(function(i){return i.ID===id;});if(iss)iss.Status=status;renderIssues();updateBadges();showToast('สถานะ: '+status,'success');}else showToast('ผิดพลาด: '+r.error,'error');}
+function populateIssueEditPartSelect(targetId) {
+  var sel = document.getElementById('issue-edit-part-select');
+  if (!sel) return;
+  var stockList = STATE.stockParts || [];
+  var target = (STATE.molds || []).concat(STATE.machines || []).find(function(x) { return x.ID === targetId; });
+  var targetName = target ? target.Name : targetId;
+  var linkedParts = stockList.filter(function(p) { return p.LinkedID === targetId && targetId; });
+  var otherStock = stockList.filter(function(p) { return p.LinkedID !== targetId || !targetId; });
+
+  var html = '<option value="">-- เลือกอะไหล่จากคลัง Stock --</option>';
+  if (linkedParts.length) {
+    html += '<optgroup label="⭐ อะไหล่สำหรับ ' + (targetName || 'เป้าหมายนี้') + '">';
+    linkedParts.forEach(function(p) {
+      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+      html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+    });
+    html += '</optgroup>';
+  }
+  if (otherStock.length) {
+    html += '<optgroup label="📦 อะไหล่อื่นๆ ในคลัง Stock">';
+    otherStock.forEach(function(p) {
+      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+      html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+    });
+    html += '</optgroup>';
+  }
+  html += '<optgroup label="✏️ อะไหล่นอกคลัง">';
+  html += '<option value="__OTHER__">➕ อื่นๆ / Other (ไม่อยู่ใน Stock)</option>';
+  html += '</optgroup>';
+  sel.innerHTML = html;
+}
+
+function onIssueEditPartSelectChange() {
+  var sel = document.getElementById('issue-edit-part-select');
+  var otherWrap = document.getElementById('issue-edit-part-other-wrap');
+  var unitEl = document.getElementById('issue-edit-part-unit');
+  if (!sel) return;
+  if (sel.value === '__OTHER__') {
+    if (otherWrap) otherWrap.style.display = 'block';
+    if (unitEl) unitEl.textContent = 'ชิ้น';
+  } else {
+    if (otherWrap) otherWrap.style.display = 'none';
+    var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
+    if (unitEl) unitEl.textContent = (p && p.Unit) ? p.Unit : 'ชิ้น';
+  }
+}
+
+function renderIssueEditPartsList() {
+  var container = document.getElementById('issue-edit-parts-list');
+  var summaryInput = document.getElementById('issue-edit-parts-used');
+  if (!container) return;
+  var parts = STATE.issueEditParts || [];
+  if (!parts.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถพิมพ์ระบุเองด้านล่าง หรือปล่อยว่างได้)</div>';
+    return;
+  }
+  container.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+    parts.map(function(p, idx) {
+      var badgeStyle = p.isStock ? 'background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#818cf8;' : 'background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;';
+      var tag = p.isStock ? '📦 ' : '✏️ ';
+      return '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;font-size:12px;' + badgeStyle + '">' +
+        '<strong>' + tag + p.partName + '</strong> (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + ')' +
+        '<button type="button" onclick="removeIssueEditPart(' + idx + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="ลบรายการ">✕</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+
+  var summaryText = parts.map(function(p) {
+    return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + (p.isStock ? '' : ' - Other') + ')';
+  }).join(', ');
+
+  if (summaryInput) {
+    summaryInput.value = summaryText;
+  }
+}
+
+function addIssueEditPart() {
+  var sel = document.getElementById('issue-edit-part-select');
+  var qtyInput = document.getElementById('issue-edit-part-qty');
+  var otherNameInput = document.getElementById('issue-edit-part-other-name');
+  if (!sel) return;
+  var qty = parseInt(qtyInput ? qtyInput.value : '1', 10);
+  if (isNaN(qty) || qty <= 0) qty = 1;
+
+  if (sel.value === '__OTHER__') {
+    var otherName = (otherNameInput ? otherNameInput.value : '').trim();
+    if (!otherName) {
+      showToast('กรุณาระบุชื่ออะไหล่นอกคลัง', 'error');
+      return;
+    }
+    STATE.issueEditParts = STATE.issueEditParts || [];
+    STATE.issueEditParts.push({
+      partId: null,
+      partName: otherName,
+      partNo: '',
+      unit: 'ชิ้น',
+      qty: qty,
+      isStock: false
+    });
+    if (otherNameInput) otherNameInput.value = '';
+  } else if (sel.value) {
+    var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
+    if (!p) return;
+    STATE.issueEditParts = STATE.issueEditParts || [];
+    var exist = STATE.issueEditParts.find(function(x) { return x.partId === p.ID; });
+    if (exist) {
+      exist.qty += qty;
+    } else {
+      STATE.issueEditParts.push({
+        partId: p.ID,
+        partName: p.PartName,
+        partNo: p.PartNo || '',
+        unit: p.Unit || 'ชิ้น',
+        qty: qty,
+        isStock: true
+      });
+    }
+  } else {
+    showToast('กรุณาเลือกอะไหล่', 'warning');
+    return;
+  }
+  if (qtyInput) qtyInput.value = '1';
+  renderIssueEditPartsList();
+}
+
+function removeIssueEditPart(idx) {
+  if (STATE.issueEditParts && STATE.issueEditParts[idx] !== undefined) {
+    STATE.issueEditParts.splice(idx, 1);
+    renderIssueEditPartsList();
+  }
+}
 
 function onClosePartSelectChange() {
   var sel = document.getElementById('close-part-select');
