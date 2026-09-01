@@ -689,6 +689,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
           </div>
           <button type="button" class="btn btn-primary" onclick="addIssueEditPart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
         </div>
+        <div id="issue-edit-part-warning" style="display:none;"></div>
         <div id="issue-edit-parts-list" style="margin-bottom:8px;"></div>
         <div>
           <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่ใช้ (Parts Used):</label>
@@ -783,6 +784,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
           </div>
           <button type="button" class="btn btn-primary" onclick="addCloseIssuePart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
         </div>
+        <div id="close-part-warning" style="display:none;"></div>
         <div id="close-parts-list" style="margin-bottom:8px;"></div>
         <div>
           <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่บันทึก (แก้ไขข้อความได้):</label>
@@ -855,7 +857,12 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
       </div>
       <div class="form-group"><label>Unit (หน่วยนับ)</label><input id="stock-unit" placeholder="ชิ้น / ตัว / ชุด..."/></div>
     </div>
-    <div class="form-row col-3"><div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div><div class="form-group"><label>Current Stock</label><input id="stock-current" type="number" value="0"/></div><div class="form-group"><label>Location</label><input id="stock-location" placeholder="ตำแหน่งจัดเก็บ"/></div></div>
+    <div class="form-row col-4">
+      <div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div>
+      <div class="form-group"><label>Current Stock</label><input id="stock-current" type="number" value="0"/></div>
+      <div class="form-group"><label>⏳ Lead Time (วัน)</label><input id="stock-leadtime" type="number" min="0" placeholder="เช่น 3, 7, 14" title="ระยะเวลาจัดส่งปกติ (วัน)"/></div>
+      <div class="form-group"><label>Location</label><input id="stock-location" placeholder="ตำแหน่งจัดเก็บ"/></div>
+    </div>
     <div class="form-row col-2"><div class="form-group"><label>🔗 Linked Type</label><select id="stock-link-type" onchange="loadStockLinkTargets()"><option value="">ไม่ระบุ</option><option value="Mold">Mold (แม่พิมพ์)</option><option value="Machine">Machine (เครื่องจักร)</option></select></div><div class="form-group"><label>🔗 Linked To</label><select id="stock-link-id" onchange="onStockLinkedTargetChange()"><option value="">-- เลือก --</option></select></div></div>
     <div class="form-group"><label>หมายเหตุ</label><textarea id="stock-notes" placeholder="ข้อมูลเพิ่มเติม..."></textarea></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
@@ -865,6 +872,50 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     </div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('stock-part-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveStockPart()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- STOCK ORDER MODAL -->
+<div class="modal-overlay" id="stock-order-modal">
+  <div class="modal"><div class="modal-header"><div class="modal-title" id="stock-order-modal-title">🛒 เปิดสั่งซื้ออะไหล่ / ติดตาม Lead Time</div><button class="modal-close" onclick="closeModal('stock-order-modal')">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="order-part-id"/>
+    <div id="order-part-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:14px;font-size:13px;"></div>
+    
+    <div class="form-row col-2">
+      <div class="form-group">
+        <label>จำนวนที่ต้องการสั่งซื้อ *</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <input id="order-qty" type="number" min="1" value="1" placeholder="จำนวน" style="flex:1;" />
+          <span id="order-unit" style="font-size:13px;color:var(--text-muted);white-space:nowrap;">ชิ้น</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>⏳ Lead Time การส่งมอบ (วัน)</label>
+        <input id="order-leadtime" type="number" min="0" value="7" oninput="calcOrderExpectedDate()" placeholder="จำนวนวัน" />
+      </div>
+    </div>
+
+    <div class="form-row col-2">
+      <div class="form-group">
+        <label>📅 วันที่คาดว่าจะได้รับ (Expected Date)</label>
+        <input id="order-expected-date" type="date" />
+      </div>
+      <div class="form-group">
+        <label>เลขที่ใบสั่งซื้อ / PO / PR</label>
+        <input id="order-po" placeholder="เช่น PO-2609-001..." />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>หมายเหตุ / ผู้จำหน่าย (Vendor)</label>
+      <textarea id="order-notes" placeholder="ระบุเงื่อนไขการสั่งซื้อ, ชื่อร้านค้า, หรือข้อความเพิ่มเติม..." rows="2"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-outline" onclick="closeModal('stock-order-modal')">ยกเลิก</button>
+    <button class="btn btn-primary" onclick="submitStockOrder()">🛒 บันทึกการสั่งซื้อ</button>
+  </div>
   </div>
 </div>
 
@@ -1383,6 +1434,25 @@ async function _apiInternal(actionStr, payload = null) {
         const mapped = (data || []).map(p => {
           let loc = p.Location || '';
           let note = '';
+          let onOrder = null;
+          let leadTime = 0;
+
+          if (loc.indexOf('[ORDER:') !== -1) {
+            const mOrder = loc.match(/\[ORDER:\s*(\{[\s\S]*?\})\s*\]/);
+            if (mOrder) {
+              try { onOrder = JSON.parse(mOrder[1]); } catch(e) {}
+              loc = loc.replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+            }
+          }
+
+          if (loc.indexOf('[LEADTIME:') !== -1) {
+            const mLT = loc.match(/\[LEADTIME:\s*(\d+)\s*\]/);
+            if (mLT) {
+              leadTime = Number(mLT[1]) || 0;
+              loc = loc.replace(/\[LEADTIME:\s*\d+\s*\]/g, '').trim();
+            }
+          }
+
           if (loc.indexOf('[NOTE:') !== -1) {
             const m = loc.match(/\[NOTE:\s*([\s\S]*?)\]/);
             if (m) {
@@ -1395,19 +1465,30 @@ async function _apiInternal(actionStr, payload = null) {
             MinStock: p.MinQty,
             Vendor: p.Category,
             Location: loc,
-            Notes: note
+            Notes: note,
+            LeadTime: leadTime || (onOrder ? (Number(onOrder.leadTime) || 0) : 0),
+            OnOrder: onOrder,
+            OnOrderQty: onOrder ? (Number(onOrder.qty) || 0) : 0,
+            ExpectedDate: onOrder ? (onOrder.expectedDate || '') : '',
+            PONo: onOrder ? (onOrder.poNo || '') : ''
           });
         });
         return { success: true, data: mapped };
       }
       case 'saveStockPart': {
         const d = payload.data || {};
-        let cleanLocation = (d.Location || '').replace(/\[NOTE:\s*([\s\S]*?)\]/g, '').trim();
+        let cleanLocation = (d.Location || '').replace(/\[NOTE:\s*[\s\S]*?\]/g, '').replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').replace(/\[LEADTIME:\s*\d+\s*\]/g, '').trim();
         let noteText = (d.Notes || '').trim();
-        let finalLocation = cleanLocation;
-        if (noteText) {
-          finalLocation = cleanLocation ? (cleanLocation + ' [NOTE: ' + noteText + ']') : ('[NOTE: ' + noteText + ']');
-        }
+        let leadTime = Number(d.LeadTime) || 0;
+        let onOrder = d.OnOrder || null;
+
+        let extraTags = '';
+        if (leadTime > 0) extraTags += ' [LEADTIME: ' + leadTime + ']';
+        if (onOrder && onOrder.qty > 0) extraTags += ' [ORDER: ' + JSON.stringify(onOrder) + ']';
+        if (noteText) extraTags += ' [NOTE: ' + noteText + ']';
+
+        let finalLocation = (cleanLocation + extraTags).trim();
+
         const item = {
           PartName: d.PartName || '',
           PartNo: d.PartNo || '',
@@ -1432,6 +1513,44 @@ async function _apiInternal(actionStr, payload = null) {
           if (error) return { success: false, error: error.message };
           return { success: true, id: item.ID };
         }
+      }
+      case 'saveStockOrder': {
+        const { partId, orderQty, leadTime, expectedDate, poNo, notes } = payload.data || {};
+        const { data: part, error: fetchErr } = await sb.from('stock_parts').select('*').eq('ID', partId).single();
+        if (fetchErr) return { success: false, error: fetchErr.message };
+        if (part) {
+          let loc = (part.Location || '').replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').replace(/\[LEADTIME:\s*\d+\s*\]/g, '').trim();
+          const onOrderObj = {
+            qty: Number(orderQty) || 0,
+            leadTime: Number(leadTime) || 0,
+            expectedDate: expectedDate || '',
+            poNo: poNo || '',
+            notes: notes || '',
+            orderedAt: new Date().toISOString()
+          };
+          let newLoc = loc;
+          if (Number(leadTime) > 0) newLoc += ' [LEADTIME: ' + Number(leadTime) + ']';
+          if (Number(orderQty) > 0) newLoc += ' [ORDER: ' + JSON.stringify(onOrderObj) + ']';
+          const { error: updErr } = await sb.from('stock_parts').update({ Location: newLoc.trim() }).eq('ID', partId);
+          if (updErr) return { success: false, error: updErr.message };
+          return { success: true };
+        }
+        return { success: true };
+      }
+      case 'receiveStockOrder': {
+        const { partId, receivedQty } = payload.data || {};
+        const { data: part, error: fetchErr } = await sb.from('stock_parts').select('*').eq('ID', partId).single();
+        if (fetchErr) return { success: false, error: fetchErr.message };
+        if (part) {
+          let curQty = Number(part.Qty) || 0;
+          let addQty = Number(receivedQty) || 0;
+          let newQty = curQty + addQty;
+          let loc = (part.Location || '').replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+          const { error: updErr } = await sb.from('stock_parts').update({ Qty: newQty, Location: loc }).eq('ID', partId);
+          if (updErr) return { success: false, error: updErr.message };
+          return { success: true, newBalance: newQty };
+        }
+        return { success: true };
       }
       case 'deleteStockPart': {
         const { error } = await sb.from('stock_parts').delete().eq('ID', payload.id);
@@ -3737,6 +3856,39 @@ function printIssueReport(id) {
   }
 }
 
+function formatStockOptionText(p) {
+  var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+  var onOrderTxt = p.OnOrderQty > 0 ? (' | 🚚 สั่งแล้ว ' + p.OnOrderQty + (p.ExpectedDate ? ' ถึง ~' + p.ExpectedDate.substring(5) : '')) : '';
+  return p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + onOrderTxt + ']';
+}
+
+function updateStockPartWarningNotice(containerId, partId) {
+  var wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  if (!partId || partId === '__OTHER__') {
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+    return;
+  }
+  var p = (STATE.stockParts || []).find(function(x) { return x.ID === partId; });
+  if (!p) {
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+    return;
+  }
+  var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+  if (cur <= 0) {
+    var orderMsg = p.OnOrderQty > 0 
+      ? (' (มีสั่งซื้อไว้แล้ว ' + p.OnOrderQty + ' ' + (p.Unit || 'ชิ้น') + (p.ExpectedDate ? ' คาดว่าถึง ' + p.ExpectedDate : '') + ')')
+      : ' (ยังไม่มีรายการสั่งซื้อ)';
+    wrap.innerHTML = '<div style="background:#fffbeb;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:12px;margin-bottom:8px;">⚠️ <strong>อะไหล่นี้ในคลังเหลือ 0 ชิ้น' + orderMsg + '</strong> — สามารถบันทึกประวัติการซ่อมได้ตามปกติ</div>';
+    wrap.style.display = 'block';
+  } else {
+    wrap.innerHTML = '';
+    wrap.style.display = 'none';
+  }
+}
+
 function populateIssueEditPartSelect(targetId) {
   var sel = document.getElementById('issue-edit-part-select');
   if (!sel) return;
@@ -3750,16 +3902,14 @@ function populateIssueEditPartSelect(targetId) {
   if (linkedParts.length) {
     html += '<optgroup label="⭐ อะไหล่สำหรับ ' + (targetName || 'เป้าหมายนี้') + '">';
     linkedParts.forEach(function(p) {
-      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-      html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+      html += '<option value="' + p.ID + '">' + formatStockOptionText(p) + '</option>';
     });
     html += '</optgroup>';
   }
   if (otherStock.length) {
     html += '<optgroup label="📦 อะไหล่อื่นๆ ในคลัง Stock">';
     otherStock.forEach(function(p) {
-      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-      html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+      html += '<option value="' + p.ID + '">' + formatStockOptionText(p) + '</option>';
     });
     html += '</optgroup>';
   }
@@ -3767,6 +3917,7 @@ function populateIssueEditPartSelect(targetId) {
   html += '<option value="__OTHER__">➕ อื่นๆ / Other (ไม่อยู่ใน Stock)</option>';
   html += '</optgroup>';
   sel.innerHTML = html;
+  updateStockPartWarningNotice('issue-edit-part-warning', sel.value);
 }
 
 function onIssueEditPartSelectChange() {
@@ -3782,6 +3933,7 @@ function onIssueEditPartSelectChange() {
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
     if (unitEl) unitEl.textContent = (p && p.Unit) ? p.Unit : 'ชิ้น';
   }
+  updateStockPartWarningNotice('issue-edit-part-warning', sel.value);
 }
 
 function renderIssueEditPartsList(existingHistory) {
@@ -3898,6 +4050,7 @@ function onClosePartSelectChange() {
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
     if (unitEl) unitEl.textContent = (p && p.Unit) ? p.Unit : 'ชิ้น';
   }
+  updateStockPartWarningNotice('close-part-warning', sel.value);
 }
 
 function renderCloseIssuePartsList() {
@@ -4012,16 +4165,14 @@ function openCloseIssueModal(id){
     if (linkedParts.length) {
       html += '<optgroup label="⭐ อะไหล่สำหรับ ' + (iss.TargetName || iss.TargetID) + '">';
       linkedParts.forEach(function(p) {
-        var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+        html += '<option value="' + p.ID + '">' + formatStockOptionText(p) + '</option>';
       });
       html += '</optgroup>';
     }
     if (otherStock.length) {
       html += '<optgroup label="📦 อะไหล่อื่นๆ ในคลัง Stock">';
       otherStock.forEach(function(p) {
-        var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
-        html += '<option value="' + p.ID + '">' + p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + ']</option>';
+        html += '<option value="' + p.ID + '">' + formatStockOptionText(p) + '</option>';
       });
       html += '</optgroup>';
     }
@@ -4029,6 +4180,7 @@ function openCloseIssueModal(id){
     html += '<option value="__OTHER__">➕ อื่นๆ / Other (ไม่อยู่ใน Stock)</option>';
     html += '</optgroup>';
     sel.innerHTML = html;
+    updateStockPartWarningNotice('close-part-warning', sel.value);
   }
 
   document.getElementById('close-photos-preview').innerHTML = '';
@@ -4171,6 +4323,21 @@ function filterStock(){
       (imgs.length > 1 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 1, \'' + (p.PartName || '').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 1) + ')">+' + (imgs.length - 1) + '</span>' : '') +
       '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
 
+    var onOrderBadge = '';
+    if (p.OnOrderQty > 0) {
+      var expStr = p.ExpectedDate ? ('~' + p.ExpectedDate.substring(5)) : '';
+      onOrderBadge = '<div style="margin-top:3px;"><span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-size:9px;padding:1px 5px;" title="กำลังสั่งซื้อ ' + p.OnOrderQty + ' ' + (p.Unit||'ชิ้น') + (p.PONo ? ' (PO: ' + p.PONo + ')' : '') + (p.ExpectedDate ? ' คาดว่าถึง: ' + p.ExpectedDate : '') + '">🚚 สั่งแล้ว ' + p.OnOrderQty + ' ' + (p.Unit||'') + (expStr ? ' (' + expStr + ')' : '') + '</span></div>';
+    }
+
+    var statusBadge = '';
+    if (cur <= min) {
+      if (p.OnOrderQty > 0) {
+        statusBadge = '<span class="badge warning" style="font-size:9px;padding:1px 6px">Low (สั่งแล้ว)</span>';
+      } else {
+        statusBadge = '<span class="badge overdue" style="font-size:9px;padding:1px 6px">🔴 Low (ยังไม่สั่ง)</span>';
+      }
+    }
+
     return '<tr>'+
       '<td>'+imgThumb+'</td>'+
       '<td><strong>'+p.PartName+'</strong></td>'+
@@ -4179,10 +4346,19 @@ function filterStock(){
       '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
       '<td>'+(p.Unit||'-')+'</td>'+
       '<td>'+min+'</td>'+
-      '<td><div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div><div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+(cur<=min?'<span class="badge overdue" style="font-size:9px;padding:1px 6px">Low</span>':'')+'</td>'+
+      '<td>'+
+        '<div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div>'+
+        '<div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+
+        statusBadge +
+        onOrderBadge +
+      '</td>'+
       '<td>'+(p.Location||'-')+'</td>'+
       '<td style="white-space:nowrap">'+
-        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')">📦 รับ/เบิก</button> '+
+        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
+        (p.OnOrderQty > 0 ?
+          '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="รับของที่สั่งเข้าสต็อกทันที (PO: '+(p.PONo||'-')+')">✅ รับของ ('+p.OnOrderQty+')</button> ' :
+          '<button class="btn btn-outline btn-sm" onclick="openStockOrderModal(\''+p.ID+'\')" title="เปิดสั่งซื้อ / ระบุ Lead Time">🛒 สั่งซื้อ</button> '
+        ) +
         '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '+
         '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>'+
       '</td>'+
@@ -4206,11 +4382,11 @@ function populateStockVendorSelect(currentVal) {
     if (pv && pv.trim() && vendors.indexOf(pv.trim()) === -1) vendors.push(pv.trim());
   });
 
-  var html = '<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 Vendor --</option>';
+  var html = '<option value="">-- เลือก Vendor --</option>';
   vendors.forEach(function(v) {
     html += '<option value="' + v + '">' + v + '</option>';
   });
-  html += '<option value="__other__">\u2795 \u0e2d\u0e37\u0e48\u0e19\u0e46 (\u0e23\u0e30\u0e1a\u0e38\u0e40\u0e2d\u0e07 / Other)...</option>';
+  html += '<option value="__other__">➕ อื่นๆ (ระบุเอง / Other)...</option>';
   sel.innerHTML = html;
 
   setStockVendorValue(currentVal || '');
@@ -4298,19 +4474,19 @@ function onStockLinkedTargetChange() {
 function loadStockLinkTargets(){
   var type=v('stock-link-type');var s=document.getElementById('stock-link-id');
   if(!s) return;
-  if(!type){s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';return;}
+  if(!type){s.innerHTML='<option value="">-- เลือก --</option>';return;}
   var list=type==='Mold'?(STATE.molds||[]):(STATE.machines||[]);
-  s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
+  s.innerHTML='<option value="">-- เลือก --</option>'+list.filter(function(x){return (x.Status||'Active')==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');
 }
 
 function openStockPartModal(data){
-  ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-location','stock-notes'].forEach(function(i){v_set(i,'');});
+  ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-location','stock-notes','stock-leadtime'].forEach(function(i){v_set(i,'');});
   v_set('stock-min','0');v_set('stock-current','0');
   v_set('stock-link-type','');v_set('stock-link-id','');
-  document.getElementById('stock-link-id').innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>';
+  document.getElementById('stock-link-id').innerHTML='<option value="">-- เลือก --</option>';
   document.getElementById('stock-photos-preview').innerHTML='';
   STATE.pendingPhotos['stock-part']={files:[], existing:[]};
-  document.getElementById('stock-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48';
+  document.getElementById('stock-modal-title').textContent=data?'✏️ แก้ไขอะไหล่':'+ เพิ่มอะไหล่';
 
   populateStockVendorSelect(data ? (data.Category || data.Vendor || '') : '');
 
@@ -4322,6 +4498,7 @@ function openStockPartModal(data){
     v_set('stock-unit',data.Unit||'');
     v_set('stock-min',data.MinQty??data.MinStock??0);
     v_set('stock-current',data.Qty??data.CurrentStock??0);
+    v_set('stock-leadtime',data.LeadTime||'');
     v_set('stock-location',data.Location||'');
     v_set('stock-notes',data.Notes||'');
     if(data.LinkedType){
@@ -4354,8 +4531,11 @@ async function saveStockPart(){
     showGlobalLoading(true);
     var imgIds=await uploadPendingPhotos('stock-part','StockParts');
     var linkType=v('stock-link-type'),linkId=v('stock-link-id');
+    var editId = v('stock-id');
+    var existingPart = editId ? (STATE.stockParts || []).find(function(p){ return p.ID === editId; }) : null;
+
     var data={
-      ID: v('stock-id') || undefined,
+      ID: editId || undefined,
       PartName: name,
       PartNo: v('stock-partno'),
       Category: v('stock-vendor'),
@@ -4365,6 +4545,8 @@ async function saveStockPart(){
       MinStock: Number(v('stock-min')) || 0,
       Qty: Number(v('stock-current')) || 0,
       CurrentStock: Number(v('stock-current')) || 0,
+      LeadTime: Number(v('stock-leadtime')) || 0,
+      OnOrder: existingPart ? existingPart.OnOrder : undefined,
       Location: v('stock-location'),
       Notes: v('stock-notes'),
       LinkedType: linkType,
@@ -4383,12 +4565,122 @@ async function saveStockPart(){
         updateBadges();
       }
     } else {
-      showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+((r && r.error)||'\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e44\u0e14\u0e49'),'error');
+      showToast('ผิดพลาด: '+((r && r.error)||'ไม่สามารถบันทึกได้'),'error');
     }
   } catch(err) {
     showGlobalLoading(false);
     console.error('saveStockPart error:', err);
-    showToast('\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+err.message, 'error');
+    showToast('เกิดข้อผิดพลาด: '+err.message, 'error');
+  }
+}
+
+function openStockOrderModal(partId) {
+  var p = (STATE.stockParts || []).find(function(x){ return x.ID === partId; });
+  if (!p) return;
+
+  v_set('order-part-id', p.ID);
+  var info = document.getElementById('order-part-info');
+  var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+  var min = Number(p.MinStock ?? p.MinQty ?? 0);
+  var color = cur <= min ? 'var(--danger)' : 'var(--success)';
+
+  if (info) {
+    info.innerHTML = 
+      '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+        '<div><strong>' + p.PartName + '</strong>' + (p.PartNo ? ' <span style="font-size:12px;color:var(--text-muted)">(' + p.PartNo + ')</span>' : '') + '</div>' +
+        '<div>คงเหลือ: <strong style="color:' + color + '">' + cur + ' ' + (p.Unit || 'ชิ้น') + '</strong> (Min: ' + min + ')</div>' +
+      '</div>';
+  }
+
+  var defQty = min > cur ? (min - cur) : 1;
+  v_set('order-qty', defQty > 0 ? defQty : 1);
+  v_set('order-unit', p.Unit || 'ชิ้น');
+  var lt = p.LeadTime || 7;
+  v_set('order-leadtime', lt);
+  v_set('order-po', p.PONo || '');
+  v_set('order-notes', p.Vendor ? ('สั่งซื้อจาก: ' + p.Vendor) : '');
+
+  calcOrderExpectedDate();
+  openModal('stock-order-modal');
+}
+
+function calcOrderExpectedDate() {
+  var lt = parseInt(v('order-leadtime') || '7', 10);
+  if (isNaN(lt) || lt < 0) lt = 7;
+  var d = new Date();
+  d.setDate(d.getDate() + lt);
+  var yyyy = d.getFullYear();
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var dd = String(d.getDate()).padStart(2, '0');
+  v_set('order-expected-date', yyyy + '-' + mm + '-' + dd);
+}
+
+async function submitStockOrder() {
+  var partId = v('order-part-id');
+  var qty = parseInt(v('order-qty'), 10);
+  var lt = parseInt(v('order-leadtime'), 10) || 0;
+  var expDate = v('order-expected-date');
+  var po = v('order-po');
+  var notes = v('order-notes');
+
+  if (!partId || isNaN(qty) || qty <= 0) {
+    showToast('กรุณาระบุจำนวนที่สั่งซื้ออย่างน้อย 1 ชิ้น', 'error');
+    return;
+  }
+
+  showGlobalLoading(true);
+  var r = await api('saveStockOrder', {
+    data: {
+      partId: partId,
+      orderQty: qty,
+      leadTime: lt,
+      expectedDate: expDate,
+      poNo: po,
+      notes: notes
+    }
+  });
+  showGlobalLoading(false);
+
+  if (r && r.success) {
+    showToast('บันทึกการสั่งซื้อเรียบร้อย 🚚 (รอของเข้า ' + (expDate || '-') + ')', 'success');
+    closeModal('stock-order-modal');
+    var res = await api('getStockParts');
+    if (res && res.success) {
+      STATE.stockParts = res.data;
+      renderStock();
+      updateBadges();
+    }
+  } else {
+    showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกการสั่งซื้อได้'), 'error');
+  }
+}
+
+async function quickReceiveOrder(partId) {
+  var p = (STATE.stockParts || []).find(function(x){ return x.ID === partId; });
+  if (!p || !p.OnOrderQty) return;
+
+  var msg = 'ยืนยันรับอะไหล่ "' + p.PartName + '" จำนวน ' + p.OnOrderQty + ' ' + (p.Unit || 'ชิ้น') + ' เข้าคลังสต็อกทันที?';
+  if (!confirm(msg)) return;
+
+  showGlobalLoading(true);
+  var r = await api('receiveStockOrder', {
+    data: {
+      partId: p.ID,
+      receivedQty: p.OnOrderQty
+    }
+  });
+  showGlobalLoading(false);
+
+  if (r && r.success) {
+    showToast('รับของเข้าสต็อกสำเร็จ ✅ ยอดคงเหลือใหม่: ' + r.newBalance + ' ' + (p.Unit || 'ชิ้น'), 'success');
+    var res = await api('getStockParts');
+    if (res && res.success) {
+      STATE.stockParts = res.data;
+      renderStock();
+      updateBadges();
+    }
+  } else {
+    showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถรับของเข้าได้'), 'error');
   }
 }
 
