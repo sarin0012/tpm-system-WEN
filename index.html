@@ -1594,9 +1594,12 @@ async function _apiInternal(actionStr, payload = null) {
                 iss.TrialShots = t.shots || 0;
                 iss.TrialNotes = t.notes || '';
                 iss.TrialImageIds = Array.isArray(t.images) ? JSON.stringify(t.images) : (t.images || '[]');
-                iss.CleanCorrectiveAction = iss.CorrectiveAction.replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
               } catch(e) {}
             }
+            iss.CleanCorrectiveAction = iss.CorrectiveAction.replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+            iss.CorrectiveAction = iss.CleanCorrectiveAction;
+          } else {
+            iss.CleanCorrectiveAction = iss.CorrectiveAction || '';
           }
         });
         return { success: true, data: data || [] };
@@ -1605,14 +1608,15 @@ async function _apiInternal(actionStr, payload = null) {
         const item = Object.assign({}, payload.data);
         if (item.TrialResult !== undefined || item.TrialDate !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
           let cleanAction = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+          const trialImages = tryParse(item.TrialImageIds);
           const trialObj = {
             result: item.TrialResult || '',
             trialDate: item.TrialDate || '',
             shots: Number(item.TrialShots) || 0,
             notes: item.TrialNotes || '',
-            images: tryParse(item.TrialImageIds)
+            images: trialImages
           };
-          if (trialObj.result || trialObj.trialDate || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+          if (trialObj.result || trialObj.shots > 0 || trialObj.notes || (trialObj.images && trialObj.images.length > 0)) {
             item.CorrectiveAction = cleanAction ? (cleanAction + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
           } else {
             item.CorrectiveAction = cleanAction;
@@ -1646,14 +1650,15 @@ async function _apiInternal(actionStr, payload = null) {
       case 'closeIssue': {
         const item = Object.assign({}, payload.data);
         let action = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+        const trialImages = tryParse(item.TrialImageIds);
         const trialObj = {
           result: item.TrialResult || '',
           trialDate: item.TrialDate || '',
           shots: Number(item.TrialShots) || 0,
           notes: item.TrialNotes || '',
-          images: tryParse(item.TrialImageIds)
+          images: trialImages
         };
-        if (trialObj.result || trialObj.trialDate || trialObj.shots || trialObj.notes || (trialObj.images && trialObj.images.length)) {
+        if (trialObj.result || trialObj.shots > 0 || trialObj.notes || (trialObj.images && trialObj.images.length > 0)) {
           action = action ? (action + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
         }
         const { error } = await sb.from('issues').update({
@@ -3464,7 +3469,8 @@ function openIssueModal(issueOrId){
     if (secTrial) secTrial.style.display = 'block';
 
     v_set('issue-edit-root-cause', data.RootCause || '');
-    v_set('issue-edit-corrective', data.CleanCorrectiveAction || data.CorrectiveAction || '');
+    var cleanCorrective = (data.CleanCorrectiveAction !== undefined) ? data.CleanCorrectiveAction : (data.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+    v_set('issue-edit-corrective', cleanCorrective);
     v_set('issue-edit-closed-date', data.ClosedAt || '');
     v_set('issue-edit-closed-by', data.ClosedBy || '');
     v_set('issue-edit-parts-used', data.PartsUsed || '');
