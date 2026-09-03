@@ -526,9 +526,15 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- USERS -->
 <div class="page" id="page-settings">
-  <div class="toolbar"><div style="flex:1"></div><button class="btn btn-primary" onclick="openUserModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609;</button></div>
+  <div class="toolbar">
+    <div style="font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;">
+      <span>👥</span> <span>จัดการรายชื่อผู้ใช้งานและกำหนดสิทธิ์ระบบ</span>
+    </div>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openUserModal()">+ เพิ่มผู้ใช้งาน</button>
+  </div>
   <div class="card"><div class="table-wrapper"><table id="users-table">
-    <thead><tr><th>Email</th><th>&#3594;&#3639;&#3656;&#3629;</th><th>Role</th><th>&#3649;&#3612;&#3609;&#3585;</th><th>Actions</th></tr></thead>
+    <thead><tr><th>ชื่อ-นามสกุล</th><th>Email</th><th>Role (สิทธิ์)</th><th>แผนก</th><th>จัดการ</th></tr></thead>
     <tbody id="users-tbody"></tbody>
   </table></div></div>
 </div>
@@ -985,14 +991,24 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- USER -->
 <div class="modal-overlay" id="user-modal">
-  <div class="modal modal-sm"><div class="modal-header"><div class="modal-title" id="user-modal-title">&#3648;&#3614;&#3636;&#3656;&#3617;&#3612;&#3641;&#3657;&#3651;&#3594;&#3657;&#3591;&#3634;&#3609;</div><button class="modal-close" onclick="closeModal('user-modal')">&#10005;</button></div>
+  <div class="modal modal-sm"><div class="modal-header"><div class="modal-title" id="user-modal-title">เพิ่มผู้ใช้งาน</div><button class="modal-close" onclick="closeModal('user-modal')">&#10005;</button></div>
   <div class="modal-body">
     <input type="hidden" id="user-id"/>
-    <div class="form-group"><label>Email *</label><input id="user-email" type="email"/></div>
-    <div class="form-group"><label>&#3594;&#3639;&#3656;&#3629;</label><input id="user-name-input"/></div>
-    <div class="form-row col-2"><div class="form-group"><label>Role</label><select id="user-role-select"><option>Admin</option><option>Technician</option><option>Viewer</option></select></div><div class="form-group"><label>Department</label><input id="user-dept"/></div></div>
+    <div class="form-group"><label>ชื่อ-นามสกุล *</label><input id="user-name-input" placeholder="เช่น สาริน T., สมชาย K."/></div>
+    <div class="form-group"><label>Email (อีเมล)</label><input id="user-email" type="email" placeholder="เช่น tech@tpm.local (ไม่ระบุก็ได้)"/></div>
+    <div class="form-row col-2">
+      <div class="form-group"><label>Role (สิทธิ์การใช้งาน)</label>
+        <select id="user-role-select">
+          <option value="Technician">Technician (ช่างซ่อมบำรุง)</option>
+          <option value="Engineer">Engineer (วิศวกร)</option>
+          <option value="Viewer">Viewer (หัวหน้า / ดูอย่างเดียว)</option>
+          <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>แผนก / ฝ่าย</label><input id="user-dept" placeholder="เช่น Maintenance, Production"/></div>
+    </div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveUser()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveUser()">💾 บันทึกผู้ใช้</button></div>
   </div>
 </div>
 
@@ -1014,7 +1030,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       </div>
     </div>
     <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:0 0 16px 16px;">
-      <button class="btn btn-outline btn-sm" onclick="openEditProfilesModal()" style="display:flex;align-items:center;gap:5px;font-size:12px;">✏️ แก้ไขชื่อผู้ใช้</button>
+      <button class="btn btn-outline btn-sm" onclick="goToUserSettings()" style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;">⚙️ จัดการผู้ใช้ในระบบ (System)</button>
       <button class="btn btn-outline btn-sm" onclick="closeModal('user-select-modal')">ปิดหน้าต่าง</button>
     </div>
   </div>
@@ -1909,12 +1925,22 @@ async function _apiInternal(actionStr, payload = null) {
 
       // USERS
       case 'getUsers': {
-        return { success: true, data: [] };
+        try {
+          const { data, error } = await sb.from('users').select('*');
+          if (!error && data && data.length > 0) return { success: true, data: data };
+        } catch(e) {}
+        return { success: true, data: getSystemUsers() };
       }
       case 'saveUser': {
-        return { success: true };
+        const d = payload.data || payload || {};
+        saveSystemUser(d);
+        try { await sb.from('users').upsert(d); } catch(e) {}
+        return { success: true, id: d.ID };
       }
       case 'deleteUser': {
+        const id = (payload && payload.id) || payload;
+        deleteSystemUser(id);
+        try { await sb.from('users').delete().eq('ID', id); } catch(e) {}
         return { success: true };
       }
 
@@ -2072,6 +2098,43 @@ function applyRolePermissions() {
   document.body.classList.add('role-' + role.toLowerCase());
 }
 
+// ============================================
+//  SYSTEM USERS DATA STORE (Synced with Settings & Profile Switcher)
+// ============================================
+function getSystemUsers() {
+  var saved = tryParse(localStorage.getItem('TPM_SYSTEM_USERS'));
+  if (saved && Array.isArray(saved) && saved.length > 0) return saved;
+  // Seed with default users if none exists
+  var defaults = [
+    { ID: 'usr_admin', Name: 'ผู้ดูแลระบบ (Admin)', Email: 'admin@tpm.local', Role: 'Admin', Department: 'IT & System' },
+    { ID: 'usr_viewer', Name: 'หัวหน้า / ผู้จัดการ', Email: 'viewer@tpm.local', Role: 'Viewer', Department: 'Management' },
+    { ID: 'usr_sarin', Name: 'สาริน T.', Email: 'sarin@tpm.local', Role: 'Technician', Department: 'Maintenance' },
+    { ID: 'usr_tech', Name: 'ทีมช่างซ่อมบำรุง', Email: 'maintenance@tpm.local', Role: 'Technician', Department: 'Maintenance' }
+  ];
+  localStorage.setItem('TPM_SYSTEM_USERS', JSON.stringify(defaults));
+  return defaults;
+}
+
+function saveSystemUser(user) {
+  var list = getSystemUsers();
+  var idx = list.findIndex(function(u) { return u.ID === user.ID || (user.Name && u.Name === user.Name); });
+  if (idx >= 0) {
+    list[idx] = Object.assign({}, list[idx], user);
+  } else {
+    if (!user.ID) user.ID = 'usr_' + Date.now();
+    list.push(user);
+  }
+  localStorage.setItem('TPM_SYSTEM_USERS', JSON.stringify(list));
+  return list;
+}
+
+function deleteSystemUser(id) {
+  var list = getSystemUsers();
+  var filtered = list.filter(function(u) { return u.ID !== id; });
+  localStorage.setItem('TPM_SYSTEM_USERS', JSON.stringify(filtered));
+  return filtered;
+}
+
 function openUserSelectModal(isWelcome) {
   var titleEl = document.getElementById('user-select-title');
   if (titleEl) {
@@ -2085,51 +2148,97 @@ function openUserSelectModal(isWelcome) {
 
   var curName = STATE.currentUser ? STATE.currentUser.Name : '';
 
-  // Build user profiles list
+  // Build user profiles list dynamically from System Users
+  var allUsers = getSystemUsers();
   var profiles = [];
 
   // 1. Viewer / Supervisor
-  profiles.push({
-    Name: 'หัวหน้า / ผู้จัดการ (โหมดดูอย่างเดียว)',
-    Role: 'Viewer',
-    Email: 'viewer@tpm.local',
-    Department: 'Management',
-    Icon: '👨‍💼',
-    Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
-  });
-
-  // 2. Custom / Default Technician Team from localStorage
-  var customProfiles = getCustomProfiles();
-  customProfiles.forEach(function(u) {
-    if (u.Role !== 'Admin' && u.Role !== 'Viewer') {
+  var viewers = allUsers.filter(function(u) { return u.Role === 'Viewer'; });
+  if (viewers.length > 0) {
+    viewers.forEach(function(u) {
       profiles.push({
+        ID: u.ID,
+        Name: u.Name,
+        Role: 'Viewer',
+        Email: u.Email || '',
+        Department: u.Department || 'Management',
+        Icon: '👨‍💼',
+        Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
+      });
+    });
+  } else {
+    profiles.push({
+      ID: 'usr_viewer',
+      Name: 'หัวหน้า / ผู้จัดการ (โหมดดูอย่างเดียว)',
+      Role: 'Viewer',
+      Email: 'viewer@tpm.local',
+      Department: 'Management',
+      Icon: '👨‍💼',
+      Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
+    });
+  }
+
+  // 2. Technicians & Engineers
+  var teamMembers = allUsers.filter(function(u) { return u.Role !== 'Viewer' && u.Role !== 'Admin'; });
+  if (teamMembers.length > 0) {
+    teamMembers.forEach(function(u) {
+      profiles.push({
+        ID: u.ID,
         Name: u.Name,
         Role: u.Role || 'Technician',
         Email: u.Email || '',
         Department: u.Department || 'Maintenance',
-        Icon: '👷‍♂️',
-        Desc: 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
+        Icon: u.Role === 'Engineer' ? '🛠️' : '👷‍♂️',
+        Desc: u.Role === 'Engineer'
+          ? 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, วางแผนและตรวจเช็ค TPM, เบิก/รับสต็อก'
+          : 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
       });
-    }
-  });
+    });
+  } else {
+    profiles.push({
+      ID: 'usr_sarin',
+      Name: 'สาริน T.',
+      Role: 'Technician',
+      Email: 'sarin@tpm.local',
+      Department: 'Maintenance',
+      Icon: '👷‍♂️',
+      Desc: 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
+    });
+  }
 
   // 3. Admin Profile
-  profiles.push({
-    Name: 'ผู้ดูแลระบบ (Admin)',
-    Role: 'Admin',
-    Email: 'admin@tpm.local',
-    Department: 'IT & System',
-    Icon: '⚙️',
-    Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
-  });
+  var admins = allUsers.filter(function(u) { return u.Role === 'Admin'; });
+  if (admins.length > 0) {
+    admins.forEach(function(u) {
+      profiles.push({
+        ID: u.ID,
+        Name: u.Name,
+        Role: 'Admin',
+        Email: u.Email || 'admin@tpm.local',
+        Department: u.Department || 'IT & System',
+        Icon: '⚙️',
+        Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
+      });
+    });
+  } else {
+    profiles.push({
+      ID: 'usr_admin',
+      Name: 'ผู้ดูแลระบบ (Admin)',
+      Role: 'Admin',
+      Email: 'admin@tpm.local',
+      Department: 'IT & System',
+      Icon: '⚙️',
+      Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
+    });
+  }
 
-  // Store profiles globally for click handler to reference by index (avoids JSON/quote escaping issues)
+  // Store profiles globally for click handler to reference by index
   STATE._userProfiles = profiles;
 
   listEl.innerHTML = profiles.map(function(p, idx) {
     var isActive = (curName === p.Name);
-    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : '#6366f1');
-    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)');
+    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : (p.Role === 'Engineer' ? '#f59e0b' : '#6366f1'));
+    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : (p.Role === 'Engineer' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)'));
 
     return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfileByIndex(' + idx + ')">' +
       '<div style="display:flex;align-items:center;gap:12px;">' +
@@ -2171,7 +2280,6 @@ function selectUserProfile(u) {
   closeModal('user-select-modal');
   showToast('เข้าสู่ระบบในชื่อ: ' + u.Name + ' (' + u.Role + ') ✅', 'success');
 
-  // Refresh active view to re-render action buttons based on new role
   var activePage = document.querySelector('.page.active');
   if (activePage) {
     var pName = activePage.id.replace('page-', '');
@@ -2183,7 +2291,16 @@ function selectUserProfile(u) {
   }
 }
 
-
+function goToUserSettings() {
+  if (getCurrentRole() === 'Admin') {
+    closeModal('user-select-modal');
+    nav('settings');
+  } else {
+    STATE._pendingNavToSettings = true;
+    closeModal('user-select-modal');
+    openAdminPassModal();
+  }
+}
 
 function openAdminPassModal() {
   var input = document.getElementById('admin-pass-input');
@@ -2209,6 +2326,12 @@ function submitAdminPassword() {
     closeModal('admin-pass-modal');
     closeModal('user-select-modal');
     showToast('เข้าสู่โหมดผู้ดูแลระบบ (Admin) สำเร็จ 🔓', 'success');
+
+    if (STATE._pendingNavToSettings) {
+      STATE._pendingNavToSettings = false;
+      nav('settings');
+      return;
+    }
 
     var activePage = document.querySelector('.page.active');
     if (activePage) {
@@ -5409,15 +5532,93 @@ function exportCSV(type){
 //  USERS
 // ============================================
 async function loadUsers(){
-  var r=await api('getUsers');if(!r||!r.success)return;
-  var utb=document.getElementById('users-tbody');
+  var r = await api('getUsers');
+  var users = (r && r.success && r.data) ? r.data : getSystemUsers();
+  STATE.users = users;
+  var utb = document.getElementById('users-tbody');
   if(utb){
-    utb.innerHTML=r.data.map(function(u){return '<tr><td>'+u.Email+'</td><td>'+u.Name+'</td><td><span class="badge planned">'+u.Role+'</span></td><td>'+(u.Department||'-')+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openUserModal('+JSON.stringify(u)+')\'>\u270f\ufe0f</button><button class="btn btn-ghost btn-sm" onclick="delUser(\''+u.ID+'\')">\ud83d\uddd1\ufe0f</button></td></tr>';}).join('');
+    if (!users.length) {
+      utb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:24px;">ยังไม่มีรายชื่อผู้ใช้งาน กดปุ่ม "+ เพิ่มผู้ใช้งาน" ด้านบนได้เลยครับ</td></tr>';
+      return;
+    }
+    utb.innerHTML = users.map(function(u){
+      var rColor = u.Role === 'Admin' ? '#ef4444' : (u.Role === 'Viewer' ? '#10b981' : (u.Role === 'Engineer' ? '#f59e0b' : '#6366f1'));
+      var rBg = u.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (u.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : (u.Role === 'Engineer' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)'));
+      var icon = u.Role === 'Admin' ? '⚙️' : (u.Role === 'Viewer' ? '👨‍💼' : (u.Role === 'Engineer' ? '🛠️' : '👷‍♂️'));
+      var uJson = JSON.stringify(u).replace(/"/g, '&quot;');
+      return '<tr>' +
+        '<td><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">' + icon + '</span><strong>' + esc(u.Name || '-') + '</strong></div></td>' +
+        '<td>' + esc(u.Email || '-') + '</td>' +
+        '<td><span class="badge" style="background:' + rBg + ';color:' + rColor + ';font-weight:600;">' + esc(u.Role || 'Technician') + '</span></td>' +
+        '<td>' + esc(u.Department || '-') + '</td>' +
+        '<td>' +
+          '<button class="btn btn-ghost btn-sm" onclick=\'openUserModal(' + uJson + ')\' title="แก้ไข">✏️</button>' +
+          (u.Role === 'Admin' ? '' : '<button class="btn btn-ghost btn-sm" onclick="delUser(\'' + u.ID + '\')" title="ลบ" style="color:#ef4444;">🗑️</button>') +
+        '</td>' +
+      '</tr>';
+    }).join('');
   }
 }
-function openUserModal(data){['user-id','user-email','user-name-input','user-dept'].forEach(function(i){v_set(i,'');});document.getElementById('user-modal-title').textContent=data?'\u270f\ufe0f \u0e41\u0e01\u0e49\u0e44\u0e02':'+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49';if(data){v_set('user-id',data.ID);v_set('user-email',data.Email);v_set('user-name-input',data.Name);v_set('user-role-select',data.Role);v_set('user-dept',data.Department);}openModal('user-modal');}
-async function saveUser(){var email=v('user-email');if(!email){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e23\u0e30\u0e1a\u0e38 Email','error');return;}var data={ID:v('user-id'),Email:email,Name:v('user-name-input')||email.split('@')[0],Role:v('user-role-select')||'Viewer',Department:v('user-dept')};var r=await api('saveUser',{data:data});if(r&&r.success){showToast('\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');closeModal('user-modal');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+((r&&r.error)||'\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08'),'error');}
-async function delUser(id){if(!confirm('\u0e25\u0e1a\u0e1c\u0e39\u0e49\u0e43\u0e0a\u0e49\u0e19\u0e35\u0e49?'))return;var r=await api('deleteUser',{id:id});if(r&&r.success){showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08','success');loadUsers();}else showToast('\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14: '+((r&&r.error)||'\u0e25\u0e1a\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08'),'error');}
+
+function renderUsers() {
+  loadUsers();
+}
+
+function openUserModal(data){
+  ['user-id','user-email','user-name-input','user-dept'].forEach(function(i){ v_set(i,''); });
+  document.getElementById('user-modal-title').textContent = data ? '✏️ แก้ไขข้อมูลผู้ใช้' : '+ เพิ่มผู้ใช้งานใหม่';
+  if(data){
+    v_set('user-id', data.ID || '');
+    v_set('user-email', data.Email || '');
+    v_set('user-name-input', data.Name || '');
+    v_set('user-role-select', data.Role || 'Technician');
+    v_set('user-dept', data.Department || 'Maintenance');
+  } else {
+    v_set('user-role-select', 'Technician');
+    v_set('user-dept', 'Maintenance');
+  }
+  openModal('user-modal');
+  setTimeout(function(){ var inp = document.getElementById('user-name-input'); if(inp) inp.focus(); }, 200);
+}
+
+async function saveUser(){
+  var name = (v('user-name-input') || '').trim();
+  var email = (v('user-email') || '').trim();
+  if(!name){
+    showToast('กรุณากรอกชื่อ-นามสกุลของผู้ใช้', 'warning');
+    return;
+  }
+  var id = v('user-id') || ('usr_' + Date.now());
+  var role = v('user-role-select') || 'Technician';
+  var dept = v('user-dept') || 'Maintenance';
+  var data = { ID: id, Name: name, Email: email, Role: role, Department: dept, Status: 'Active' };
+  
+  var r = await api('saveUser', { data: data });
+  if(r && r.success){
+    showToast('บันทึกข้อมูลผู้ใช้เรียบร้อย ✅', 'success');
+    closeModal('user-modal');
+    loadUsers();
+    if(STATE.currentUser && STATE.currentUser.ID === id){
+      STATE.currentUser = data;
+      localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(data));
+      updateUserDisplay();
+      applyRolePermissions();
+    }
+  } else {
+    showToast('ผิดพลาด: ' + ((r && r.error) || 'บันทึกไม่สำเร็จ'), 'error');
+  }
+}
+
+async function delUser(id){
+  if(!confirm('ยืนยันลบผู้ใช้งานนี้ออกจากระบบ?')) return;
+  var r = await api('deleteUser', { id: id });
+  if(r && r.success){
+    showToast('ลบผู้ใช้งานเรียบร้อย ✅', 'success');
+    loadUsers();
+  } else {
+    showToast('ผิดพลาด: ' + ((r && r.error) || 'ลบไม่สำเร็จ'), 'error');
+  }
+}
 
 // ============================================
 //  PHOTO UPLOAD & COMPRESSION
