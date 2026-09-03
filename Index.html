@@ -2100,13 +2100,15 @@ function openUserSelectModal(isWelcome) {
     Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
   });
 
-  listEl.innerHTML = profiles.map(function(p) {
+  // Store profiles globally for click handler to reference by index (avoids JSON/quote escaping issues)
+  STATE._userProfiles = profiles;
+
+  listEl.innerHTML = profiles.map(function(p, idx) {
     var isActive = (curName === p.Name);
-    var pJson = JSON.stringify(p).replace(/"/g, '&quot;');
     var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : '#6366f1');
     var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)');
 
-    return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfile(\'' + pJson + '\')">' +
+    return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfileByIndex(' + idx + ')">' +
       '<div style="display:flex;align-items:center;gap:12px;">' +
         '<div style="font-size:26px;width:44px;height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">' + p.Icon + '</div>' +
         '<div>' +
@@ -2124,9 +2126,14 @@ function openUserSelectModal(isWelcome) {
   openModal('user-select-modal');
 }
 
-function selectUserProfile(userJsonStr) {
-  var u = tryParse(userJsonStr);
-  if (!u) return;
+function selectUserProfileByIndex(idx) {
+  var profiles = STATE._userProfiles;
+  if (!profiles || !profiles[idx]) return;
+  selectUserProfile(profiles[idx]);
+}
+
+function selectUserProfile(u) {
+  if (!u || !u.Name) return;
 
   if (u.Role === 'Admin') {
     STATE._pendingAdminUser = u;
@@ -2141,7 +2148,7 @@ function selectUserProfile(userJsonStr) {
   closeModal('user-select-modal');
   showToast('เข้าสู่ระบบในชื่อ: ' + u.Name + ' (' + u.Role + ') ✅', 'success');
 
-  // Refresh active view
+  // Refresh active view to re-render action buttons based on new role
   var activePage = document.querySelector('.page.active');
   if (activePage) {
     var pName = activePage.id.replace('page-', '');
@@ -2152,6 +2159,8 @@ function selectUserProfile(userJsonStr) {
     else if (pName === 'stock') renderStock();
   }
 }
+
+
 
 function openAdminPassModal() {
   var input = document.getElementById('admin-pass-input');
