@@ -120,9 +120,22 @@ CREATE TABLE IF NOT EXISTS tpm_plans (
 ALTER TABLE tpm_plans ADD COLUMN IF NOT EXISTS "CoInspector" TEXT;
 
 
+-- 6. USERS (ตารางรายชื่อผู้ใช้งานและสิทธิ์)
+CREATE TABLE IF NOT EXISTS users (
+  "ID" TEXT PRIMARY KEY,
+  "Name" TEXT NOT NULL,
+  "Email" TEXT,
+  "Role" TEXT DEFAULT 'Technician',
+  "Department" TEXT,
+  "Status" TEXT DEFAULT 'Active',
+  "CreatedAt" TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ปิดการใช้งาน RLS เพื่อเปิดสิทธิ์การอ่าน-เขียนผ่าน Anon API Key
 ALTER TABLE molds DISABLE ROW LEVEL SECURITY;
 ALTER TABLE machines DISABLE ROW LEVEL SECURITY;
 ALTER TABLE stock_parts DISABLE ROW LEVEL SECURITY;
 ALTER TABLE issues DISABLE ROW LEVEL SECURITY;
 ALTER TABLE tpm_plans DISABLE ROW LEVEL SECURITY;
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+
