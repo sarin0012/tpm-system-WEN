@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -310,34 +310,6 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   .chart-grid,.grid-2{grid-template-columns:1fr;}
   .form-row.col-2,.form-row.col-3{grid-template-columns:1fr;}
 }
-  /* Role Visibility Classes */
-  body.role-viewer .role-hide-viewer { display: none !important; }
-  body.role-viewer .role-admin-only { display: none !important; }
-  body.role-technician .role-admin-only { display: none !important; }
-  body.role-engineer .role-admin-only { display: none !important; }
-
-  /* User profile selector cards in modal */
-  .user-profile-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .user-profile-card:hover {
-    background: rgba(99, 102, 241, 0.12);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-  }
-  .user-profile-card.active {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-  }
 </style>
 </head>
 <body>
@@ -379,7 +351,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">&#128230;</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
     <div class="nav-section">System</div>
     <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">📈</div>รายงาน / Reports</div>
-    <div class="nav-item role-admin-only" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
+    <div class="nav-item" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card">
@@ -399,13 +371,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
       </div>
       <h1 id="page-title" style="margin:0;">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
     </div>
-        <div class="header-actions" style="display:flex;align-items:center;gap:8px;">
-      <button id="user-profile-btn" class="btn btn-outline btn-sm" onclick="openUserSelectModal()" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border-color:var(--border);padding:5px 12px;font-weight:600;font-size:12px;border-radius:8px;" title="เธเธฅเธดเธเน€เธเธทเนเธญเธชเธฅเธฑเธเธเธนเนเนเธเนเธเธฒเธ / เน€เธเธฅเธตเนเธขเธเธเธ—เธเธฒเธ—">
-        <span id="top-user-icon">๐‘ทโ€โ๏ธ</span>
-        <span id="top-user-name" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">เธชเธฒเธฃเธดเธ T.</span>
-        <span id="top-user-role-badge" class="badge" style="font-size:10px;padding:2px 6px;background:rgba(99,102,241,0.2);color:var(--primary);border:1px solid rgba(99,102,241,0.4)">Technician</span>
-        <span style="font-size:9px;color:var(--text-muted);margin-left:2px;">โ–ผ</span>
-      </button>
+    <div class="header-actions">
       <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
     </div>
   </header>
@@ -463,7 +429,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select id="tpm-month" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</option></select>
     <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option value="Overdue">&#128308; Overdue (&#3594;&#3657;&#3634;&#3585;&#3623;&#3656;&#3634;&#3585;&#3635;&#3627;&#3609;&#3604;)</option><option value="Due Soon">&#128993; Due Soon (&#3651;&#3585;&#3621;&#3657;&#3606;&#3638;&#3591;&#3649;&#3612;&#3609;)</option><option value="Planned">&#128309; Planned (&#3605;&#3634;&#3617;&#3649;&#3612;&#3609;)</option><option value="Done">&#128994; Done (&#3648;&#3626;&#3619;&#3647;&#3592;&#3649;&#3621;&#3657;&#3623;)</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline role-admin-only" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">&#9997;&#65039; &#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619;</button><button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
+    <button class="btn btn-outline" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">&#9997;&#65039; &#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619;</button><button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
   </div>
   <div id="tpm-container"></div>
 </div>
@@ -986,86 +952,6 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="form-row col-2"><div class="form-group"><label>Role</label><select id="user-role-select"><option>Admin</option><option>Technician</option><option>Viewer</option></select></div><div class="form-group"><label>Department</label><input id="user-dept"/></div></div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveUser()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
-  </div>
-</div>
-
-<!-- USER SELECT MODAL (WELCOME & SWITCH) -->
-<div class="modal-overlay" id="user-select-modal" style="z-index:99999;">
-  <div class="modal" style="max-width:480px;border-radius:16px;">
-    <div class="modal-header" style="border-bottom:1px solid var(--border);padding:18px 24px;">
-      <div>
-        <div class="modal-title" id="user-select-title" style="font-size:18px;display:flex;align-items:center;gap:8px;">
-          <span>๐‘ค</span> <span>เน€เธฅเธทเธญเธเธเธนเนเนเธเนเธเธฒเธ (User Profile)</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธเธทเนเธญเธเธญเธเธเธธเธ“เน€เธเธทเนเธญเธฅเธเธเธฑเธเธ—เธถเธเธเธฒเธฃเธ—เธณเธเธฒเธ</div>
-      </div>
-      <button class="modal-close" onclick="closeModal('user-select-modal')">โ•</button>
-    </div>
-    <div class="modal-body" style="padding:16px 20px;max-height:65vh;overflow-y:auto;">
-      <div id="user-select-list" style="display:flex;flex-direction:column;gap:10px;">
-        <!-- Rendered by JS -->
-      </div>
-    </div>
-    <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:0 0 16px 16px;">
-      <span style="font-size:11px;color:var(--text-muted);">๐”’ เนเธซเธกเธ” Admin เธ•เนเธญเธเนเธชเนเธฃเธซเธฑเธชเธเนเธฒเธ (Default: 1234)</span>
-      <button class="btn btn-outline btn-sm" onclick="closeModal('user-select-modal')">เธเธดเธ”เธซเธเนเธฒเธ•เนเธฒเธ</button>
-    </div>
-  </div>
-</div>
-
-<!-- ADMIN PASSWORD PROMPT MODAL -->
-<div class="modal-overlay" id="admin-pass-modal" style="z-index:100000;">
-  <div class="modal" style="max-width:380px;border-radius:16px;text-align:center;">
-    <div class="modal-header" style="justify-content:center;border-bottom:none;padding-top:24px;">
-      <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto;">๐”’</div>
-    </div>
-    <div class="modal-body" style="padding:0 24px 20px 24px;">
-      <h3 style="margin:8px 0 4px 0;font-size:17px;font-weight:700;">เน€เธเนเธฒเธชเธนเนเนเธซเธกเธ”เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin)</h3>
-      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธฃเธซเธฑเธชเธเนเธฒเธเน€เธเธทเนเธญเธเธฅเธ”เธฅเนเธญเธเธชเธดเธ—เธเธดเนเธเธฑเธ”เธเธฒเธฃเธฃเธฐเธเธ</p>
-      
-      <div class="form-group" style="text-align:left;">
-        <label style="font-size:12px;font-weight:600;">เธฃเธซเธฑเธชเธเนเธฒเธ Admin (Default: 1234)</label>
-        <input type="password" id="admin-pass-input" placeholder="เธเธฃเธญเธเธฃเธซเธฑเธชเธเนเธฒเธ 4 เธซเธฅเธฑเธ..." style="text-align:center;font-size:20px;letter-spacing:6px;font-weight:700;height:46px;" onkeydown="if(event.key==='Enter') submitAdminPassword()"/>
-      </div>
-      <div id="admin-pass-error" style="font-size:12px;color:#ef4444;display:none;margin-top:6px;font-weight:600;">โ เธฃเธซเธฑเธชเธเนเธฒเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ เธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ</div>
-      
-      <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
-        <button type="button" class="btn btn-ghost btn-sm" onclick="showAdminForgotHint()" style="font-size:11px;color:var(--text-muted);padding:0;">๐”‘ เธฅเธทเธกเธฃเธซเธฑเธชเธเนเธฒเธ?</button>
-        <button type="button" class="btn btn-outline btn-sm" onclick="openAdminChangePassModal()" style="font-size:11px;padding:2px 8px;">โ๏ธ เน€เธเธฅเธตเนเธขเธเธฃเธซเธฑเธช</button>
-      </div>
-    </div>
-    <div class="modal-footer" style="justify-content:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border);">
-      <button class="btn btn-outline" onclick="closeModal('admin-pass-modal')" style="width:100px;">เธขเธเน€เธฅเธดเธ</button>
-      <button class="btn btn-primary" onclick="submitAdminPassword()" style="width:140px;">๐”“ เธขเธทเธเธขเธฑเธเธฃเธซเธฑเธช</button>
-    </div>
-  </div>
-</div>
-
-<!-- ADMIN CHANGE PASSWORD MODAL -->
-<div class="modal-overlay" id="admin-change-pass-modal" style="z-index:100001;">
-  <div class="modal" style="max-width:400px;border-radius:16px;">
-    <div class="modal-header">
-      <div class="modal-title">โ๏ธ เน€เธเธฅเธตเนเธขเธเธฃเธซเธฑเธชเธเนเธฒเธ Admin</div>
-      <button class="modal-close" onclick="closeModal('admin-change-pass-modal')">โ•</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>เธฃเธซเธฑเธชเธเนเธฒเธเธเธฑเธเธเธธเธเธฑเธ</label>
-        <input type="password" id="admin-old-pass" placeholder="เธเธฃเธญเธเธฃเธซเธฑเธชเธเนเธฒเธเน€เธ”เธดเธก..."/>
-      </div>
-      <div class="form-group">
-        <label>เธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเน</label>
-        <input type="password" id="admin-new-pass" placeholder="เธเธฃเธญเธเธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเน (เน€เธเนเธ 1234)..."/>
-      </div>
-      <div class="form-group">
-        <label>เธขเธทเธเธขเธฑเธเธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเน</label>
-        <input type="password" id="admin-confirm-pass" placeholder="เธเธฃเธญเธเธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ..."/>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('admin-change-pass-modal')">เธขเธเน€เธฅเธดเธ</button>
-      <button class="btn btn-primary" onclick="saveAdminNewPassword()">๐’พ เธเธฑเธเธ—เธถเธเธฃเธซเธฑเธชเนเธซเธกเน</button>
-    </div>
   </div>
 </div>
 
@@ -1972,8 +1858,6 @@ async function initApp() {
     }
 
     initSelects();
-    initCurrentUser();
-    initCurrentUser();
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
 
@@ -1996,543 +1880,7 @@ async function initApp() {
 }
 
 if (document.readyState === 'loading') {
-  
-// ============================================
-//  USER IDENTITY & ROLE PERMISSION SYSTEM
-// ============================================
-function getCurrentRole() {
-  return (STATE.currentUser && STATE.currentUser.Role) ? STATE.currentUser.Role : 'Technician';
-}
-
-function canEdit() {
-  var r = getCurrentRole();
-  return r === 'Admin' || r === 'Technician' || r === 'Engineer';
-}
-
-function canDelete() {
-  var r = getCurrentRole();
-  return r === 'Admin';
-}
-
-function initCurrentUser() {
-  var saved = tryParse(localStorage.getItem('TPM_CURRENT_USER'));
-  if (saved && saved.Name) {
-    STATE.currentUser = saved;
-    updateUserDisplay();
-    applyRolePermissions();
-  } else {
-    // Default user on very first launch: Sarin T. (Technician)
-    STATE.currentUser = { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' };
-    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(STATE.currentUser));
-    updateUserDisplay();
-    applyRolePermissions();
-    // Prompt welcome select modal on first visit
-    setTimeout(function() { openUserSelectModal(true); }, 500);
-  }
-}
-
-function updateUserDisplay() {
-  var u = STATE.currentUser || { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician' };
-  var role = u.Role || 'Technician';
-  
-  var icon = '๐‘ทโ€โ๏ธ';
-  var roleLabel = 'Technician (เธเนเธฒเธ)';
-  var roleBadgeBg = 'rgba(99,102,241,0.2)';
-  var roleBadgeColor = 'var(--primary)';
-
-  if (role === 'Admin') {
-    icon = 'โ๏ธ';
-    roleLabel = 'Admin (เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ)';
-    roleBadgeBg = 'rgba(239,68,68,0.2)';
-    roleBadgeColor = '#ef4444';
-  } else if (role === 'Viewer') {
-    icon = '๐‘จโ€๐’ผ';
-    roleLabel = 'Viewer (เธซเธฑเธงเธซเธเนเธฒ / เธ”เธนเธเนเธญเธกเธนเธฅ)';
-    roleBadgeBg = 'rgba(16,185,129,0.2)';
-    roleBadgeColor = '#10b981';
-  } else if (role === 'Engineer') {
-    icon = '๐ ๏ธ';
-    roleLabel = 'Engineer (เธงเธดเธจเธงเธเธฃ)';
-  }
-
-  // Top Bar User Widget
-  var topIcon = document.getElementById('top-user-icon');
-  var topName = document.getElementById('top-user-name');
-  var topBadge = document.getElementById('top-user-role-badge');
-  if (topIcon) topIcon.textContent = icon;
-  if (topName) topName.textContent = u.Name || 'เธเธนเนเนเธเนเธเธฒเธ';
-  if (topBadge) {
-    topBadge.textContent = role;
-    topBadge.style.background = roleBadgeBg;
-    topBadge.style.color = roleBadgeColor;
-  }
-
-  // Sidebar Footer Widget
-  var sbAvatar = document.getElementById('sidebar-user-avatar');
-  var sbName = document.getElementById('sidebar-user-name');
-  var sbRole = document.getElementById('sidebar-user-role');
-  if (sbAvatar) sbAvatar.textContent = icon;
-  if (sbName) sbName.textContent = u.Name || 'เธเธนเนเนเธเนเธเธฒเธ';
-  if (sbRole) sbRole.textContent = roleLabel;
-}
-
-function applyRolePermissions() {
-  var role = getCurrentRole();
-  document.body.classList.remove('role-admin', 'role-technician', 'role-viewer', 'role-engineer');
-  document.body.classList.add('role-' + role.toLowerCase());
-}
-
-function openUserSelectModal(isWelcome) {
-  var titleEl = document.getElementById('user-select-title');
-  if (titleEl) {
-    titleEl.innerHTML = isWelcome
-      ? '<span>๐‘</span> <span>เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธเธชเธนเนเธฃเธฐเธเธ TPM - เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธเธนเนเนเธเนเธเธฒเธ</span>'
-      : '<span>๐‘ค</span> <span>เธชเธฅเธฑเธเธเธนเนเนเธเนเธเธฒเธ (User Profile)</span>';
-  }
-
-  var listEl = document.getElementById('user-select-list');
-  if (!listEl) return;
-
-  var curName = STATE.currentUser ? STATE.currentUser.Name : '';
-
-  // Build user profiles list
-  var profiles = [];
-
-  // 1. Viewer / Supervisor
-  profiles.push({
-    Name: 'เธซเธฑเธงเธซเธเนเธฒ / เธเธนเนเธเธฑเธ”เธเธฒเธฃ (เนเธซเธกเธ”เธ”เธนเธญเธขเนเธฒเธเน€เธ”เธตเธขเธง)',
-    Role: 'Viewer',
-    Email: 'viewer@tpm.local',
-    Department: 'Management',
-    Icon: '๐‘จโ€๐’ผ',
-    Desc: 'เธ”เธน Dashboard, เธชเธ–เธดเธ•เธด, เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธเธเนเธญเธก, เธชเธฑเนเธเธเธดเธกเธเนเธฃเธฒเธขเธเธฒเธ A4 (เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเนเธญเธกเธนเธฅเนเธ”เน)'
-  });
-
-  // 2. Default Team Members & Custom Users
-  var defaultTechs = [
-    { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' },
-    { Name: 'เธ—เธตเธกเธเนเธฒเธเธเนเธญเธกเธเธณเธฃเธธเธ', Role: 'Technician', Email: 'maintenance@tpm.local', Department: 'Maintenance' }
-  ];
-
-  var existingUsers = (STATE.users && STATE.users.length) ? STATE.users : defaultTechs;
-  existingUsers.forEach(function(u) {
-    if (u.Role !== 'Admin' && u.Role !== 'Viewer') {
-      profiles.push({
-        Name: u.Name,
-        Role: u.Role || 'Technician',
-        Email: u.Email || '',
-        Department: u.Department || 'Maintenance',
-        Icon: '๐‘ทโ€โ๏ธ',
-        Desc: 'เนเธเนเธเธเธฑเธเธซเธฒ, เธเธฑเธเธ—เธถเธเธเธฒเธฃเธเนเธญเธก, เธเธฅ Trial, เธ•เธดเนเธเธ•เธฃเธงเธ PM 9 เธเนเธญ, เน€เธเธดเธ/เธฃเธฑเธเธชเธ•เนเธญเธ (เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธเนเธ”เน)'
-      });
-    }
-  });
-
-  // 3. Admin Profile
-  profiles.push({
-    Name: 'เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin)',
-    Role: 'Admin',
-    Email: 'admin@tpm.local',
-    Department: 'IT & System',
-    Icon: 'โ๏ธ',
-    Desc: 'เธชเธดเธ—เธเธดเนเน€เธ•เนเธก 100% (เน€เธเธดเนเธก/เนเธเนเนเธ/เธฅเธเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธ, เธเธฑเธ”เธเธฒเธฃเธเธนเนเนเธเน) ๐”’ เธ•เนเธญเธเนเธชเนเธฃเธซเธฑเธชเธเนเธฒเธ'
-  });
-
-  listEl.innerHTML = profiles.map(function(p) {
-    var isActive = (curName === p.Name);
-    var pJson = JSON.stringify(p).replace(/"/g, '&quot;');
-    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : '#6366f1');
-    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)');
-
-    return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfile(\'' + pJson + '\')">' +
-      '<div style="display:flex;align-items:center;gap:12px;">' +
-        '<div style="font-size:26px;width:44px;height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">' + p.Icon + '</div>' +
-        '<div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<strong style="font-size:14px;color:var(--text);">' + p.Name + '</strong>' +
-            '<span class="badge" style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:10px;padding:2px 6px;">' + p.Role + '</span>' +
-          '</div>' +
-          '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.3;">' + p.Desc + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div>' + (isActive ? '<span style="font-size:18px;color:#10b981;">โ”</span>' : '<span style="font-size:14px;color:var(--text-muted);">โ”</span>') + '</div>' +
-    '</div>';
-  }).join('');
-
-  openModal('user-select-modal');
-}
-
-function selectUserProfile(userJsonStr) {
-  var u = tryParse(userJsonStr);
-  if (!u) return;
-
-  if (u.Role === 'Admin') {
-    STATE._pendingAdminUser = u;
-    openAdminPassModal();
-    return;
-  }
-
-  STATE.currentUser = u;
-  localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
-  updateUserDisplay();
-  applyRolePermissions();
-  closeModal('user-select-modal');
-  showToast('เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธเธเธทเนเธญ: ' + u.Name + ' (' + u.Role + ') โ…', 'success');
-
-  // Refresh current view to apply button permissions
-  var activePage = document.querySelector('.page.active');
-  if (activePage) {
-    var pName = activePage.id.replace('page-', '');
-    if (pName === 'molds') renderMolds();
-    else if (pName === 'machines') renderMachines();
-    else if (pName === 'tpm') renderTPM();
-    else if (pName === 'issues') renderIssues();
-    else if (pName === 'stock') renderStock();
-  }
-}
-
-function openAdminPassModal() {
-  var input = document.getElementById('admin-pass-input');
-  var errEl = document.getElementById('admin-pass-error');
-  if (input) input.value = '';
-  if (errEl) errEl.style.display = 'none';
-  openModal('admin-pass-modal');
-  setTimeout(function() { if (input) input.focus(); }, 200);
-}
-
-function submitAdminPassword() {
-  var input = document.getElementById('admin-pass-input');
-  var errEl = document.getElementById('admin-pass-error');
-  var entered = input ? input.value.trim() : '';
-  var realPass = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
-
-  if (entered === realPass || entered === 'TPM-MASTER-2026') {
-    var u = STATE._pendingAdminUser || { Name: 'เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin)', Role: 'Admin', Email: 'admin@tpm.local' };
-    STATE.currentUser = u;
-    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
-    updateUserDisplay();
-    applyRolePermissions();
-    closeModal('admin-pass-modal');
-    closeModal('user-select-modal');
-    showToast('เน€เธเนเธฒเธชเธนเนเนเธซเธกเธ”เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin) เธชเธณเน€เธฃเนเธ ๐”“', 'success');
-
-    var activePage = document.querySelector('.page.active');
-    if (activePage) {
-      var pName = activePage.id.replace('page-', '');
-      if (pName === 'molds') renderMolds();
-      else if (pName === 'machines') renderMachines();
-      else if (pName === 'tpm') renderTPM();
-      else if (pName === 'issues') renderIssues();
-      else if (pName === 'stock') renderStock();
-    }
-  } else {
-    if (errEl) errEl.style.display = 'block';
-    if (input) { input.value = ''; input.focus(); }
-  }
-}
-
-function showAdminForgotHint() {
-  alert('๐”‘ เธเนเธญเธกเธนเธฅเธเธนเนเธเธทเธเธฃเธซเธฑเธชเธเนเธฒเธ Admin:\n\nโ€ข เธฃเธซเธฑเธชเธเนเธฒเธเน€เธฃเธดเนเธกเธ•เนเธ (Default): 1234\nโ€ข Master Emergency Key: TPM-MASTER-2026\n\nเธซเธฒเธเธ•เนเธญเธเธเธฒเธฃเธฃเธตเน€เธเนเธ•เนเธซเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเน Master Key เน€เธเนเธฒเนเธเธ•เธฑเนเธเธฃเธซเธฑเธชเนเธซเธกเนเนเธ”เนเธ—เธฑเธเธ—เธตเธเธฃเธฑเธ');
-}
-
-function openAdminChangePassModal() {
-  ['admin-old-pass', 'admin-new-pass', 'admin-confirm-pass'].forEach(function(id) { v_set(id, ''); });
-  openModal('admin-change-pass-modal');
-}
-
-function saveAdminNewPassword() {
-  var oldP = v('admin-old-pass');
-  var newP = v('admin-new-pass');
-  var confP = v('admin-confirm-pass');
-  var realP = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
-
-  if (oldP !== realP && oldP !== 'TPM-MASTER-2026') {
-    showToast('เธฃเธซเธฑเธชเธเนเธฒเธเน€เธ”เธดเธกเนเธกเนเธ–เธนเธเธ•เนเธญเธ', 'error');
-    return;
-  }
-  if (!newP || newP.length < 4) {
-    showToast('เธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเนเธ•เนเธญเธเธกเธตเธเธงเธฒเธกเธขเธฒเธงเธญเธขเนเธฒเธเธเนเธญเธข 4 เธซเธฅเธฑเธ', 'warning');
-    return;
-  }
-  if (newP !== confP) {
-    showToast('เธขเธทเธเธขเธฑเธเธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเนเนเธกเนเธ•เธฃเธเธเธฑเธ', 'error');
-    return;
-  }
-
-  localStorage.setItem('TPM_ADMIN_PASS', newP);
-  showToast('เน€เธเธฅเธตเนเธขเธเธฃเธซเธฑเธชเธเนเธฒเธ Admin เธชเธณเน€เธฃเนเธ โ…', 'success');
-  closeModal('admin-change-pass-modal');
-}
-
-
-// ============================================
-//  USER IDENTITY & ROLE PERMISSION SYSTEM
-// ============================================
-function getCurrentRole() {
-  return (STATE.currentUser && STATE.currentUser.Role) ? STATE.currentUser.Role : 'Technician';
-}
-
-function canEdit() {
-  var r = getCurrentRole();
-  return r === 'Admin' || r === 'Technician' || r === 'Engineer';
-}
-
-function canDelete() {
-  var r = getCurrentRole();
-  return r === 'Admin';
-}
-
-function initCurrentUser() {
-  var saved = tryParse(localStorage.getItem('TPM_CURRENT_USER'));
-  if (saved && saved.Name) {
-    STATE.currentUser = saved;
-    updateUserDisplay();
-    applyRolePermissions();
-  } else {
-    // Default user on very first launch: Sarin T. (Technician)
-    STATE.currentUser = { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' };
-    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(STATE.currentUser));
-    updateUserDisplay();
-    applyRolePermissions();
-    // Prompt welcome select modal on first visit
-    setTimeout(function() { openUserSelectModal(true); }, 500);
-  }
-}
-
-function updateUserDisplay() {
-  var u = STATE.currentUser || { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician' };
-  var role = u.Role || 'Technician';
-  
-  var icon = '๐‘ทโ€โ๏ธ';
-  var roleLabel = 'Technician (เธเนเธฒเธ)';
-  var roleBadgeBg = 'rgba(99,102,241,0.2)';
-  var roleBadgeColor = 'var(--primary)';
-
-  if (role === 'Admin') {
-    icon = 'โ๏ธ';
-    roleLabel = 'Admin (เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ)';
-    roleBadgeBg = 'rgba(239,68,68,0.2)';
-    roleBadgeColor = '#ef4444';
-  } else if (role === 'Viewer') {
-    icon = '๐‘จโ€๐’ผ';
-    roleLabel = 'Viewer (เธซเธฑเธงเธซเธเนเธฒ / เธ”เธนเธเนเธญเธกเธนเธฅ)';
-    roleBadgeBg = 'rgba(16,185,129,0.2)';
-    roleBadgeColor = '#10b981';
-  } else if (role === 'Engineer') {
-    icon = '๐ ๏ธ';
-    roleLabel = 'Engineer (เธงเธดเธจเธงเธเธฃ)';
-  }
-
-  // Top Bar User Widget
-  var topIcon = document.getElementById('top-user-icon');
-  var topName = document.getElementById('top-user-name');
-  var topBadge = document.getElementById('top-user-role-badge');
-  if (topIcon) topIcon.textContent = icon;
-  if (topName) topName.textContent = u.Name || 'เธเธนเนเนเธเนเธเธฒเธ';
-  if (topBadge) {
-    topBadge.textContent = role;
-    topBadge.style.background = roleBadgeBg;
-    topBadge.style.color = roleBadgeColor;
-  }
-
-  // Sidebar Footer Widget
-  var sbAvatar = document.getElementById('sidebar-user-avatar');
-  var sbName = document.getElementById('sidebar-user-name');
-  var sbRole = document.getElementById('sidebar-user-role');
-  if (sbAvatar) sbAvatar.textContent = icon;
-  if (sbName) sbName.textContent = u.Name || 'เธเธนเนเนเธเนเธเธฒเธ';
-  if (sbRole) sbRole.textContent = roleLabel;
-}
-
-function applyRolePermissions() {
-  var role = getCurrentRole();
-  document.body.classList.remove('role-admin', 'role-technician', 'role-viewer', 'role-engineer');
-  document.body.classList.add('role-' + role.toLowerCase());
-}
-
-function openUserSelectModal(isWelcome) {
-  var titleEl = document.getElementById('user-select-title');
-  if (titleEl) {
-    titleEl.innerHTML = isWelcome
-      ? '<span>๐‘</span> <span>เธขเธดเธเธ”เธตเธ•เนเธญเธเธฃเธฑเธเธชเธนเนเธฃเธฐเธเธ TPM - เธเธฃเธธเธ“เธฒเน€เธฅเธทเธญเธเธเธนเนเนเธเนเธเธฒเธ</span>'
-      : '<span>๐‘ค</span> <span>เธชเธฅเธฑเธเธเธนเนเนเธเนเธเธฒเธ (User Profile)</span>';
-  }
-
-  var listEl = document.getElementById('user-select-list');
-  if (!listEl) return;
-
-  var curName = STATE.currentUser ? STATE.currentUser.Name : '';
-
-  // Build user profiles list
-  var profiles = [];
-
-  // 1. Viewer / Supervisor
-  profiles.push({
-    Name: 'เธซเธฑเธงเธซเธเนเธฒ / เธเธนเนเธเธฑเธ”เธเธฒเธฃ (เนเธซเธกเธ”เธ”เธนเธญเธขเนเธฒเธเน€เธ”เธตเธขเธง)',
-    Role: 'Viewer',
-    Email: 'viewer@tpm.local',
-    Department: 'Management',
-    Icon: '๐‘จโ€๐’ผ',
-    Desc: 'เธ”เธน Dashboard, เธชเธ–เธดเธ•เธด, เธเธฃเธฐเธงเธฑเธ•เธดเธเธฒเธเธเนเธญเธก, เธชเธฑเนเธเธเธดเธกเธเนเธฃเธฒเธขเธเธฒเธ A4 (เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเนเนเธเธเนเธญเธกเธนเธฅเนเธ”เน)'
-  });
-
-  // 2. Default Team Members & Custom Users
-  var defaultTechs = [
-    { Name: 'เธชเธฒเธฃเธดเธ T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' },
-    { Name: 'เธ—เธตเธกเธเนเธฒเธเธเนเธญเธกเธเธณเธฃเธธเธ', Role: 'Technician', Email: 'maintenance@tpm.local', Department: 'Maintenance' }
-  ];
-
-  var existingUsers = (STATE.users && STATE.users.length) ? STATE.users : defaultTechs;
-  existingUsers.forEach(function(u) {
-    if (u.Role !== 'Admin' && u.Role !== 'Viewer') {
-      profiles.push({
-        Name: u.Name,
-        Role: u.Role || 'Technician',
-        Email: u.Email || '',
-        Department: u.Department || 'Maintenance',
-        Icon: '๐‘ทโ€โ๏ธ',
-        Desc: 'เนเธเนเธเธเธฑเธเธซเธฒ, เธเธฑเธเธ—เธถเธเธเธฒเธฃเธเนเธญเธก, เธเธฅ Trial, เธ•เธดเนเธเธ•เธฃเธงเธ PM 9 เธเนเธญ, เน€เธเธดเธ/เธฃเธฑเธเธชเธ•เนเธญเธ (เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธฅเธเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธเนเธ”เน)'
-      });
-    }
-  });
-
-  // 3. Admin Profile
-  profiles.push({
-    Name: 'เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin)',
-    Role: 'Admin',
-    Email: 'admin@tpm.local',
-    Department: 'IT & System',
-    Icon: 'โ๏ธ',
-    Desc: 'เธชเธดเธ—เธเธดเนเน€เธ•เนเธก 100% (เน€เธเธดเนเธก/เนเธเนเนเธ/เธฅเธเธเนเธญเธกเธนเธฅเธซเธฅเธฑเธ, เธเธฑเธ”เธเธฒเธฃเธเธนเนเนเธเน) ๐”’ เธ•เนเธญเธเนเธชเนเธฃเธซเธฑเธชเธเนเธฒเธ'
-  });
-
-  listEl.innerHTML = profiles.map(function(p) {
-    var isActive = (curName === p.Name);
-    var pJson = JSON.stringify(p).replace(/"/g, '&quot;');
-    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : '#6366f1');
-    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)');
-
-    return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfile(\'' + pJson + '\')">' +
-      '<div style="display:flex;align-items:center;gap:12px;">' +
-        '<div style="font-size:26px;width:44px;height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">' + p.Icon + '</div>' +
-        '<div>' +
-          '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<strong style="font-size:14px;color:var(--text);">' + p.Name + '</strong>' +
-            '<span class="badge" style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:10px;padding:2px 6px;">' + p.Role + '</span>' +
-          '</div>' +
-          '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.3;">' + p.Desc + '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div>' + (isActive ? '<span style="font-size:18px;color:#10b981;">โ”</span>' : '<span style="font-size:14px;color:var(--text-muted);">โ”</span>') + '</div>' +
-    '</div>';
-  }).join('');
-
-  openModal('user-select-modal');
-}
-
-function selectUserProfile(userJsonStr) {
-  var u = tryParse(userJsonStr);
-  if (!u) return;
-
-  if (u.Role === 'Admin') {
-    STATE._pendingAdminUser = u;
-    openAdminPassModal();
-    return;
-  }
-
-  STATE.currentUser = u;
-  localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
-  updateUserDisplay();
-  applyRolePermissions();
-  closeModal('user-select-modal');
-  showToast('เน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเนเธเธเธทเนเธญ: ' + u.Name + ' (' + u.Role + ') โ…', 'success');
-
-  // Refresh current view to apply button permissions
-  var activePage = document.querySelector('.page.active');
-  if (activePage) {
-    var pName = activePage.id.replace('page-', '');
-    if (pName === 'molds') renderMolds();
-    else if (pName === 'machines') renderMachines();
-    else if (pName === 'tpm') renderTPM();
-    else if (pName === 'issues') renderIssues();
-    else if (pName === 'stock') renderStock();
-  }
-}
-
-function openAdminPassModal() {
-  var input = document.getElementById('admin-pass-input');
-  var errEl = document.getElementById('admin-pass-error');
-  if (input) input.value = '';
-  if (errEl) errEl.style.display = 'none';
-  openModal('admin-pass-modal');
-  setTimeout(function() { if (input) input.focus(); }, 200);
-}
-
-function submitAdminPassword() {
-  var input = document.getElementById('admin-pass-input');
-  var errEl = document.getElementById('admin-pass-error');
-  var entered = input ? input.value.trim() : '';
-  var realPass = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
-
-  if (entered === realPass || entered === 'TPM-MASTER-2026') {
-    var u = STATE._pendingAdminUser || { Name: 'เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin)', Role: 'Admin', Email: 'admin@tpm.local' };
-    STATE.currentUser = u;
-    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
-    updateUserDisplay();
-    applyRolePermissions();
-    closeModal('admin-pass-modal');
-    closeModal('user-select-modal');
-    showToast('เน€เธเนเธฒเธชเธนเนเนเธซเธกเธ”เธเธนเนเธ”เธนเนเธฅเธฃเธฐเธเธ (Admin) เธชเธณเน€เธฃเนเธ ๐”“', 'success');
-
-    var activePage = document.querySelector('.page.active');
-    if (activePage) {
-      var pName = activePage.id.replace('page-', '');
-      if (pName === 'molds') renderMolds();
-      else if (pName === 'machines') renderMachines();
-      else if (pName === 'tpm') renderTPM();
-      else if (pName === 'issues') renderIssues();
-      else if (pName === 'stock') renderStock();
-    }
-  } else {
-    if (errEl) errEl.style.display = 'block';
-    if (input) { input.value = ''; input.focus(); }
-  }
-}
-
-function showAdminForgotHint() {
-  alert('๐”‘ เธเนเธญเธกเธนเธฅเธเธนเนเธเธทเธเธฃเธซเธฑเธชเธเนเธฒเธ Admin:\n\nโ€ข เธฃเธซเธฑเธชเธเนเธฒเธเน€เธฃเธดเนเธกเธ•เนเธ (Default): 1234\nโ€ข Master Emergency Key: TPM-MASTER-2026\n\nเธซเธฒเธเธ•เนเธญเธเธเธฒเธฃเธฃเธตเน€เธเนเธ•เนเธซเธกเนเธชเธฒเธกเธฒเธฃเธ–เนเธเน Master Key เน€เธเนเธฒเนเธเธ•เธฑเนเธเธฃเธซเธฑเธชเนเธซเธกเนเนเธ”เนเธ—เธฑเธเธ—เธตเธเธฃเธฑเธ');
-}
-
-function openAdminChangePassModal() {
-  ['admin-old-pass', 'admin-new-pass', 'admin-confirm-pass'].forEach(function(id) { v_set(id, ''); });
-  openModal('admin-change-pass-modal');
-}
-
-function saveAdminNewPassword() {
-  var oldP = v('admin-old-pass');
-  var newP = v('admin-new-pass');
-  var confP = v('admin-confirm-pass');
-  var realP = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
-
-  if (oldP !== realP && oldP !== 'TPM-MASTER-2026') {
-    showToast('เธฃเธซเธฑเธชเธเนเธฒเธเน€เธ”เธดเธกเนเธกเนเธ–เธนเธเธ•เนเธญเธ', 'error');
-    return;
-  }
-  if (!newP || newP.length < 4) {
-    showToast('เธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเนเธ•เนเธญเธเธกเธตเธเธงเธฒเธกเธขเธฒเธงเธญเธขเนเธฒเธเธเนเธญเธข 4 เธซเธฅเธฑเธ', 'warning');
-    return;
-  }
-  if (newP !== confP) {
-    showToast('เธขเธทเธเธขเธฑเธเธฃเธซเธฑเธชเธเนเธฒเธเนเธซเธกเนเนเธกเนเธ•เธฃเธเธเธฑเธ', 'error');
-    return;
-  }
-
-  localStorage.setItem('TPM_ADMIN_PASS', newP);
-  showToast('เน€เธเธฅเธตเนเธขเธเธฃเธซเธฑเธชเธเนเธฒเธ Admin เธชเธณเน€เธฃเนเธ โ…', 'success');
-  closeModal('admin-change-pass-modal');
-}
-
-document.addEventListener('DOMContentLoaded', initApp);
+  document.addEventListener('DOMContentLoaded', initApp);
 } else {
   initApp();
 }
@@ -4101,7 +3449,7 @@ function openIssueModal(issueOrId){
     v_set('issue-severity', data.Severity || 'Medium');
     v_set('issue-description', data.Description || '');
     v_set('issue-occurred', data.OccurredAt || new Date().toISOString().slice(0,16));
-    v_set('issue-reporter', data.ReportedBy || (STATE.currentUser ? STATE.currentUser.Name : ''));
+    v_set('issue-reporter', data.ReportedBy || '');
 
     // Before Photos
     var existingImgs = tryParse(data.BeforeImageIds);
@@ -4421,35 +3769,7 @@ function printIssueReport(id) {
     '.open { background: #fee2e2; color: #b91c1c; } .in-progress { background: #eff6ff; color: #1d4ed8; } .closed { background: #ecfdf5; color: #047857; }' +
     '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-top: 16px; text-align: center; page-break-inside: avoid; }' +
     '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 6px; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }' +
-    '  /* Role Visibility Classes */
-  body.role-viewer .role-hide-viewer { display: none !important; }
-  body.role-viewer .role-admin-only { display: none !important; }
-  body.role-technician .role-admin-only { display: none !important; }
-  body.role-engineer .role-admin-only { display: none !important; }
-
-  /* User profile selector cards in modal */
-  .user-profile-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .user-profile-card:hover {
-    background: rgba(99, 102, 241, 0.12);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-  }
-  .user-profile-card.active {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-  }
-</style></head><body>' +
+    '</style></head><body>' +
     '<div class="no-print">' +
       '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์ / Print Report</button>' +
       '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">✕ ปิด</button>' +
@@ -4841,8 +4161,6 @@ function openCloseIssueModal(id){
   ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name','close-trial-shots','close-trial-notes'].forEach(function(i){ v_set(i,''); });
   v_set('close-trial-result', 'Passed');
   v_set('close-date', new Date().toISOString().slice(0,16));
-  v_set('close-by', STATE.currentUser ? STATE.currentUser.Name : '');
-  v_set('close-by', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('close-trial-date', new Date().toISOString().slice(0,16));
   v_set('close-part-qty', '1');
   var otherWrap = document.getElementById('close-part-other-wrap');
@@ -6570,35 +5888,7 @@ async function openPMPrintForm(moldId) {
       '.sig-clickable:hover { background: #eff6ff !important; outline: 1.5px dashed #2563eb; }' +
       '.pm-page { width: 100%; box-sizing: border-box; }' +
       '@media print { .no-print { display: none !important; } .sig-clickable { cursor: default; background: transparent !important; outline: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .pm-page { page-break-after: always; break-after: page; } .pm-page:last-child { page-break-after: avoid; break-after: avoid; } }' +
-    '  /* Role Visibility Classes */
-  body.role-viewer .role-hide-viewer { display: none !important; }
-  body.role-viewer .role-admin-only { display: none !important; }
-  body.role-technician .role-admin-only { display: none !important; }
-  body.role-engineer .role-admin-only { display: none !important; }
-
-  /* User profile selector cards in modal */
-  .user-profile-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .user-profile-card:hover {
-    background: rgba(99, 102, 241, 0.12);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-  }
-  .user-profile-card.active {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-  }
-</style></head><body>' +
+    '</style></head><body>' +
 
     '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:6px; background:#f3f4f6; margin-bottom:6px; border-bottom:1px solid #ccc; flex-wrap:wrap; position:sticky; top:0; z-index:100;">' +
       '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print (A4 \u0e41\u0e19\u0e27\u0e19\u0e2d\u0e19 ' + (totalPages > 1 ? totalPages + ' \u0e2b\u0e19\u0e49\u0e32' : '1 \u0e2b\u0e19\u0e49\u0e32') + ')</button>' +
