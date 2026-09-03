@@ -5378,6 +5378,8 @@ async function doTransaction(){
 // ============================================
 //  HELPERS
 // ============================================
+function esc(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function escHtml(s){return esc(s);}
 function filterTable(input,tableId){var q=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().indexOf(q)>=0?'':'none';});}
 function filterTableByCol(sel,tableId,colIdx){var q=sel.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){var cell=tr.cells[colIdx];tr.style.display=(!q||(cell&&cell.textContent.toLowerCase().indexOf(q)>=0))?'':'none';});}
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
