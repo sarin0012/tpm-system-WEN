@@ -559,7 +559,22 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity" oninput="calcMoldProduction()"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>&#9201; Cycle Time (วิ/ช็อต) <small style="color:var(--text-muted)">เวลาจับเวลา 1 รอบฟีด</small></label><input id="mold-cycle-time" type="number" step="0.1" min="0" placeholder="เช่น 45.5" oninput="calcMoldProduction()"/></div><div class="form-group"><label>&#9889; ยอดผลิต / 8 ชม. <small style="color:var(--text-muted)">(คำนวณอัตโนมัติ)</small></label><div id="mold-production-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:var(--text-muted);min-height:38px;display:flex;align-items:center;">กรอก Cycle Time เพื่อดูยอดผลิต</div></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Status (สถานะแม่พิมพ์)</label><select id="mold-status"><option value="Active">🟢 Active (ใช้งานอยู่)</option><option value="Inactive">⚪ Inactive (หยุดใช้งาน / ยกเว้น PM)</option></select></div><div class="form-group"><label>หมายเหตุ</label><textarea id="mold-notes" placeholder="ข้อมูลเพิ่มเติม..." style="height:38px"></textarea></div></div>
-    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
+    
+    <!-- MOLD CUSTOM CHECKPOINTS (TPM) -->
+    <div style="margin-top:12px;margin-bottom:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <div style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;">
+          <span>🔍</span> <span>หัวข้อตรวจเช็คเฉพาะโมลนี้ (TPM Custom Checkpoints)</span>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addMoldCustomCheckpointRow()" style="font-size:11.5px;padding:3px 9px;">+ เพิ่มหัวข้อเฉพาะ</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:8px;">
+        กำหนดจุดตรวจพิเศษเฉพาะโมลนี้ (เช่น Hot Runner, Valve Gate, Hydraulic Core Pull, สไลด์พิเศษ) ระบบจะนำไปรวมกับ 9 ข้อมาตรฐานในรอบตรวจ TPM อัตโนมัติ
+      </div>
+      <div id="mold-custom-checkpoints-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
+    <div class="form-group"><label>รูปภาพ</label>
       <div class="photo-upload-area" onclick="triggerUpload('mold-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:13px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611; (&#3627;&#3621;&#3634;&#3618;&#3619;&#3641;&#3611;&#3652;&#3604;&#3657;)</div></div>
       <input type="file" id="mold-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'mold-photos-preview','mold')"/>
       <div class="photo-preview-grid" id="mold-photos-preview"></div>
@@ -2952,12 +2967,20 @@ function openMoldTPMDetailModal(moldId) {
   
   var infoEl = document.getElementById('mold-tpm-detail-info');
   if (infoEl) {
+    var customChecks = getMoldCustomCheckpoints(mold);
+    var customChecksHtml = '';
+    if (customChecks && customChecks.length > 0) {
+      customChecksHtml = '<div style="margin-top:8px;padding:8px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:var(--r-sm);font-size:11.5px;">' +
+        '<strong style="color:var(--primary)">🔍 หัวข้อตรวจเฉพาะโมลนี้ (' + customChecks.length + ' ข้อ):</strong> ' +
+        customChecks.map(function(c){ return '<span class="badge" style="background:var(--surface);border:1px solid var(--border);margin-left:4px;font-weight:500;">' + esc(c.th) + '</span>'; }).join(' ') +
+      '</div>';
+    }
     infoEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));gap:8px;font-size:12px;background:var(--surface2);padding:12px;border-radius:var(--r-sm);border:1px solid var(--border);">' +
       '<div><span style="color:var(--text-muted)">🏢 Vendor:</span> <strong>' + (mold.Vendor || '-') + '</strong></div>' +
       '<div><span style="color:var(--text-muted)">📐 Drawing No:</span> <strong>' + (mold.DrawingNo || '-') + '</strong></div>' +
       '<div><span style="color:var(--text-muted)">📦 Material:</span> <strong>' + (mold.Material || '-') + '</strong></div>' +
       '<div><span style="color:var(--text-muted)">🔧 สถานะ PM รวม:</span> ' + summary.badgeHtml + '</div>' +
-    '</div>';
+    '</div>' + customChecksHtml;
   }
   
   var tbody = document.getElementById('mold-tpm-detail-tbody');
@@ -3100,6 +3123,93 @@ function filterMolds(){
     '</tr>';
   }).join('');
 }
+
+// ============================================
+//  MOLD CUSTOM CHECKPOINTS (TPM SPECIFIC ITEMS)
+// ============================================
+function getMoldCustomCheckpoints(mold) {
+  if (!mold) return [];
+  if (mold.CustomCheckpoints) {
+    var parsed = parseJson(mold.CustomCheckpoints);
+    if (Array.isArray(parsed)) return parsed;
+  }
+  if (mold.Notes && mold.Notes.indexOf('[CUSTOM_CHECKS:') !== -1) {
+    var m = mold.Notes.match(/\[CUSTOM_CHECKS:(.*?)\]/);
+    if (m && m[1]) {
+      var p = parseJson(m[1]);
+      if (Array.isArray(p)) return p;
+      if (p && p.items && Array.isArray(p.items)) return p.items;
+    }
+  }
+  return [];
+}
+
+function renderMoldCustomCheckpoints(items) {
+  var container = document.getElementById('mold-custom-checkpoints-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!items || !items.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0;">ยังไม่มีหัวข้อตรวจเฉพาะ (ใช้ 9 ข้อมาตรฐานทั่วไป)</div>';
+    return;
+  }
+  items.forEach(function(item) {
+    addMoldCustomCheckpointRow(item.th, item.std);
+  });
+}
+
+function addMoldCustomCheckpointRow(thVal, stdVal) {
+  var container = document.getElementById('mold-custom-checkpoints-list');
+  if (!container) return;
+  var emptyMsg = container.querySelector('div[style*="italic"]');
+  if (emptyMsg) emptyMsg.remove();
+
+  var rowId = 'mcp-row-' + Date.now() + '-' + Math.floor(Math.random()*1000);
+  var div = document.createElement('div');
+  div.id = rowId;
+  div.className = 'mold-custom-check-row';
+  div.style.cssText = 'display:flex;gap:8px;align-items:center;background:var(--surface);padding:6px 10px;border-radius:8px;border:1px solid var(--border);';
+  div.innerHTML = 
+    '<span style="font-weight:700;color:var(--primary);font-size:12px;min-width:22px;" class="mcp-num"></span>' +
+    '<input type="text" class="mcp-th" placeholder="หัวข้อการตรวจ เช่น ตรวจ Valve Gate..." value="' + (thVal || '').replace(/"/g, '&quot;') + '" style="flex:1.2;font-size:12px;padding:6px 8px;" />' +
+    '<input type="text" class="mcp-std" placeholder="มาตรฐาน เช่น ไม่รั่วซึม..." value="' + (stdVal || '').replace(/"/g, '&quot;') + '" style="flex:1;font-size:12px;padding:6px 8px;" />' +
+    '<button type="button" class="btn btn-ghost btn-sm" onclick="removeMoldCustomCheckpointRow(\'' + rowId + '\')" style="color:#ef4444;padding:2px 6px;" title="ลบข้อนี้">🗑️</button>';
+  container.appendChild(div);
+  updateMoldCustomCheckpointNumbers();
+}
+
+function removeMoldCustomCheckpointRow(rowId) {
+  var row = document.getElementById(rowId);
+  if (row) row.remove();
+  updateMoldCustomCheckpointNumbers();
+  var container = document.getElementById('mold-custom-checkpoints-list');
+  if (container && !container.children.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0;">ยังไม่มีหัวข้อตรวจเฉพาะ (ใช้ 9 ข้อมาตรฐานทั่วไป)</div>';
+  }
+}
+
+function updateMoldCustomCheckpointNumbers() {
+  var rows = document.querySelectorAll('.mold-custom-check-row');
+  rows.forEach(function(r, idx) {
+    var numEl = r.querySelector('.mcp-num');
+    if (numEl) numEl.textContent = (10 + idx) + '.';
+  });
+}
+
+function collectMoldCustomCheckpoints() {
+  var rows = document.querySelectorAll('.mold-custom-check-row');
+  var items = [];
+  rows.forEach(function(r, idx) {
+    var thInput = r.querySelector('.mcp-th');
+    var stdInput = r.querySelector('.mcp-std');
+    var th = thInput ? thInput.value.trim() : '';
+    var std = stdInput ? stdInput.value.trim() : '';
+    if (th) {
+      items.push({ id: 10 + idx, th: th, std: std });
+    }
+  });
+  return items;
+}
+
 function openMoldModal(data) {
   ['mold-id','mold-name','mold-model','mold-asset','mold-machine-ton','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
   var _prev0=document.getElementById('mold-production-preview'); if(_prev0) _prev0.innerHTML='กรอก Cycle Time เพื่อดูยอดผลิต';
@@ -3125,8 +3235,12 @@ function openMoldModal(data) {
     v_set('mold-status', data.Status || 'Active');
     v_set('mold-cycle-time', data.CycleTime || '');
     calcMoldProduction();
-    var cleanNotes = (data.Notes||'').replace(/\[SPECS:.*?\]/g, '').trim();
+    var cleanNotes = (data.Notes||'').replace(/\[SPECS:.*?\]/g, '').replace(/\[CUSTOM_CHECKS:.*?\]/g, '').trim();
     v_set('mold-notes',cleanNotes);
+    var customChecks = getMoldCustomCheckpoints(data);
+    renderMoldCustomCheckpoints(customChecks);
+  } else {
+    renderMoldCustomCheckpoints([]);
   }
   openModal('mold-modal');
 }
@@ -3147,6 +3261,13 @@ async function saveMold(){
   if(!name||!asset){showToast('กรุณากรอกชื่อและ Asset No.','error');return;}
   showGlobalLoading(true);
   var imgIds=await uploadPendingPhotos('mold','Molds');
+
+  var customChecks = collectMoldCustomCheckpoints();
+  var rawNotes = (v('mold-notes') || '').trim();
+  if (customChecks.length > 0) {
+    rawNotes = (rawNotes ? (rawNotes + ' ') : '') + '[CUSTOM_CHECKS:' + JSON.stringify(customChecks) + ']';
+  }
+
   var data={
     ID:v('mold-id'),
     Name:name,
@@ -3163,7 +3284,8 @@ async function saveMold(){
     Cavity:v('mold-cavity'),
     Location:v('mold-location'),
     PurchaseDate:v('mold-purchase-date'),
-    Notes:v('mold-notes'),
+    Notes:rawNotes,
+    CustomCheckpoints: JSON.stringify(customChecks),
     CycleTime: v('mold-cycle-time') ? parseFloat(v('mold-cycle-time')) : null,
     Status:v('mold-status') || 'Active',
     ImageIds:JSON.stringify(imgIds)
@@ -3836,49 +3958,156 @@ function openTPMCompleteModal(planId){
   v_set('tpm-co-inspector',plan.CoInspector || '');
   v_set('tpm-complete-notes',plan.Notes || '');
   document.getElementById('tpm-complete-photos-preview').innerHTML='';STATE.pendingPhotos['tpm-complete']={files:[]};
-  document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; \u0e01\u0e33\u0e2b\u0e19\u0e14: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
+  document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; กำหนด: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
+  
   var tmpl=STATE.checklistTemplates.find(function(t){return t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
   var prev={};try{if(plan.ChecklistResult)prev=JSON.parse(plan.ChecklistResult);}catch(e){}
+
+  // Build full checklist: Standard items + Mold specific items + Previously recorded custom items
+  var allItems = [];
   if(tmpl && tmpl.items){
-    var rows=tmpl.items.map(function(item){
-      var p=prev[item.id]||{};
-      var isOK=p.result==='OK';var isNG=p.result==='NG';
-      return '<tr style="border-bottom:1px solid var(--border)">'+
-        '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">'+item.id+'</td>'+
-        '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+'</div><div style="font-size:11px;color:var(--text-faint)">'+item.en+'</div></td>'+
-        '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
-        '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+
-        '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
-            '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">'+
-              '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>'+
-            '</label>'+
-            '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">'+
-              '<input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>'+
-            '</label>'+
-          '</div>'+
-        '</td>'+
-        '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="ระบุสาเหตุ (ถ้า NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
-      '</tr>';
-    }).join('');
-    document.getElementById('tpm-checklist-items').innerHTML=
-      '<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'+
-      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">ลำดับ</th>'+
-      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">หัวข้อการตรวจสอบ</th>'+
-      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">มาตรฐาน</th>'+
-      '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">ผล</th>'+
-      '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
-      '</tr></thead><tbody>'+rows+'</tbody></table></div>';
-  } else {
-    document.getElementById('tpm-checklist-items').innerHTML='<div style="color:var(--text-muted);padding:12px">ไม่พบ Checklist Template</div>';
+    allItems = tmpl.items.map(function(it){ return Object.assign({}, it); });
   }
+
+  // If Mold, load its dedicated custom checkpoints
+  if (plan.TargetType === 'Mold') {
+    var mold = (STATE.molds || []).find(function(m){ return m.ID === plan.TargetID; });
+    if (mold) {
+      var customChecks = getMoldCustomCheckpoints(mold);
+      customChecks.forEach(function(cc, idx){
+        var itemId = cc.id || (10 + idx);
+        if (!allItems.some(function(it){ return it.id == itemId; })) {
+          allItems.push({
+            id: itemId,
+            th: cc.th,
+            en: 'Mold Specific Point',
+            std: cc.std || '-',
+            isMoldSpecific: true
+          });
+        }
+      });
+    }
+  }
+
+  // Restore any previous ad-hoc checkpoints saved in plan
+  Object.keys(prev).forEach(function(k){
+    var kNum = parseInt(k, 10);
+    if (!allItems.some(function(it){ return it.id == kNum; })) {
+      var pItem = prev[k] || {};
+      allItems.push({
+        id: kNum,
+        th: pItem.th || ('หัวข้อพิเศษข้อ ' + kNum),
+        en: 'Ad-hoc Point',
+        std: pItem.std || '-',
+        isAdHoc: true
+      });
+    }
+  });
+
+  STATE._currentTPMItems = allItems;
+
+  var rows=allItems.map(function(item){
+    var p=prev[item.id]||{};
+    var isOK=p.result==='OK';var isNG=p.result==='NG';
+    var badgeTag = '';
+    if (item.isMoldSpecific) {
+      badgeTag = '<span class="badge" style="font-size:9.5px;background:rgba(99,102,241,0.15);color:#6366f1;padding:1px 5px;margin-left:4px;">เฉพาะโมล</span>';
+    } else if (item.isAdHoc) {
+      badgeTag = '<span class="badge" style="font-size:9.5px;background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 5px;margin-left:4px;">เฉพาะรอบนี้</span>';
+    }
+
+    return '<tr data-item-id="'+item.id+'" style="border-bottom:1px solid var(--border)">'+
+      '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">'+item.id+'</td>'+
+      '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+badgeTag+'</div><div style="font-size:11px;color:var(--text-faint)">'+(item.en||'')+'</div></td>'+
+      '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
+      '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+
+        '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
+          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">'+
+            '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>'+
+          '</label>'+
+          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">'+
+            '<input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>'+
+          '</label>'+
+        '</div>'+
+      '</td>'+
+      '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="ระบุสาเหตุ (ถ้า NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
+    '</tr>';
+  }).join('');
+
+  document.getElementById('tpm-checklist-items').innerHTML=
+    '<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'+
+    '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:36px">ลำดับ</th>'+
+    '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">หัวข้อการตรวจสอบ</th>'+
+    '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">มาตรฐาน</th>'+
+    '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">ผล</th>'+
+    '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
+    '</tr></thead><tbody id="tpm-checklist-tbody">'+rows+'</tbody></table></div>' +
+    '<div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+      '<button type="button" class="btn btn-outline btn-sm" onclick="addTPMAdhocItemRow()" style="font-size:11.5px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">' +
+        '<span>➕</span> <span>เพิ่มหัวข้อตรวจเฉพาะกิจในรอบนี้</span>' +
+      '</button>' +
+      '<span style="font-size:11px;color:var(--text-muted);">* หัวข้อเฉพาะโมลและเฉพาะรอบจะถูกลงใบรายงาน A4 ให้อัตโนมัติ</span>' +
+    '</div>';
+
   openModal('tpm-complete-modal');
 }
+
+function addTPMAdhocItemRow() {
+  var tbody = document.getElementById('tpm-checklist-tbody');
+  if (!tbody) return;
+  var items = STATE._currentTPMItems || [];
+  var nextId = 10;
+  if (items.length > 0) {
+    var maxId = Math.max.apply(null, items.map(function(it){ return parseInt(it.id, 10) || 0; }));
+    nextId = Math.max(10, maxId + 1);
+  }
+
+  var newItem = {
+    id: nextId,
+    th: '',
+    std: '',
+    en: 'Ad-hoc Checkpoint',
+    isAdHoc: true
+  };
+  items.push(newItem);
+  STATE._currentTPMItems = items;
+
+  var tr = document.createElement('tr');
+  tr.setAttribute('data-item-id', nextId);
+  tr.style.borderBottom = '1px solid var(--border)';
+  tr.innerHTML = 
+    '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">' + nextId + '</td>' +
+    '<td style="padding:10px 8px">' +
+      '<input type="text" class="adhoc-th" id="adhoc-th-' + nextId + '" placeholder="พิมพ์หัวข้อตรวจเพิ่มเติม..." style="font-size:11px;padding:5px 8px;width:100%;font-weight:600;color:var(--text);" />' +
+      '<div style="font-size:10px;color:var(--primary);margin-top:2px;">* หัวข้อตรวจเฉพาะกิจ</div>' +
+    '</td>' +
+    '<td style="padding:10px 8px">' +
+      '<input type="text" class="adhoc-std" id="adhoc-std-' + nextId + '" placeholder="พิมพ์มาตรฐานการตรวจ..." style="font-size:11px;padding:5px 8px;width:100%;" />' +
+    '</td>' +
+    '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">' +
+      '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">' +
+        '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">' +
+          '<input type="radio" name="chk-' + nextId + '" value="OK" onchange="toggleRemark(' + nextId + ')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>' +
+        '</label>' +
+        '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">' +
+          '<input type="radio" name="chk-' + nextId + '" value="NG" onchange="toggleRemark(' + nextId + ')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>' +
+        '</label>' +
+      '</div>' +
+    '</td>' +
+    '<td style="padding:10px 8px"><input id="remark-' + nextId + '" placeholder="ระบุสาเหตุ (ถ้า NG)" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;"/></td>';
+
+  tbody.appendChild(tr);
+  var thInp = document.getElementById('adhoc-th-' + nextId);
+  if (thInp) thInp.focus();
+}
+
 function toggleRemark(itemId){
   var sel=document.querySelector('input[name="chk-'+itemId+'"]:checked');
   var remark=document.getElementById('remark-'+itemId);
   if(sel && sel.value==='NG'){remark.style.borderColor='var(--danger)';remark.focus();}
   else{remark.style.borderColor='';}
 }
+
 async function completeTPM(){
   var planId=v('tpm-complete-id');
   var rawDate=(v('tpm-actual-date')||'').trim();
@@ -3903,22 +4132,65 @@ async function completeTPM(){
     if(elCo) elCo.focus();
     return;
   }
+
+  var allItems = (STATE._currentTPMItems || []).slice();
+
+  // Read ad-hoc text values from inputs if any
+  document.querySelectorAll('#tpm-checklist-tbody tr').forEach(function(tr){
+    var itemId = tr.getAttribute('data-item-id');
+    if (!itemId) return;
+    var thInp = tr.querySelector('.adhoc-th');
+    var stdInp = tr.querySelector('.adhoc-std');
+    if (thInp) {
+      var thVal = thInp.value.trim();
+      var stdVal = stdInp ? stdInp.value.trim() : '';
+      var itemObj = allItems.find(function(it){ return it.id == itemId; });
+      if (itemObj) {
+        itemObj.th = thVal;
+        itemObj.std = stdVal;
+      }
+    }
+  });
+
+  // Validate that ad-hoc items have a title
+  for (var i = 0; i < allItems.length; i++) {
+    if (allItems[i].isAdHoc && !allItems[i].th) {
+      showToast('กรุณากรอกชื่อหัวข้อตรวจสำหรับข้อ ' + allItems[i].id, 'warning');
+      var adInp = document.getElementById('adhoc-th-' + allItems[i].id);
+      if (adInp) adInp.focus();
+      return;
+    }
+  }
+
   var checks={};
   document.querySelectorAll('[name^="chk-"]').forEach(function(radio){
     if(!radio.checked)return;
     var id=radio.name.replace('chk-','');
     var remark=v('remark-'+id);
-    checks[id]={result:radio.value,remark:remark};
+    var itemMeta = allItems.find(function(it){ return it.id == id; }) || {};
+    checks[id]={
+      result:radio.value,
+      remark:remark,
+      th: itemMeta.th || '',
+      std: itemMeta.std || '',
+      isCustom: !!(itemMeta.isMoldSpecific || itemMeta.isAdHoc)
+    };
   });
-  // Validate: all items must be checked
-  var tmpl=STATE.checklistTemplates.find(function(t){var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});return plan && t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
-  if(tmpl){
-    var unchecked=tmpl.items.filter(function(item){return !checks[item.id];});
-    if(unchecked.length>0){showToast('กรุณาติ๊ก OK/NG ให้ครบทุกข้อ ('+unchecked.length+' ข้อยังไม่ได้ติ๊ก)','warning');return;}
-    // Validate: NG items must have remark
-    var ngNoRemark=tmpl.items.filter(function(item){return checks[item.id] && checks[item.id].result==='NG' && !checks[item.id].remark;});
-    if(ngNoRemark.length>0){showToast('กรุณาระบุ Remark สำหรับข้อที่ NG','error');return;}
+
+  // Validate: all items must be checked OK or NG
+  var unchecked = allItems.filter(function(item){ return !checks[item.id]; });
+  if (unchecked.length > 0) {
+    showToast('กรุณาติ๊ก OK/NG ให้ครบทุกข้อ (' + unchecked.length + ' ข้อยังไม่ได้ติ๊ก)', 'warning');
+    return;
   }
+
+  // Validate: NG items must have remark
+  var ngNoRemark = allItems.filter(function(item){ return checks[item.id] && checks[item.id].result==='NG' && !checks[item.id].remark; });
+  if (ngNoRemark.length > 0) {
+    showToast('กรุณาระบุ Remark สำหรับข้อที่ NG', 'error');
+    return;
+  }
+
   showGlobalLoading(true);var imgIds=await uploadPendingPhotos('tpm-complete','TPM_Records');
   var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,CoInspector:coInspector,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
   var r=await api('completeTPMPlan',{data:data});showGlobalLoading(false);
@@ -6254,16 +6526,42 @@ async function openPMPrintForm(moldId) {
   var moldPlans = allPlans.filter(function(p){ return p.TargetID === moldId && p.TargetType === 'Mold'; }).sort(function(a,b){ return new Date(a.PlannedDate) - new Date(b.PlannedDate); });
 
   var masterCheckItems = [
-    { id: 1, th: '\u0e0a\u0e34\u0e49\u0e19\u0e07\u0e32\u0e19\u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22\u0e2b\u0e25\u0e31\u0e07\u0e01\u0e32\u0e23\u0e1c\u0e25\u0e34\u0e15', std: '\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e40\u0e1b\u0e47\u0e19\u0e23\u0e2d\u0e22\u0e41\u0e25\u0e30\u0e21\u0e35\u0e04\u0e23\u0e35\u0e1a' },
-    { id: 2, th: '\u0e08\u0e38\u0e14\u0e22\u0e36\u0e14\u0e15\u0e34\u0e14\u0e15\u0e48\u0e32\u0e07\u0e46 \u0e02\u0e2d\u0e07\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c', std: 'SCREW \u0e15\u0e49\u0e2d\u0e07\u0e22\u0e36\u0e14\u0e41\u0e19\u0e48\u0e19, \u0e44\u0e21\u0e48\u0e02\u0e32\u0e14 \u0e23\u0e48\u0e2d\u0e07\u0e1b\u0e23\u0e30\u0e41\u0e08\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e0a\u0e33\u0e23\u0e38\u0e14' },
-    { id: 3, th: '\u0e01\u0e32\u0e23\u0e2b\u0e25\u0e48\u0e2d\u0e25\u0e37\u0e48\u0e19 GUIDE POST, EJECTOR PIN \u0e41\u0e25\u0e30\u0e08\u0e38\u0e14 SLIDE \u0e15\u0e48\u0e32\u0e07\u0e46', std: '\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e1b\u0e34\u0e14-\u0e40\u0e1b\u0e34\u0e14\u0e15\u0e49\u0e2d\u0e07\u0e04\u0e25\u0e48\u0e2d\u0e07\u0e15\u0e31\u0e27\u0e44\u0e21\u0e48\u0e15\u0e34\u0e14\u0e02\u0e31\u0e14\u0e23\u0e30\u0e2b\u0e27\u0e48\u0e32\u0e07\u0e40\u0e04\u0e25\u0e37\u0e48\u0e2d\u0e19\u0e17\u0e35\u0e48\u0e40\u0e02\u0e49\u0e32\u0e2d\u0e2d\u0e01' },
-    { id: 4, th: '\u0e15\u0e23\u0e27\u0e08\u0e40\u0e0a\u0e47\u0e04\u0e23\u0e39\u0e19\u0e49\u0e33\u0e2b\u0e25\u0e48\u0e2d\u0e40\u0e22\u0e47\u0e19', std: '\u0e23\u0e39\u0e19\u0e49\u0e33\u0e44\u0e21\u0e48\u0e2d\u0e38\u0e14\u0e15\u0e31\u0e19 \u0e41\u0e25\u0e30\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e2d\u0e22\u0e23\u0e31\u0e48\u0e27' },
-    { id: 5, th: '\u0e40\u0e0a\u0e47\u0e04 SPRING FOR RETURN PIN & SPRING FOR SLIDE', std: '\u0e44\u0e21\u0e48\u0e41\u0e15\u0e01\u0e2b\u0e31\u0e01 \u0e44\u0e21\u0e48\u0e04\u0e14\u0e07\u0e2d\u0e40\u0e2a\u0e35\u0e22\u0e23\u0e39\u0e1b' },
-    { id: 6, th: '\u0e40\u0e0a\u0e47\u0e04 EJECTOR PIN', std: '\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e2d\u0e22\u0e44\u0e2b\u0e21\u0e49 \u0e44\u0e21\u0e48\u0e04\u0e14\u0e07\u0e2d\u0e41\u0e25\u0e30\u0e44\u0e21\u0e48\u0e2b\u0e31\u0e01 \u0e15\u0e49\u0e2d\u0e07\u0e27\u0e34\u0e48\u0e07\u0e40\u0e02\u0e49\u0e32-\u0e2d\u0e2d\u0e01\u0e44\u0e14\u0e49\u0e04\u0e25\u0e48\u0e2d\u0e07\u0e15\u0e31\u0e27' },
-    { id: 7, th: '\u0e40\u0e0a\u0e47\u0e04 \u0e2a\u0e20\u0e32\u0e1e\u0e02\u0e2d\u0e07 GUIDE POST & GUIDE BUSH ,ANGULAR PIN & BUSH', std: '\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e2d\u0e22\u0e44\u0e2b\u0e21\u0e49 \u0e44\u0e21\u0e48\u0e2a\u0e36\u0e01\u0e2b\u0e23\u0e2d \u0e44\u0e21\u0e48\u0e2b\u0e25\u0e27\u0e21 \u0e44\u0e21\u0e48\u0e40\u0e1a\u0e35\u0e22\u0e14\u0e41\u0e25\u0e30\u0e15\u0e49\u0e2d\u0e07\u0e21\u0e35\u0e08\u0e32\u0e23\u0e30\u0e1a\u0e35\u0e0a\u0e42\u0e25\u0e21\u0e44\u0e27\u0e49' },
-    { id: 8, th: '\u0e40\u0e0a\u0e47\u0e04 \u0e04\u0e23\u0e32\u0e1a\u0e2a\u0e19\u0e34\u0e21\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c', std: '\u0e15\u0e49\u0e2d\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e04\u0e23\u0e32\u0e1a\u0e2a\u0e19\u0e34\u0e21\u0e17\u0e35\u0e48\u0e2b\u0e19\u0e49\u0e32\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e17\u0e31\u0e49\u0e07\u0e14\u0e49\u0e32\u0e19 CORE \u0e41\u0e25\u0e30 CAVITY' },
-    { id: 9, th: '\u0e04\u0e27\u0e32\u0e21\u0e2a\u0e30\u0e2d\u0e32\u0e14\u0e02\u0e2d\u0e07\u0e41\u0e21\u0e48\u0e1e\u0e34\u0e21\u0e1e\u0e4c', std: '\u0e2a\u0e20\u0e32\u0e1e\u0e17\u0e31\u0e48\u0e27\u0e44\u0e1b\u0e15\u0e49\u0e2d\u0e07\u0e2a\u0e30\u0e2d\u0e32\u0e14' }
+    { id: 1, th: 'ชิ้นงานสุดท้ายหลังการผลิต', std: 'ต้องไม่เป็นรอยและมีครีบ' },
+    { id: 2, th: 'จุดยึดติดต่างๆ ของแม่พิมพ์', std: 'SCREW ต้องยึดแน่น, ไม่ขาด ร่องประแจต้องไม่ชำรุด' },
+    { id: 3, th: 'การหล่อลื่น GUIDE POST, EJECTOR PIN และจุด SLIDE ต่างๆ', std: 'แม่พิมพ์ ปิด-เปิดต้องคล่องตัวไม่ติดขัดระหว่างเคลื่อนที่เข้าออก' },
+    { id: 4, th: 'ตรวจเช็ครูน้ำหล่อเย็น', std: 'รูน้ำไม่อุดตัน และไม่มีรอยรั่ว' },
+    { id: 5, th: 'เช็ค SPRING FOR RETURN PIN & SPRING FOR SLIDE', std: 'ไม่แตกหัก ไม่คดงอเสียรูป' },
+    { id: 6, th: 'เช็ค EJECTOR PIN', std: 'ต้องไม่มีรอยไหม้ ไม่คดงอและไม่หัก ต้องวิ่งเข้า-ออกได้อย่างคล่องตัว' },
+    { id: 7, th: 'เช็ค สภาพของ GUIDE POST & GUIDE BUSH ,ANGULAR PIN & BUSH', std: 'ต้องไม่มีรอยไหม้ ไม่สึกหรอ ไม่หลวม ไม่เบียดและต้องมีจาระบีชโลมไว้' },
+    { id: 8, th: 'เช็ค คราบสนิมหน้าแม่พิมพ์', std: 'ต้องไม่มีคราบสนิมที่หน้าแม่พิมพ์ ทั้งด้าน CORE และ CAVITY' },
+    { id: 9, th: 'ความสะอาดของแม่พิมพ์', std: 'สภาพทั่วไปต้องสะอาด' }
   ];
+
+  // Append Mold-specific checkpoints and ad-hoc checkpoints from plans
+  var moldCustomChecks = getMoldCustomCheckpoints(mold);
+  var extraItemsMap = {};
+  moldCustomChecks.forEach(function(cc, idx){
+    var cId = cc.id || (10 + idx);
+    extraItemsMap[cId] = { id: cId, th: cc.th, std: cc.std || '-' };
+  });
+  moldPlans.forEach(function(p){
+    if (p.ChecklistResult) {
+      try {
+        var res = parseJson(p.ChecklistResult);
+        if (res) {
+          Object.keys(res).forEach(function(k){
+            var numK = parseInt(k, 10);
+            if (numK > 9 && !extraItemsMap[numK]) {
+              var itm = res[k] || {};
+              extraItemsMap[numK] = { id: numK, th: itm.th || ('หัวข้อพิเศษข้อ ' + numK), std: itm.std || '-' };
+            }
+          });
+        }
+      } catch(e){}
+    }
+  });
+  var extraItemsList = Object.values(extraItemsMap).sort(function(a,b){ return a.id - b.id; });
+  masterCheckItems = masterCheckItems.concat(extraItemsList);
 
   var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
 
@@ -6442,19 +6740,32 @@ async function openPMPrintForm(moldId) {
         if (p && p.Status === 'Done') {
           try {
             var resObj = JSON.parse(p.ChecklistResult || '{}');
-            var resItem = resObj[item.id] || {};
-            if (resItem.result === 'OK') { resultSym = '\u2713'; actFindingStr = ''; }
-            else if (resItem.result === 'NG') { resultSym = '\u2715'; actFindingStr = resItem.remark || 'NG'; }
-            else { resultSym = '\u2713'; actFindingStr = ''; }
-          } catch(e){ resultSym = '\u2713'; actFindingStr = ''; }
+            var resItem = resObj[item.id];
+            if (!resItem || !resItem.result) {
+              resultSym = '-';
+              actFindingStr = '';
+            } else if (resItem.result === 'OK') {
+              resultSym = '\u2713';
+              actFindingStr = '';
+            } else if (resItem.result === 'NG') {
+              resultSym = '\u2715';
+              actFindingStr = resItem.remark || 'NG';
+            } else {
+              resultSym = '\u2713';
+              actFindingStr = '';
+            }
+          } catch(e){
+            resultSym = '-';
+            actFindingStr = '';
+          }
         }
         roundCols += '<td style="border:1px solid #333;text-align:center;font-size:7.5pt;padding:2px;width:55px;color:'+(resultSym==='\u2715'?'#b91c1c':'#000')+'">' + actFindingStr + '</td>' +
                      '<td style="border:1px solid #333;text-align:center;font-size:9pt;font-weight:bold;padding:2px;width:40px;color:'+(resultSym==='\u2715'?'#b91c1c':'#000')+'">' + resultSym + '</td>';
       }
       return '<tr>' +
-        '<td style="border:1px solid #333;text-align:center;font-size:8.5pt;padding:2px;">' + item.id + '</td>' +
-        '<td style="border:1px solid #333;font-size:8.5pt;padding:3px 5px;">' + item.th + '</td>' +
-        '<td style="border:1px solid #333;font-size:8.5pt;padding:3px 5px;">' + item.std + '</td>' +
+        '<td style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px 1px;">' + item.id + '</td>' +
+        '<td style="border:1px solid #333;font-size:8pt;padding:2px 4px;">' + item.th + (item.id > 9 ? ' <span style="font-size:6.5pt;color:#4f46e5;">(เฉพาะโมล)</span>' : '') + '</td>' +
+        '<td style="border:1px solid #333;font-size:8pt;padding:2px 4px;">' + item.std + '</td>' +
         roundCols +
       '</tr>';
     }).join('');
