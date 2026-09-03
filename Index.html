@@ -1929,17 +1929,52 @@ async function _apiInternal(actionStr, payload = null) {
           const { data, error } = await sb.from('users').select('*');
           if (!error && data && data.length > 0) return { success: true, data: data };
         } catch(e) {}
+        // Fallback: Cloud-synced user config in stock_parts
+        try {
+          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_USERS_CONFIG__').single();
+          if (!cfgErr && cfg && cfg.Notes) {
+            const list = parseJson(cfg.Notes);
+            if (list && Array.isArray(list) && list.length > 0) {
+              localStorage.setItem('TPM_SYSTEM_USERS', JSON.stringify(list));
+              return { success: true, data: list };
+            }
+          }
+        } catch(e) {}
         return { success: true, data: getSystemUsers() };
       }
       case 'saveUser': {
         const d = payload.data || payload || {};
-        saveSystemUser(d);
+        const allUsers = saveSystemUser(d);
+        // Sync to Supabase Cloud for cross-device sharing (PC <-> Mobile)
+        try {
+          await sb.from('stock_parts').upsert({
+            ID: '__SYS_USERS_CONFIG__',
+            PartName: '__SYSTEM_CONFIG_USERS__',
+            Category: '__CONFIG__',
+            Notes: JSON.stringify(allUsers),
+            Qty: 0,
+            MinQty: 0,
+            Unit: 'config'
+          });
+        } catch(e) { console.warn('Cloud sync error', e); }
         try { await sb.from('users').upsert(d); } catch(e) {}
         return { success: true, id: d.ID };
       }
       case 'deleteUser': {
         const id = (payload && payload.id) || payload;
-        deleteSystemUser(id);
+        const allUsers = deleteSystemUser(id);
+        // Sync to Supabase Cloud for cross-device sharing (PC <-> Mobile)
+        try {
+          await sb.from('stock_parts').upsert({
+            ID: '__SYS_USERS_CONFIG__',
+            PartName: '__SYSTEM_CONFIG_USERS__',
+            Category: '__CONFIG__',
+            Notes: JSON.stringify(allUsers),
+            Qty: 0,
+            MinQty: 0,
+            Unit: 'config'
+          });
+        } catch(e) { console.warn('Cloud sync error', e); }
         try { await sb.from('users').delete().eq('ID', id); } catch(e) {}
         return { success: true };
       }
@@ -2032,15 +2067,24 @@ function canDelete() {
   return r === 'Admin';
 }
 
+function parseJson(str, fallback) {
+  if (!str) return fallback !== undefined ? fallback : null;
+  try {
+    var obj = JSON.parse(str);
+    return obj !== null ? obj : (fallback !== undefined ? fallback : null);
+  } catch(e) {
+    return fallback !== undefined ? fallback : null;
+  }
+}
+
 function initCurrentUser() {
-  var saved = tryParse(localStorage.getItem('TPM_CURRENT_USER'));
+  var saved = parseJson(localStorage.getItem('TPM_CURRENT_USER'));
   if (saved && saved.Name) {
     STATE.currentUser = saved;
     updateUserDisplay();
     applyRolePermissions();
   } else {
     STATE.currentUser = { Name: 'สาริน T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' };
-    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(STATE.currentUser));
     updateUserDisplay();
     applyRolePermissions();
     setTimeout(function() { openUserSelectModal(true); }, 400);
@@ -2102,7 +2146,7 @@ function applyRolePermissions() {
 //  SYSTEM USERS DATA STORE (Synced with Settings & Profile Switcher)
 // ============================================
 function getSystemUsers() {
-  var saved = tryParse(localStorage.getItem('TPM_SYSTEM_USERS'));
+  var saved = parseJson(localStorage.getItem('TPM_SYSTEM_USERS'));
   if (saved && Array.isArray(saved) && saved.length > 0) return saved;
   // Seed with default users if none exists
   var defaults = [
@@ -2526,14 +2570,28 @@ function initSelects() {
 // ============================================
 async function loadAllData() {
   try {
-    const [m, mc, s, i, t] = await Promise.all([
-      api('getMolds'), api('getMachines'), api('getStockParts'), api('getIssues'), api('getChecklistTemplates')
+    const [m, mc, s, i, t, u] = await Promise.all([
+      api('getMolds'), api('getMachines'), api('getStockParts'), api('getIssues'), api('getChecklistTemplates'), api('getUsers')
     ]);
     if (m && m.success)  STATE.molds = m.data || [];
     if (mc && mc.success) STATE.machines = mc.data || [];
-    if (s && s.success)  STATE.stockParts = s.data || [];
+    if (s && s.success)  STATE.stockParts = (s.data || []).filter(function(x){ return x.ID !== '__SYS_USERS_CONFIG__'; });
     if (i && i.success)  STATE.issues = i.data || [];
     if (t && t.success)  STATE.checklistTemplates = t.data || [];
+    if (u && u.success && u.data && u.data.length > 0) {
+      STATE.users = u.data;
+      if (STATE.currentUser) {
+        var matchUser = u.data.find(function(usr){
+          return (usr.ID && usr.ID === STATE.currentUser.ID) || (usr.Role === 'Admin' && STATE.currentUser.Role === 'Admin');
+        });
+        if (matchUser && (matchUser.Name !== STATE.currentUser.Name || matchUser.Role !== STATE.currentUser.Role)) {
+          STATE.currentUser = Object.assign({}, STATE.currentUser, matchUser);
+          localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(STATE.currentUser));
+          updateUserDisplay();
+          applyRolePermissions();
+        }
+      }
+    }
     updateBadges();
     await loadTPMPlans();
 
@@ -4908,15 +4966,16 @@ async function delIssue(id){
 //  STOCK
 // ============================================
 function renderStock(){
-  var vendors=[]; (STATE.stockParts||[]).forEach(function(p){
+  var stockList = (STATE.stockParts||[]).filter(function(p){ return p.ID !== '__SYS_USERS_CONFIG__'; });
+  var vendors=[]; stockList.forEach(function(p){
     var vname = p.Vendor || p.Category;
     if(vname && vendors.indexOf(vname)===-1) vendors.push(vname);
   });
   var vf=document.getElementById('stock-vendor-filter');
-  if(vf){var cur=vf.value;vf.innerHTML='<option value="">\ud83c\udfe2 \u0e17\u0e38\u0e01 Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
-  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  if(vf){var cur=vf.value;vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
+  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'🧩 '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'🏭 '+m.Name};}));
   var lf=document.getElementById('stock-link-filter');
-  if(lf){var cur2=lf.value;lf.innerHTML='<option value="">\ud83d\udd17 \u0e17\u0e38\u0e01 Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
+  if(lf){var cur2=lf.value;lf.innerHTML='<option value="">🔗 ทุก Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
   filterStock();
 }
 
@@ -4926,6 +4985,7 @@ function filterStock(){
   var link=(document.getElementById('stock-link-filter')||{}).value||'';
   var level=(document.getElementById('stock-level-filter')||{}).value||'';
   var data=(STATE.stockParts||[]).filter(function(p){
+    if (p.ID === '__SYS_USERS_CONFIG__') return false;
     var pVendor = p.Vendor || p.Category || '';
     var curStock = Number(p.CurrentStock ?? p.Qty ?? 0);
     var minStock = Number(p.MinStock ?? p.MinQty ?? 0);
