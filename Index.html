@@ -307,8 +307,34 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   #mobile-bottom-nav {
     display: flex !important;
   }
-  .chart-grid,.grid-2{grid-template-columns:1fr;}
-  .form-row.col-2,.form-row.col-3{grid-template-columns:1fr;}
+  /* Role Visibility Classes */
+  body.role-viewer .role-hide-viewer { display: none !important; }
+  body.role-viewer .role-admin-only { display: none !important; }
+  body.role-technician .role-admin-only { display: none !important; }
+  body.role-engineer .role-admin-only { display: none !important; }
+
+  /* User profile selector cards in modal */
+  .user-profile-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .user-profile-card:hover {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+  }
+  .user-profile-card.active {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+  }
 }
 </style>
 </head>
@@ -336,7 +362,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <div class="sidebar-logo" style="display:flex;align-items:center;width:100%;">
     <div class="logo-icon">&#9881;&#65039;</div>
     <div class="logo-text">TPM System<span>Total Productive Maintenance</span></div>
-    <button type="button" class="mobile-sidebar-close" onclick="closeMobileSidebar()" title="เธเธดเธ”เน€เธกเธเธน">&#10005;</button>
+    <button type="button" class="mobile-sidebar-close" onclick="closeMobileSidebar()" title="ปิดเมนู">&#10005;</button>
   </div>
   <div class="sidebar-nav">
     <div class="nav-section">Main</div>
@@ -351,12 +377,15 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">&#128230;</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
     <div class="nav-section">System</div>
     <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">📈</div>รายงาน / Reports</div>
-    <div class="nav-item" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
+    <div class="nav-item role-admin-only" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
   </div>
   <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-avatar" style="background:var(--success-g)">⚡</div>
-      <div class="user-info"><div class="user-name">TPM System</div><div class="user-role" style="color:#34d399">☁️ Supabase Cloud</div></div>
+    <div class="user-card" onclick="openUserSelectModal()" style="cursor:pointer" title="คลิกเพื่อสลับผู้ใช้งาน">
+      <div class="user-avatar" id="sidebar-user-avatar" style="background:var(--primary-g);font-size:18px;">👷‍♂️</div>
+      <div class="user-info">
+        <div class="user-name" id="sidebar-user-name">สาริน T.</div>
+        <div class="user-role" id="sidebar-user-role" style="color:#38bdf8">Technician (ช่าง)</div>
+      </div>
     </div>
   </div>
 </nav>
@@ -366,12 +395,18 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   <header id="header">
     <div style="display:flex;align-items:center;gap:6px;min-width:0;">
       <div class="header-mobile-nav">
-        <button type="button" id="mobile-back-btn" class="btn btn-outline btn-sm" onclick="nav('dashboard')" style="display:none;padding:5px 8px;font-size:12px;white-space:nowrap;" title="เธเธฅเธฑเธเธซเธเนเธฒเธซเธฅเธฑเธ">&#11013;&#65039; &#3627;&#3609;&#3657;&#3634;&#3627;&#3621;&#3633;&#3585;</button>
-        <button type="button" id="mobile-menu-btn" class="btn btn-outline btn-sm" onclick="toggleMobileSidebar()" style="padding:5px 9px;font-size:15px;" title="เน€เธเธดเธ”เน€เธกเธเธน">&#9776;</button>
+        <button type="button" id="mobile-back-btn" class="btn btn-outline btn-sm" onclick="nav('dashboard')" style="display:none;padding:5px 8px;font-size:12px;white-space:nowrap;" title="กลับหน้าหลัก">&#11013;&#65039; &#3627;&#3609;&#3657;&#3634;&#3627;&#3621;&#3633;&#3585;</button>
+        <button type="button" id="mobile-menu-btn" class="btn btn-outline btn-sm" onclick="toggleMobileSidebar()" style="padding:5px 9px;font-size:15px;" title="เปิดเมนู">&#9776;</button>
       </div>
       <h1 id="page-title" style="margin:0;">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" style="display:flex;align-items:center;gap:8px;">
+      <button id="user-profile-btn" class="btn btn-outline btn-sm" onclick="openUserSelectModal()" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border-color:var(--border);padding:5px 12px;font-weight:600;font-size:12px;border-radius:8px;" title="คลิกเพื่อสลับผู้ใช้งาน / เปลี่ยนบทบาท">
+        <span id="top-user-icon">👷‍♂️</span>
+        <span id="top-user-name" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">สาริน T.</span>
+        <span id="top-user-role-badge" class="badge" style="font-size:10px;padding:2px 6px;background:rgba(99,102,241,0.2);color:var(--primary);border:1px solid rgba(99,102,241,0.4)">Technician</span>
+        <span style="font-size:9px;color:var(--text-muted);margin-left:2px;">▼</span>
+      </button>
       <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
     </div>
   </header>
@@ -398,7 +433,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select id="molds-vendor-filter" style="width:160px" onchange="filterMolds()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
     <select id="molds-status-filter" style="width:130px" onchange="filterMolds()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openMoldModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3650;&#3617;&#3621;</button>
+    <button class="btn btn-primary role-hide-viewer" onclick="openMoldModal()">+ เพิ่มโมล</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
     <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>ขนาดเครื่อง (Ton)</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>⏱ Cycle Time</th><th>⚡ ยอดผลิต/8ชม.</th><th>Status</th><th>🔧 สถานะ PM</th><th>รูป</th><th>Actions</th></tr></thead>
@@ -409,27 +444,27 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 <!-- MACHINES -->
 <div class="page" id="page-machines">
   <div class="toolbar">
-    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619;..." oninput="filterMachines()"/>
-    <select id="machines-vendor-filter" style="width:160px" onchange="filterMachines()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
-    <select id="machines-status-filter" style="width:130px" onchange="filterMachines()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
+    <input class="search-input" type="text" placeholder="🔍 ค้นหาเครื่องจักร..." oninput="filterMachines()"/>
+    <select id="machines-vendor-filter" style="width:160px" onchange="filterMachines()"><option value="">🏢 ทุก Vendor</option></select>
+    <select id="machines-status-filter" style="width:130px" onchange="filterMachines()"><option value="">ทุกสถานะ</option><option>Active</option><option>Inactive</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openMachineModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3648;&#3588;&#3619;&#3639;&#3656;&#3629;&#3591;&#3592;&#3633;&#3585;&#3619;</button>
+    <button class="btn btn-primary role-hide-viewer" onclick="openMachineModal()">+ เพิ่มเครื่องจักร</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="machines-table">
-    <thead><tr><th>&#3594;&#3639;&#3656;&#3629;</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>&#3619;&#3641;&#3611;</th><th>Actions</th></tr></thead>
-    <tbody id="machines-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</td></tr></tbody>
+    <thead><tr><th>ชื่อ</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
+    <tbody id="machines-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
   </table></div></div>
 </div>
 
 <!-- TPM -->
 <div class="page" id="page-tpm">
   <div class="toolbar">
-    <select id="tpm-view" onchange="renderTPM()"><option value="calendar">&#128197; &#3611;&#3599;&#3636;&#3607;&#3636;&#3609;</option><option value="list">&#128203; &#3619;&#3634;&#3618;&#3585;&#3634;&#3619;</option></select>
+    <select id="tpm-view" onchange="renderTPM()"><option value="calendar">📅 ปฏิทิน</option><option value="list">📋 รายการ</option></select>
     <select id="tpm-year" onchange="loadTPMPlans()"></select>
-    <select id="tpm-month" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3648;&#3604;&#3639;&#3629;&#3609;</option></select>
-    <select id="tpm-filter-status" onchange="renderTPM()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option value="Overdue">&#128308; Overdue (&#3594;&#3657;&#3634;&#3585;&#3623;&#3656;&#3634;&#3585;&#3635;&#3627;&#3609;&#3604;)</option><option value="Due Soon">&#128993; Due Soon (&#3651;&#3585;&#3621;&#3657;&#3606;&#3638;&#3591;&#3649;&#3612;&#3609;)</option><option value="Planned">&#128309; Planned (&#3605;&#3634;&#3617;&#3649;&#3612;&#3609;)</option><option value="Done">&#128994; Done (&#3648;&#3626;&#3619;&#3647;&#3592;&#3649;&#3621;&#3657;&#3623;)</option></select>
+    <select id="tpm-month" onchange="renderTPM()"><option value="">ทุกเดือน</option></select>
+    <select id="tpm-filter-status" onchange="renderTPM()"><option value="">ทุกสถานะ</option><option value="Overdue">🔴 Overdue (ช้ากว่ากำหนด)</option><option value="Due Soon">🟡 Due Soon (ใกล้ถึงแผน)</option><option value="Planned">🔵 Planned (ตามแผน)</option><option value="Done">🟢 Done (เสร็จแล้ว)</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">&#9997;&#65039; &#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;&#3627;&#3633;&#3623;&#3648;&#3629;&#3585;&#3626;&#3634;&#3619;</button><button class="btn btn-primary" onclick="openBulkTPMModal()">&#128203; &#3626;&#3619;&#3657;&#3634;&#3591;&#3649;&#3612;&#3609; TPM &#3611;&#3619;&#3632;&#3592;&#3635;&#3611;&#3637;</button>
+    <button class="btn btn-outline role-admin-only" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary role-hide-viewer" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
   </div>
   <div id="tpm-container"></div>
 </div>
@@ -442,7 +477,7 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <select id="issue-status-filter" onchange="filterIssues()" style="width:170px;"><option value="Active" selected>⚡ ค้างอยู่ (Open + In Progress)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open</option><option value="In Progress">🟡 In Progress</option><option value="Closed">🟢 Closed (จบแล้ว)</option></select>
     <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">ทุก Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openIssueModal()">+ แจ้งปัญหา</button>
+    <button class="btn btn-primary role-hide-viewer" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
     <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
@@ -453,13 +488,13 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 <!-- STOCK -->
 <div class="page" id="page-stock">
   <div class="toolbar">
-    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;..." oninput="filterStock()"/>
-    <select id="stock-vendor-filter" style="width:160px" onchange="filterStock()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
-    <select id="stock-link-filter" style="width:160px" onchange="filterStock()"><option value="">&#128279; &#3607;&#3640;&#3585; Machine/Mold</option></select>
-    <select id="stock-level-filter" style="width:130px" onchange="filterStock()"><option value="">&#3607;&#3640;&#3585; Level</option><option value="low">&#9888;&#65039; Low Stock</option><option value="ok">&#9989; &#3611;&#3585;&#3605;&#3636;</option></select>
+    <input class="search-input" type="text" placeholder="🔍 ค้นหาอะไหล่..." oninput="filterStock()"/>
+    <select id="stock-vendor-filter" style="width:160px" onchange="filterStock()"><option value="">🏢 ทุก Vendor</option></select>
+    <select id="stock-link-filter" style="width:160px" onchange="filterStock()"><option value="">🔗 ทุก Machine/Mold</option></select>
+    <select id="stock-level-filter" style="width:130px" onchange="filterStock()"><option value="">ทุก Level</option><option value="low">⚠️ Low Stock</option><option value="ok">✅ ปกติ</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline" onclick="openStockTxModal()">&#128230; &#3619;&#3633;&#3610;/&#3648;&#3610;&#3636;&#3585;</button>
-    <button class="btn btn-primary" onclick="openStockPartModal()">+ &#3648;&#3614;&#3636;&#3656;&#3617;&#3629;&#3632;&#3652;&#3627;&#3621;&#3656;</button>
+    <button class="btn btn-outline role-hide-viewer" onclick="openStockTxModal()">📦 รับ/เบิก</button>
+    <button class="btn btn-primary role-hide-viewer" onclick="openStockPartModal()">+ เพิ่มอะไหล่</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="stock-table">
     <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
@@ -952,6 +987,86 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     <div class="form-row col-2"><div class="form-group"><label>Role</label><select id="user-role-select"><option>Admin</option><option>Technician</option><option>Viewer</option></select></div><div class="form-group"><label>Department</label><input id="user-dept"/></div></div>
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-primary" onclick="saveUser()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;</button></div>
+  </div>
+</div>
+
+<!-- USER SELECT MODAL (WELCOME & SWITCH) -->
+<div class="modal-overlay" id="user-select-modal" style="z-index:99999;">
+  <div class="modal" style="max-width:480px;border-radius:16px;">
+    <div class="modal-header" style="border-bottom:1px solid var(--border);padding:18px 24px;">
+      <div>
+        <div class="modal-title" id="user-select-title" style="font-size:18px;display:flex;align-items:center;gap:8px;">
+          <span>👤</span> <span>เลือกผู้ใช้งาน (User Profile)</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">กรุณาเลือกชื่อของคุณเพื่อลงบันทึกการทำงาน</div>
+      </div>
+      <button class="modal-close" onclick="closeModal('user-select-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;max-height:65vh;overflow-y:auto;">
+      <div id="user-select-list" style="display:flex;flex-direction:column;gap:10px;">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:0 0 16px 16px;">
+      <span style="font-size:11px;color:var(--text-muted);">🔒 โหมด Admin ต้องใส่รหัสผ่าน (Default: 1234)</span>
+      <button class="btn btn-outline btn-sm" onclick="closeModal('user-select-modal')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN PASSWORD PROMPT MODAL -->
+<div class="modal-overlay" id="admin-pass-modal" style="z-index:100000;">
+  <div class="modal" style="max-width:380px;border-radius:16px;text-align:center;">
+    <div class="modal-header" style="justify-content:center;border-bottom:none;padding-top:24px;">
+      <div style="width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,0.15);color:#ef4444;font-size:28px;display:flex;align-items:center;justify-content:center;margin:0 auto;">🔒</div>
+    </div>
+    <div class="modal-body" style="padding:0 24px 20px 24px;">
+      <h3 style="margin:8px 0 4px 0;font-size:17px;font-weight:700;">เข้าสู่โหมดผู้ดูแลระบบ (Admin)</h3>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">กรุณากรอกรหัสผ่านเพื่อปลดล็อคสิทธิ์จัดการระบบ</p>
+      
+      <div class="form-group" style="text-align:left;">
+        <label style="font-size:12px;font-weight:600;">รหัสผ่าน Admin (Default: 1234)</label>
+        <input type="password" id="admin-pass-input" placeholder="กรอกรหัสผ่าน 4 หลัก..." style="text-align:center;font-size:20px;letter-spacing:6px;font-weight:700;height:46px;" onkeydown="if(event.key==='Enter') submitAdminPassword()"/>
+      </div>
+      <div id="admin-pass-error" style="font-size:12px;color:#ef4444;display:none;margin-top:6px;font-weight:600;">❌ รหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง</div>
+      
+      <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
+        <button type="button" class="btn btn-ghost btn-sm" onclick="showAdminForgotHint()" style="font-size:11px;color:var(--text-muted);padding:0;">🔑 ลืมรหัสผ่าน?</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="openAdminChangePassModal()" style="font-size:11px;padding:2px 8px;">⚙️ เปลี่ยนรหัส</button>
+      </div>
+    </div>
+    <div class="modal-footer" style="justify-content:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border);">
+      <button class="btn btn-outline" onclick="closeModal('admin-pass-modal')" style="width:100px;">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitAdminPassword()" style="width:140px;">🔓 ยืนยันรหัส</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN CHANGE PASSWORD MODAL -->
+<div class="modal-overlay" id="admin-change-pass-modal" style="z-index:100001;">
+  <div class="modal" style="max-width:400px;border-radius:16px;">
+    <div class="modal-header">
+      <div class="modal-title">⚙️ เปลี่ยนรหัสผ่าน Admin</div>
+      <button class="modal-close" onclick="closeModal('admin-change-pass-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>รหัสผ่านปัจจุบัน</label>
+        <input type="password" id="admin-old-pass" placeholder="กรอกรหัสผ่านเดิม..."/>
+      </div>
+      <div class="form-group">
+        <label>รหัสผ่านใหม่</label>
+        <input type="password" id="admin-new-pass" placeholder="กรอกรหัสผ่านใหม่ (เช่น 1234)..."/>
+      </div>
+      <div class="form-group">
+        <label>ยืนยันรหัสผ่านใหม่</label>
+        <input type="password" id="admin-confirm-pass" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('admin-change-pass-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveAdminNewPassword()">💾 บันทึกรหัสใหม่</button>
+    </div>
   </div>
 </div>
 
@@ -1847,6 +1962,271 @@ async function api(actionStr, payload = null) {
 }
 
 // ============================================
+//  USER IDENTITY & ROLE PERMISSION SYSTEM
+// ============================================
+function getCurrentRole() {
+  return (STATE.currentUser && STATE.currentUser.Role) ? STATE.currentUser.Role : 'Technician';
+}
+
+function canEdit() {
+  var r = getCurrentRole();
+  return r === 'Admin' || r === 'Technician' || r === 'Engineer';
+}
+
+function canDelete() {
+  var r = getCurrentRole();
+  return r === 'Admin';
+}
+
+function initCurrentUser() {
+  var saved = tryParse(localStorage.getItem('TPM_CURRENT_USER'));
+  if (saved && saved.Name) {
+    STATE.currentUser = saved;
+    updateUserDisplay();
+    applyRolePermissions();
+  } else {
+    STATE.currentUser = { Name: 'สาริน T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' };
+    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(STATE.currentUser));
+    updateUserDisplay();
+    applyRolePermissions();
+    setTimeout(function() { openUserSelectModal(true); }, 400);
+  }
+}
+
+function updateUserDisplay() {
+  var u = STATE.currentUser || { Name: 'สาริน T.', Role: 'Technician' };
+  var role = u.Role || 'Technician';
+  
+  var icon = '👷‍♂️';
+  var roleLabel = 'Technician (ช่าง)';
+  var roleBadgeBg = 'rgba(99,102,241,0.2)';
+  var roleBadgeColor = 'var(--primary)';
+
+  if (role === 'Admin') {
+    icon = '⚙️';
+    roleLabel = 'Admin (ผู้ดูแลระบบ)';
+    roleBadgeBg = 'rgba(239,68,68,0.2)';
+    roleBadgeColor = '#ef4444';
+  } else if (role === 'Viewer') {
+    icon = '👨‍💼';
+    roleLabel = 'Viewer (หัวหน้า / ดูข้อมูล)';
+    roleBadgeBg = 'rgba(16,185,129,0.2)';
+    roleBadgeColor = '#10b981';
+  } else if (role === 'Engineer') {
+    icon = '🛠️';
+    roleLabel = 'Engineer (วิศวกร)';
+  }
+
+  // Top Bar User Widget
+  var topIcon = document.getElementById('top-user-icon');
+  var topName = document.getElementById('top-user-name');
+  var topBadge = document.getElementById('top-user-role-badge');
+  if (topIcon) topIcon.textContent = icon;
+  if (topName) topName.textContent = u.Name || 'ผู้ใช้งาน';
+  if (topBadge) {
+    topBadge.textContent = role;
+    topBadge.style.background = roleBadgeBg;
+    topBadge.style.color = roleBadgeColor;
+  }
+
+  // Sidebar Footer Widget
+  var sbAvatar = document.getElementById('sidebar-user-avatar');
+  var sbName = document.getElementById('sidebar-user-name');
+  var sbRole = document.getElementById('sidebar-user-role');
+  if (sbAvatar) sbAvatar.textContent = icon;
+  if (sbName) sbName.textContent = u.Name || 'ผู้ใช้งาน';
+  if (sbRole) sbRole.textContent = roleLabel;
+}
+
+function applyRolePermissions() {
+  var role = getCurrentRole();
+  document.body.classList.remove('role-admin', 'role-technician', 'role-viewer', 'role-engineer');
+  document.body.classList.add('role-' + role.toLowerCase());
+}
+
+function openUserSelectModal(isWelcome) {
+  var titleEl = document.getElementById('user-select-title');
+  if (titleEl) {
+    titleEl.innerHTML = isWelcome
+      ? '<span>👋</span> <span>ยินดีต้อนรับสู่ระบบ TPM - กรุณาเลือกผู้ใช้งาน</span>'
+      : '<span>👤</span> <span>สลับผู้ใช้งาน (User Profile)</span>';
+  }
+
+  var listEl = document.getElementById('user-select-list');
+  if (!listEl) return;
+
+  var curName = STATE.currentUser ? STATE.currentUser.Name : '';
+
+  // Build user profiles list
+  var profiles = [];
+
+  // 1. Viewer / Supervisor
+  profiles.push({
+    Name: 'หัวหน้า / ผู้จัดการ (โหมดดูอย่างเดียว)',
+    Role: 'Viewer',
+    Email: 'viewer@tpm.local',
+    Department: 'Management',
+    Icon: '👨‍💼',
+    Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
+  });
+
+  // 2. Default Team Members & Custom Users
+  var defaultTechs = [
+    { Name: 'สาริน T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' },
+    { Name: 'ทีมช่างซ่อมบำรุง', Role: 'Technician', Email: 'maintenance@tpm.local', Department: 'Maintenance' }
+  ];
+
+  var existingUsers = (STATE.users && STATE.users.length) ? STATE.users : defaultTechs;
+  existingUsers.forEach(function(u) {
+    if (u.Role !== 'Admin' && u.Role !== 'Viewer') {
+      profiles.push({
+        Name: u.Name,
+        Role: u.Role || 'Technician',
+        Email: u.Email || '',
+        Department: u.Department || 'Maintenance',
+        Icon: '👷‍♂️',
+        Desc: 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
+      });
+    }
+  });
+
+  // 3. Admin Profile
+  profiles.push({
+    Name: 'ผู้ดูแลระบบ (Admin)',
+    Role: 'Admin',
+    Email: 'admin@tpm.local',
+    Department: 'IT & System',
+    Icon: '⚙️',
+    Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
+  });
+
+  listEl.innerHTML = profiles.map(function(p) {
+    var isActive = (curName === p.Name);
+    var pJson = JSON.stringify(p).replace(/"/g, '&quot;');
+    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : '#6366f1');
+    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : 'rgba(99,102,241,0.15)');
+
+    return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfile(\'' + pJson + '\')">' +
+      '<div style="display:flex;align-items:center;gap:12px;">' +
+        '<div style="font-size:26px;width:44px;height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">' + p.Icon + '</div>' +
+        '<div>' +
+          '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<strong style="font-size:14px;color:var(--text);">' + p.Name + '</strong>' +
+            '<span class="badge" style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:10px;padding:2px 6px;">' + p.Role + '</span>' +
+          '</div>' +
+          '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.3;">' + p.Desc + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div>' + (isActive ? '<span style="font-size:18px;color:#10b981;">✔</span>' : '<span style="font-size:14px;color:var(--text-muted);">➔</span>') + '</div>' +
+    '</div>';
+  }).join('');
+
+  openModal('user-select-modal');
+}
+
+function selectUserProfile(userJsonStr) {
+  var u = tryParse(userJsonStr);
+  if (!u) return;
+
+  if (u.Role === 'Admin') {
+    STATE._pendingAdminUser = u;
+    openAdminPassModal();
+    return;
+  }
+
+  STATE.currentUser = u;
+  localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
+  updateUserDisplay();
+  applyRolePermissions();
+  closeModal('user-select-modal');
+  showToast('เข้าสู่ระบบในชื่อ: ' + u.Name + ' (' + u.Role + ') ✅', 'success');
+
+  // Refresh active view
+  var activePage = document.querySelector('.page.active');
+  if (activePage) {
+    var pName = activePage.id.replace('page-', '');
+    if (pName === 'molds') renderMolds();
+    else if (pName === 'machines') renderMachines();
+    else if (pName === 'tpm') renderTPM();
+    else if (pName === 'issues') renderIssues();
+    else if (pName === 'stock') renderStock();
+  }
+}
+
+function openAdminPassModal() {
+  var input = document.getElementById('admin-pass-input');
+  var errEl = document.getElementById('admin-pass-error');
+  if (input) input.value = '';
+  if (errEl) errEl.style.display = 'none';
+  openModal('admin-pass-modal');
+  setTimeout(function() { if (input) input.focus(); }, 200);
+}
+
+function submitAdminPassword() {
+  var input = document.getElementById('admin-pass-input');
+  var errEl = document.getElementById('admin-pass-error');
+  var entered = input ? input.value.trim() : '';
+  var realPass = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
+
+  if (entered === realPass || entered === 'TPM-MASTER-2026') {
+    var u = STATE._pendingAdminUser || { Name: 'ผู้ดูแลระบบ (Admin)', Role: 'Admin', Email: 'admin@tpm.local' };
+    STATE.currentUser = u;
+    localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(u));
+    updateUserDisplay();
+    applyRolePermissions();
+    closeModal('admin-pass-modal');
+    closeModal('user-select-modal');
+    showToast('เข้าสู่โหมดผู้ดูแลระบบ (Admin) สำเร็จ 🔓', 'success');
+
+    var activePage = document.querySelector('.page.active');
+    if (activePage) {
+      var pName = activePage.id.replace('page-', '');
+      if (pName === 'molds') renderMolds();
+      else if (pName === 'machines') renderMachines();
+      else if (pName === 'tpm') renderTPM();
+      else if (pName === 'issues') renderIssues();
+      else if (pName === 'stock') renderStock();
+    }
+  } else {
+    if (errEl) errEl.style.display = 'block';
+    if (input) { input.value = ''; input.focus(); }
+  }
+}
+
+function showAdminForgotHint() {
+  alert('🔑 ข้อมูลกู้คืนรหัสผ่าน Admin:\n\n• รหัสผ่านเริ่มต้น (Default): 1234\n• Master Emergency Key: TPM-MASTER-2026\n\nหากต้องการรีเซ็ตใหม่สามารถใช้ Master Key เข้าไปตั้งรหัสใหม่ได้ทันทีครับ');
+}
+
+function openAdminChangePassModal() {
+  ['admin-old-pass', 'admin-new-pass', 'admin-confirm-pass'].forEach(function(id) { v_set(id, ''); });
+  openModal('admin-change-pass-modal');
+}
+
+function saveAdminNewPassword() {
+  var oldP = v('admin-old-pass');
+  var newP = v('admin-new-pass');
+  var confP = v('admin-confirm-pass');
+  var realP = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
+
+  if (oldP !== realP && oldP !== 'TPM-MASTER-2026') {
+    showToast('รหัสผ่านเดิมไม่ถูกต้อง', 'error');
+    return;
+  }
+  if (!newP || newP.length < 4) {
+    showToast('รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 4 หลัก', 'warning');
+    return;
+  }
+  if (newP !== confP) {
+    showToast('ยืนยันรหัสผ่านใหม่ไม่ตรงกัน', 'error');
+    return;
+  }
+
+  localStorage.setItem('TPM_ADMIN_PASS', newP);
+  showToast('เปลี่ยนรหัสผ่าน Admin สำเร็จ ✅', 'success');
+  closeModal('admin-change-pass-modal');
+}
+
+// ============================================
 //  SETUP / CONNECT
 // ============================================
 async function initApp() {
@@ -1858,6 +2238,7 @@ async function initApp() {
     }
 
     initSelects();
+    initCurrentUser();
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
 
@@ -2422,8 +2803,8 @@ function filterMolds(){
       '<td style="white-space:nowrap;">'+
         '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="ดูรายละเอียด & แผน PM" style="margin-right:2px">📋 แผน PM</button>'+
         '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button>'+
-        '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\'>✏️</button>'+
-        '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')">🗑️</button>'+
+        (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '')+
+        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
@@ -2562,7 +2943,7 @@ function filterMachines(){
     var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
       return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
     }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
-    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td><button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\'>&#9999;&#65039;</button><button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')">&#128465;&#65039;</button></td></tr>';
+    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td>' + (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
   }).join('');
 }
 function openMachineModal(data){
@@ -2681,11 +3062,10 @@ function renderTPMList(container){
   plans.sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
-    var isDone = p.Status === 'Done';
     var actionBtns = !isDone
-      ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">\u2705 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e1c\u0e25</button>'
-      : '<span style="color:var(--success);font-size:12px">\u2705 \u0e40\u0e2a\u0e23\u0e47\u0e08</span> <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="\u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15\u0e01\u0e25\u0e31\u0e1a\u0e40\u0e1b\u0e47\u0e19 Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e0b\u0e47\u0e15</button>';
-    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="\u0e25\u0e1a\u0e41\u0e1c\u0e19\u0e19\u0e35\u0e49">\ud83d\uddd1\ufe0f</button></td></tr>';
+      ? (canEdit() ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
+      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (canEdit() ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
+    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(canDelete() ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -3372,10 +3752,10 @@ function filterIssues() {
       '<td>' + trialThumbs + '</td>' +
       '<td style="white-space:nowrap">' +
         '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
-        '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' +
+        (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
-        (i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ' : '') +
-        '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' +
+        (canEdit() && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ' : '') +
+        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
       '</td>' +
     '</tr>';
   }).join('');
@@ -3404,6 +3784,7 @@ function loadIssueTargets(selectedTargetId){
 
 function openIssueModal(issueOrId){
   ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
+  v_set('issue-reporter', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('issue-edit-closed-date','');
   v_set('issue-edit-part-qty','1');
   var otherWrap = document.getElementById('issue-edit-part-other-wrap');
@@ -3449,7 +3830,7 @@ function openIssueModal(issueOrId){
     v_set('issue-severity', data.Severity || 'Medium');
     v_set('issue-description', data.Description || '');
     v_set('issue-occurred', data.OccurredAt || new Date().toISOString().slice(0,16));
-    v_set('issue-reporter', data.ReportedBy || '');
+    v_set('issue-reporter', data.ReportedBy || (STATE.currentUser ? STATE.currentUser.Name : ''));
 
     // Before Photos
     var existingImgs = tryParse(data.BeforeImageIds);
@@ -4159,6 +4540,7 @@ function openCloseIssueModal(id){
   if(!iss) return;
   v_set('close-issue-id', id);
   ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name','close-trial-shots','close-trial-notes'].forEach(function(i){ v_set(i,''); });
+  v_set('close-by', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('close-trial-result', 'Passed');
   v_set('close-date', new Date().toISOString().slice(0,16));
   v_set('close-trial-date', new Date().toISOString().slice(0,16));
@@ -4369,13 +4751,15 @@ function filterStock(){
       '</td>'+
       '<td>'+(p.Location||'-')+'</td>'+
       '<td style="white-space:nowrap">'+
-        '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
-        (p.OnOrderQty > 0 ?
-          '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="รับของที่สั่งเข้าสต็อกทันที (PO: '+(p.PONo||'-')+')">✅ รับของ ('+p.OnOrderQty+')</button> ' :
-          '<button class="btn btn-outline btn-sm" onclick="openStockOrderModal(\''+p.ID+'\')" title="เปิดสั่งซื้อ / ระบุ Lead Time">🛒 สั่งซื้อ</button> '
-        ) +
-        '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '+
-        '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>'+
+        (canEdit() ? (
+          '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
+          (p.OnOrderQty > 0 ?
+            '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="รับของที่สั่งเข้าสต็อกทันที (PO: '+(p.PONo||'-')+')">✅ รับของ ('+p.OnOrderQty+')</button> ' :
+            '<button class="btn btn-outline btn-sm" onclick="openStockOrderModal(\''+p.ID+'\')" title="เปิดสั่งซื้อ / ระบุ Lead Time">🛒 สั่งซื้อ</button> '
+          ) +
+          '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '
+        ) : '') +
+        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
