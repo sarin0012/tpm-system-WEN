@@ -307,34 +307,40 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   #mobile-bottom-nav {
     display: flex !important;
   }
-  /* Role Visibility Classes */
-  body.role-viewer .role-hide-viewer { display: none !important; }
-  body.role-viewer .role-admin-only { display: none !important; }
-  body.role-technician .role-admin-only { display: none !important; }
-  body.role-engineer .role-admin-only { display: none !important; }
+}
 
-  /* User profile selector cards in modal */
-  .user-profile-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .user-profile-card:hover {
-    background: rgba(99, 102, 241, 0.12);
-    border-color: var(--primary);
-    transform: translateY(-2px);
-  }
-  .user-profile-card.active {
-    background: rgba(99, 102, 241, 0.18);
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
-  }
+/* === Role Visibility & User Profile Cards (Global) === */
+body.role-viewer .role-hide-viewer { display: none !important; }
+body.role-viewer .role-admin-only { display: none !important; }
+body.role-technician .role-admin-only { display: none !important; }
+body.role-engineer .role-admin-only { display: none !important; }
+
+.user-profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 16px;
+  cursor: pointer !important;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.user-profile-card:hover {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(99,102,241,0.18);
+}
+.user-profile-card:active {
+  transform: translateY(0px);
+  box-shadow: none;
+}
+.user-profile-card.active {
+  background: rgba(99, 102, 241, 0.18);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
 }
 </style>
 </head>
@@ -1008,8 +1014,30 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
       </div>
     </div>
     <div class="modal-footer" style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border-radius:0 0 16px 16px;">
-      <span style="font-size:11px;color:var(--text-muted);">🔒 โหมด Admin ต้องใส่รหัสผ่าน (Default: 1234)</span>
+      <button class="btn btn-outline btn-sm" onclick="openEditProfilesModal()" style="display:flex;align-items:center;gap:5px;font-size:12px;">✏️ แก้ไขชื่อผู้ใช้</button>
       <button class="btn btn-outline btn-sm" onclick="closeModal('user-select-modal')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER PROFILES MODAL -->
+<div class="modal-overlay" id="edit-profiles-modal" style="z-index:100002;">
+  <div class="modal" style="max-width:480px;border-radius:16px;">
+    <div class="modal-header">
+      <div class="modal-title">✏️ แก้ไขรายชื่อผู้ใช้งาน</div>
+      <button class="modal-close" onclick="closeModal('edit-profiles-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px 20px;">
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">เพิ่ม/แก้ไข/ลบชื่อทีมช่าง (บทบาท Technician) ที่จะแสดงในหน้าเลือกผู้ใช้งาน</p>
+      <div id="edit-profiles-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="new-profile-name" type="text" placeholder="กรอกชื่อช่างใหม่ เช่น สมชาย K." style="flex:1;height:36px;font-size:13px;" onkeydown="if(event.key==='Enter') addNewProfile()"/>
+        <button class="btn btn-primary btn-sm" onclick="addNewProfile()" style="white-space:nowrap;height:36px;">+ เพิ่มชื่อ</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-profiles-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveEditedProfiles()">💾 บันทึกรายชื่อ</button>
     </div>
   </div>
 </div>
@@ -2070,14 +2098,9 @@ function openUserSelectModal(isWelcome) {
     Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
   });
 
-  // 2. Default Team Members & Custom Users
-  var defaultTechs = [
-    { Name: 'สาริน T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' },
-    { Name: 'ทีมช่างซ่อมบำรุง', Role: 'Technician', Email: 'maintenance@tpm.local', Department: 'Maintenance' }
-  ];
-
-  var existingUsers = (STATE.users && STATE.users.length) ? STATE.users : defaultTechs;
-  existingUsers.forEach(function(u) {
+  // 2. Custom / Default Technician Team from localStorage
+  var customProfiles = getCustomProfiles();
+  customProfiles.forEach(function(u) {
     if (u.Role !== 'Admin' && u.Role !== 'Viewer') {
       profiles.push({
         Name: u.Name,
@@ -2236,6 +2259,84 @@ function saveAdminNewPassword() {
 }
 
 // ============================================
+//  EDIT USER PROFILES (Custom Technician List)
+// ============================================
+function getCustomProfiles() {
+  var saved = tryParse(localStorage.getItem('TPM_CUSTOM_PROFILES'));
+  if (saved && Array.isArray(saved) && saved.length) return saved;
+  // Default profiles
+  return [
+    { Name: 'สาริน T.', Role: 'Technician' },
+    { Name: 'ทีมช่างซ่อมบำรุง', Role: 'Technician' }
+  ];
+}
+
+function openEditProfilesModal() {
+  renderEditProfilesList();
+  var inp = document.getElementById('new-profile-name');
+  if (inp) inp.value = '';
+  openModal('edit-profiles-modal');
+  setTimeout(function() { if (inp) inp.focus(); }, 200);
+}
+
+function renderEditProfilesList() {
+  var listEl = document.getElementById('edit-profiles-list');
+  if (!listEl) return;
+  var profiles = getCustomProfiles();
+
+  if (!profiles.length) {
+    listEl.innerHTML = '<div style="color:var(--text-muted);font-size:12px;text-align:center;padding:12px;">ยังไม่มีรายชื่อ กรุณาเพิ่มชื่อด้านล่าง</div>';
+    return;
+  }
+
+  listEl.innerHTML = profiles.map(function(p, idx) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">' +
+      '<span style="font-size:16px;">👷‍♂️</span>' +
+      '<input type="text" value="' + p.Name.replace(/"/g, '&quot;') + '" ' +
+             'id="ep-name-' + idx + '" ' +
+             'style="flex:1;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text);padding:0;outline:none;" ' +
+             'placeholder="ชื่อผู้ใช้งาน..." />' +
+      '<button class="btn btn-ghost btn-sm" onclick="removeEditProfile(' + idx + ')" title="ลบชื่อนี้" style="color:#ef4444;padding:2px 6px;">🗑️</button>' +
+    '</div>';
+  }).join('');
+}
+
+function addNewProfile() {
+  var inp = document.getElementById('new-profile-name');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) { showToast('กรุณากรอกชื่อก่อนครับ', 'warning'); return; }
+
+  var profiles = getCustomProfiles();
+  profiles.push({ Name: name, Role: 'Technician' });
+  localStorage.setItem('TPM_CUSTOM_PROFILES', JSON.stringify(profiles));
+  inp.value = '';
+  renderEditProfilesList();
+  showToast('เพิ่มชื่อ "' + name + '" เรียบร้อย ✅', 'success');
+}
+
+function removeEditProfile(idx) {
+  var profiles = getCustomProfiles();
+  var removed = profiles.splice(idx, 1);
+  localStorage.setItem('TPM_CUSTOM_PROFILES', JSON.stringify(profiles));
+  renderEditProfilesList();
+  if (removed[0]) showToast('ลบชื่อ "' + removed[0].Name + '" แล้ว', 'info');
+}
+
+function saveEditedProfiles() {
+  // Read all current input values and save
+  var profiles = getCustomProfiles();
+  var updated = profiles.map(function(p, idx) {
+    var inp = document.getElementById('ep-name-' + idx);
+    var newName = inp ? inp.value.trim() : p.Name;
+    return { Name: newName || p.Name, Role: p.Role || 'Technician' };
+  }).filter(function(p) { return p.Name; });
+
+  localStorage.setItem('TPM_CUSTOM_PROFILES', JSON.stringify(updated));
+  showToast('บันทึกรายชื่อสำเร็จ ✅', 'success');
+  closeModal('edit-profiles-modal');
+}
+
+
 //  SETUP / CONNECT
 // ============================================
 async function initApp() {
