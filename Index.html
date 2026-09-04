@@ -107,15 +107,16 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)
 select option{background:var(--surface2);}textarea{resize:vertical;min-height:80px;}
 
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:2500;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.open{display:flex;}
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:modalIn .2s ease;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;max-height:90dvh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.6);animation:modalIn .2s ease;position:relative;}
 .modal.modal-lg{max-width:900px;}.modal.modal-sm{max-width:480px;}
 @keyframes modalIn{from{opacity:0;transform:scale(.95)translateY(10px);}to{opacity:1;transform:none;}}
-.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
 .modal-title{font-size:16px;font-weight:700;}
 .modal-close{background:none;border:none;color:var(--text-muted);font-size:20px;cursor:pointer;padding:4px;border-radius:6px;transition:all var(--transition);}.modal-close:hover{background:var(--surface2);color:var(--text);}
-.modal-body{padding:24px;}.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.modal-body{padding:20px;flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.modal-footer{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;flex-shrink:0;background:var(--surface);border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);}
 
 /* TOOLBAR */
 .toolbar{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
@@ -306,6 +307,39 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
   }
   #mobile-bottom-nav {
     display: flex !important;
+  }
+  .modal-overlay {
+    padding: 10px 8px env(safe-area-inset-bottom, 10px) 8px !important;
+    align-items: flex-end !important;
+    z-index: 2500 !important;
+  }
+  .modal {
+    max-height: 92vh !important;
+    max-height: 92dvh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    margin-bottom: 0 !important;
+    width: 100% !important;
+  }
+  .modal-header {
+    padding: 12px 16px !important;
+  }
+  .modal-body {
+    padding: 14px 16px 24px 16px !important;
+  }
+  .modal-footer {
+    padding: 12px 16px !important;
+    padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+    position: sticky !important;
+    bottom: 0 !important;
+    background: var(--surface) !important;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.35) !important;
+    z-index: 20 !important;
+  }
+  .modal-footer .btn {
+    min-height: 42px !important;
+    font-size: 13.5px !important;
+    padding: 8px 16px !important;
   }
 }
 
@@ -4317,7 +4351,7 @@ function filterIssues() {
         '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
         (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
-        (canEdit() && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> <button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ">▶️</button> ' : '') +
+        (canEdit() && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
         (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
       '</td>' +
     '</tr>';
@@ -5012,17 +5046,30 @@ function onClosePartSelectChange() {
   updateStockPartWarningNotice('close-part-warning', sel.value);
 }
 
-function renderCloseIssuePartsList() {
+function renderCloseIssuePartsList(existingHistory) {
   var container = document.getElementById('close-parts-list');
   var summaryInput = document.getElementById('close-parts-used');
   if (!container) return;
   var parts = STATE.closeIssueParts || [];
+  var hist = (existingHistory !== undefined) ? existingHistory : (STATE.existingClosePartsHistory || '');
+  var html = '';
+
+  if (hist) {
+    html += '<div style="font-size:12px;color:var(--primary);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);padding:6px 10px;border-radius:4px;margin-bottom:8px;">🕒 <strong>ประวัติอะไหล่เดิมที่เคยบันทึกไว้:</strong> ' + hist + '</div>';
+  }
+
   if (!parts.length) {
-    container.innerHTML = '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถปล่อยว่างได้)</div>';
-    if (summaryInput) summaryInput.value = '';
+    if (!hist) {
+      html += '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถพิมพ์ระบุเองด้านล่าง หรือปล่อยว่างได้)</div>';
+    }
+    container.innerHTML = html;
+    if (summaryInput && (existingHistory !== undefined)) {
+      summaryInput.value = hist || '';
+    }
     return;
   }
-  container.innerHTML = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
     parts.map(function(p, idx) {
       var badgeStyle = p.isStock ? 'background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#818cf8;' : 'background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;';
       var tag = p.isStock ? '📦 ' : '✏️ ';
@@ -5032,13 +5079,18 @@ function renderCloseIssuePartsList() {
       '</div>';
     }).join('') +
   '</div>';
+  container.innerHTML = html;
 
-  var summaryText = parts.map(function(p) {
+  var newPartsText = parts.map(function(p) {
     return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + (p.isStock ? '' : ' - Other') + ')';
   }).join(', ');
 
   if (summaryInput) {
-    summaryInput.value = summaryText;
+    if (hist) {
+      summaryInput.value = hist + (newPartsText ? (', ' + newPartsText) : '');
+    } else {
+      summaryInput.value = newPartsText;
+    }
   }
 }
 
@@ -5102,22 +5154,37 @@ function openCloseIssueModal(id){
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   v_set('close-issue-id', id);
-  ['close-root-cause','close-corrective','close-by','close-parts-used','close-part-other-name','close-trial-shots','close-trial-notes'].forEach(function(i){ v_set(i,''); });
-  v_set('close-by', STATE.currentUser ? STATE.currentUser.Name : '');
-  v_set('close-trial-result', 'Passed');
-  v_set('close-date', new Date().toISOString().slice(0,16));
-  v_set('close-trial-date', new Date().toISOString().slice(0,16));
+
+  // Pre-fill Root Cause & Corrective Action
+  v_set('close-root-cause', iss.RootCause || '');
+  var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+  v_set('close-corrective', cleanAction);
+
+  // Pre-fill Repairer & Dates
+  v_set('close-by', iss.ClosedBy || (STATE.currentUser ? STATE.currentUser.Name : ''));
+  v_set('close-date', iss.ClosedAt ? iss.ClosedAt.slice(0,16) : new Date().toISOString().slice(0,16));
+
+  // Pre-fill Parts
+  v_set('close-part-other-name', '');
   v_set('close-part-qty', '1');
   var otherWrap = document.getElementById('close-part-other-wrap');
   if(otherWrap) otherWrap.style.display = 'none';
 
   STATE.closeIssueParts = [];
-  renderCloseIssuePartsList();
+  STATE.existingClosePartsHistory = iss.PartsUsed || '';
+  v_set('close-parts-used', iss.PartsUsed || '');
+  renderCloseIssuePartsList(iss.PartsUsed || '');
+
+  // Pre-fill Trial Data
+  v_set('close-trial-result', iss.TrialResult || 'Passed');
+  v_set('close-trial-date', iss.TrialDate ? iss.TrialDate.slice(0,16) : (iss.ClosedAt ? iss.ClosedAt.slice(0,16) : new Date().toISOString().slice(0,16)));
+  v_set('close-trial-shots', iss.TrialShots || '');
+  v_set('close-trial-notes', iss.TrialNotes || '');
 
   // Populate close-part-select with Stock Parts
   var sel = document.getElementById('close-part-select');
   if (sel) {
-    var stockList = STATE.stockParts || [];
+    var stockList = (STATE.stockParts || []).filter(function(p){ return p.ID !== '__SYS_USERS_CONFIG__'; });
     var linkedParts = stockList.filter(function(p) { return p.LinkedID === iss.TargetID && iss.TargetID; });
     var otherStock = stockList.filter(function(p) { return p.LinkedID !== iss.TargetID || !iss.TargetID; });
 
@@ -5143,12 +5210,38 @@ function openCloseIssueModal(id){
     updateStockPartWarningNotice('close-part-warning', sel.value);
   }
 
-  document.getElementById('close-photos-preview').innerHTML = '';
-  document.getElementById('close-trial-photos-preview').innerHTML = '';
-  STATE.pendingPhotos['close'] = { files: [], existing: [] };
-  STATE.pendingPhotos['close-trial'] = { files: [], existing: [] };
+  // Pre-fill After Photos
+  var gridClose = document.getElementById('close-photos-preview');
+  if (gridClose) gridClose.innerHTML = '';
+  var existingAfter = tryParse(iss.AfterImageIds);
+  STATE.pendingPhotos['close'] = { files: [], existing: existingAfter.slice() };
+  if (gridClose && existingAfter.length) {
+    existingAfter.forEach(function(url, idx) {
+      var item = document.createElement('div');
+      item.className = 'photo-preview-item';
+      item.id = 'pi-close-ex-' + idx;
+      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'close\',' + idx + ',\'close-photos-preview\',true)">✕</button>';
+      gridClose.appendChild(item);
+    });
+  }
 
-  document.getElementById('close-issue-info').innerHTML = '<strong>' + (getIssueDisplayCode(iss) || iss.ID) + '</strong> — ' + (iss.TargetName || '-') + '<br><span style="color:var(--text-muted)">' + (iss.Description || '') + '</span>';
+  // Pre-fill Trial Photos
+  var gridTrial = document.getElementById('close-trial-photos-preview');
+  if (gridTrial) gridTrial.innerHTML = '';
+  var existingTrial = tryParse(iss.TrialImageIds);
+  STATE.pendingPhotos['close-trial'] = { files: [], existing: existingTrial.slice() };
+  if (gridTrial && existingTrial.length) {
+    existingTrial.forEach(function(url, idx) {
+      var item = document.createElement('div');
+      item.className = 'photo-preview-item';
+      item.id = 'pi-close-trial-ex-' + idx;
+      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'close-trial\',' + idx + ',\'close-trial-photos-preview\',true)">✕</button>';
+      gridTrial.appendChild(item);
+    });
+  }
+
+  var code = getIssueDisplayCode(iss);
+  document.getElementById('close-issue-info').innerHTML = '<strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')<br><span style="color:var(--text-muted)">' + (iss.Description || '') + '</span>';
   openModal('issue-close-modal');
 }
 
@@ -5218,6 +5311,23 @@ async function closeIssue(){
     showGlobalLoading(false);
     console.error('closeIssue error:', err);
     showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+  }
+async function updIssueStatus(id, status){
+  var iss = (STATE.issues || []).find(function(x){ return x.ID === id; });
+  var statusText = status === 'In Progress' ? 'กำลังดำเนินการ (In Progress)' : status;
+  var displayCode = iss ? getIssueDisplayCode(iss) : id;
+  if(!confirm('ยืนยันเปลี่ยนสถานะของ #' + displayCode + ' เป็น "' + statusText + '" ใช่หรือไม่?')) return;
+
+  showGlobalLoading(true);
+  var r = await api('updateIssueStatus', { id: id, status: status });
+  showGlobalLoading(false);
+  if(r && r.success){
+    showToast('เปลี่ยนสถานะเป็น "' + statusText + '" สำเร็จ ▶️', 'success');
+    if(iss) iss.Status = status;
+    renderIssues();
+    updateBadges();
+  } else {
+    showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถอัปเดตสถานะได้'), 'error');
   }
 }
 
