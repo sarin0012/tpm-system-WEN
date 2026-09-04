@@ -3112,7 +3112,7 @@ function filterMolds(){
   if(!data.length){tb.innerHTML='<tr><td colspan="12">'+emptyState('🧩','ยังไม่มีโมล','คลิก "+ เพิ่มโมล"')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m, idx){
     var rawImgs = tryParse(m.ImageIds);
-    var imgs = rawImgs.map(function(id){ return id.indexOf('http') === 0 ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+    var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
     var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
     var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
       return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
@@ -3248,7 +3248,7 @@ function openMoldModal(data) {
   ['mold-id','mold-name','mold-model','mold-asset','mold-machine-ton','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
   var _prev0=document.getElementById('mold-production-preview'); if(_prev0) _prev0.innerHTML='กรอก Cycle Time เพื่อดูยอดผลิต';
   v_set('mold-status', 'Active');
-  document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[]};
+  document.getElementById('mold-photos-preview').innerHTML='';STATE.pendingPhotos['mold']={files:[], existing:[]};
   document.getElementById('mold-modal-title').textContent=data?'✏️ แก้ไขโมล':'+ เพิ่มโมล';
   if(data){
     v_set('mold-id',data.ID);
@@ -3273,6 +3273,19 @@ function openMoldModal(data) {
     v_set('mold-notes',cleanNotes);
     var customChecks = getMoldCustomCheckpoints(data);
     renderMoldCustomCheckpoints(customChecks);
+
+    var existingImgs = tryParse(data.ImageIds);
+    STATE.pendingPhotos['mold'].existing = existingImgs.slice();
+    var grid = document.getElementById('mold-photos-preview');
+    if (grid && existingImgs.length) {
+      existingImgs.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-mold-ex-' + idx;
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'mold\',' + idx + ',\'mold-photos-preview\',true)">✕</button>';
+        grid.appendChild(item);
+      });
+    }
   } else {
     renderMoldCustomCheckpoints([]);
   }
@@ -3385,7 +3398,7 @@ function filterMachines(){
   if(!data.length){tb.innerHTML='<tr><td colspan="9">'+emptyState('\ud83c\udfed','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e08\u0e31\u0e01\u0e23','')+'</td></tr>';return;}
   tb.innerHTML=data.map(function(m){
     var rawImgs = tryParse(m.ImageIds);
-    var imgs = rawImgs.map(function(id){ return id.indexOf('http') === 0 ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+    var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
     var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
     var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
       return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
@@ -5885,7 +5898,7 @@ function updateLightboxView(){
   var llink = document.getElementById('lightbox-drive-link');
   if (llink) {
     llink.href = curUrl;
-    llink.style.display = (curUrl && curUrl.indexOf('http') === 0) ? 'flex' : 'none';
+    llink.style.display = (curUrl && (curUrl.indexOf('http://') === 0 || curUrl.indexOf('https://') === 0) && curUrl.indexOf('drive.google.com') !== -1) ? 'flex' : 'none';
   }
 
   var counter = document.getElementById('lightbox-counter');
