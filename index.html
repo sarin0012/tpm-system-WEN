@@ -417,7 +417,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">&#128230;</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
     <div class="nav-section">System</div>
     <div class="nav-item" onclick="nav('reports')" data-page="reports"><div class="icon">📈</div>รายงาน / Reports</div>
-    <div class="nav-item role-admin-only" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
+    <div class="nav-item" data-perm="settings:view" onclick="nav('settings')" data-page="settings"><div class="icon">👥</div>ผู้ใช้งาน / Users</div>
   </div>
   <div class="sidebar-footer">
     <div class="user-card" onclick="openUserSelectModal()" style="cursor:pointer" title="คลิกเพื่อสลับผู้ใช้งาน">
@@ -473,7 +473,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="molds-vendor-filter" style="width:160px" onchange="filterMolds()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
     <select id="molds-status-filter" style="width:130px" onchange="filterMolds()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary role-hide-viewer" onclick="openMoldModal()">+ เพิ่มโมล</button>
+    <button class="btn btn-primary" data-perm="molds:edit" onclick="openMoldModal()">+ เพิ่มโมล</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
     <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>ขนาดเครื่อง (Ton)</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>⏱ Cycle Time</th><th>⚡ ยอดผลิต/8ชม.</th><th>Status</th><th>🔧 สถานะ PM</th><th>รูป</th><th>Actions</th></tr></thead>
@@ -488,7 +488,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="machines-vendor-filter" style="width:160px" onchange="filterMachines()"><option value="">🏢 ทุก Vendor</option></select>
     <select id="machines-status-filter" style="width:130px" onchange="filterMachines()"><option value="">ทุกสถานะ</option><option>Active</option><option>Inactive</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary role-hide-viewer" onclick="openMachineModal()">+ เพิ่มเครื่องจักร</button>
+    <button class="btn btn-primary" data-perm="machines:edit" onclick="openMachineModal()">+ เพิ่มเครื่องจักร</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="machines-table">
     <thead><tr><th>ชื่อ</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
@@ -504,7 +504,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="tpm-month" onchange="renderTPM()"><option value="">ทุกเดือน</option></select>
     <select id="tpm-filter-status" onchange="renderTPM()"><option value="">ทุกสถานะ</option><option value="Overdue">🔴 Overdue (ช้ากว่ากำหนด)</option><option value="Due Soon">🟡 Due Soon (ใกล้ถึงแผน)</option><option value="Planned">🔵 Planned (ตามแผน)</option><option value="Done">🟢 Done (เสร็จแล้ว)</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline role-admin-only" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary role-hide-viewer" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
+    <button class="btn btn-outline" data-perm="tpm:edit" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary" data-perm="tpm:edit" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
   </div>
   <div id="tpm-container"></div>
 </div>
@@ -517,7 +517,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="issue-status-filter" onchange="filterIssues()" style="width:170px;"><option value="Active" selected>⚡ ค้างอยู่ (Open + In Progress)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open</option><option value="In Progress">🟡 In Progress</option><option value="Closed">🟢 Closed (จบแล้ว)</option></select>
     <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">ทุก Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-primary role-hide-viewer" onclick="openIssueModal()">+ แจ้งปัญหา</button>
+    <button class="btn btn-primary" data-perm="issues:edit" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
     <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
@@ -533,8 +533,8 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="stock-link-filter" style="width:160px" onchange="filterStock()"><option value="">🔗 ทุก Machine/Mold</option></select>
     <select id="stock-level-filter" style="width:130px" onchange="filterStock()"><option value="">ทุก Level</option><option value="low">⚠️ Low Stock</option><option value="ok">✅ ปกติ</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline role-hide-viewer" onclick="openStockTxModal()">📦 รับ/เบิก</button>
-    <button class="btn btn-primary role-hide-viewer" onclick="openStockPartModal()">+ เพิ่มอะไหล่</button>
+    <button class="btn btn-outline" data-perm="stock:edit" onclick="openStockTxModal()">📦 รับ/เบิก</button>
+    <button class="btn btn-primary" data-perm="stock:edit" onclick="openStockPartModal()">+ เพิ่มอะไหล่</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="stock-table">
     <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
@@ -565,7 +565,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       <span>👥</span> <span>จัดการรายชื่อผู้ใช้งานและกำหนดสิทธิ์ระบบ</span>
     </div>
     <div style="flex:1"></div>
-    <button class="btn btn-primary" onclick="openUserModal()">+ เพิ่มผู้ใช้งาน</button>
+    <button class="btn btn-primary" data-perm="settings:edit" onclick="openUserModal()">+ เพิ่มผู้ใช้งาน</button>
   </div>
   <div class="card"><div class="table-wrapper"><table id="users-table">
     <thead><tr><th>ชื่อ-นามสกุล</th><th>Email</th><th>Role (สิทธิ์)</th><th>แผนก</th><th>จัดการ</th></tr></thead>
@@ -1040,22 +1040,92 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- USER -->
 <div class="modal-overlay" id="user-modal">
-  <div class="modal modal-sm"><div class="modal-header"><div class="modal-title" id="user-modal-title">เพิ่มผู้ใช้งาน</div><button class="modal-close" onclick="closeModal('user-modal')">&#10005;</button></div>
-  <div class="modal-body">
+  <div class="modal" style="max-width:640px;width:95%;"><div class="modal-header"><div class="modal-title" id="user-modal-title">เพิ่มผู้ใช้งาน</div><button class="modal-close" onclick="closeModal('user-modal')">&#10005;</button></div>
+  <div class="modal-body" style="max-height:80vh;overflow-y:auto;padding:16px 20px;">
     <input type="hidden" id="user-id"/>
     <div class="form-group"><label>ชื่อ-นามสกุล *</label><input id="user-name-input" placeholder="เช่น สาริน T., สมชาย K."/></div>
     <div class="form-group"><label>Email (อีเมล)</label><input id="user-email" type="email" placeholder="เช่น tech@tpm.local (ไม่ระบุก็ได้)"/></div>
     <div class="form-row col-2">
-      <div class="form-group"><label>Role (สิทธิ์การใช้งาน)</label>
-        <select id="user-role-select">
-          <option value="Technician">Technician (ช่างซ่อมบำรุง)</option>
-          <option value="Engineer">Engineer (วิศวกร)</option>
-          <option value="Viewer">Viewer (หัวหน้า / ดูอย่างเดียว)</option>
-          <option value="Admin">Admin (ผู้ดูแลระบบ)</option>
+      <div class="form-group"><label>Role Preset (กลุ่มสิทธิ์หลัก)</label>
+        <select id="user-role-select" onchange="onUserRolePresetChange()">
+          <option value="Admin">⚙️ Admin (ผู้ดูแลระบบ - สิทธิ์เต็ม)</option>
+          <option value="Technician">👷‍♂️ Technician (ช่างซ่อมบำรุงทั่วไป)</option>
+          <option value="Engineer">🛠️ Engineer (วิศวกร)</option>
+          <option value="MoldSpecialist">🧩 Mold Specialist (ช่างเฉพาะระบบโมล)</option>
+          <option value="MachineSpecialist">🏭 Machine Specialist (ช่างเฉพาะเครื่องจักร)</option>
+          <option value="StockKeeper">📦 Stock Keeper (เจ้าหน้าที่สโตร์/คลังอะไหล่)</option>
+          <option value="Viewer">👨‍💼 Viewer (ดูอย่างเดียว)</option>
+          <option value="Custom">🎛️ Custom (กำหนดสิทธิ์เองอิสระ)</option>
         </select>
       </div>
-      <div class="form-group"><label>แผนก / ฝ่าย</label><input id="user-dept" placeholder="เช่น Maintenance, Production"/></div>
+      <div class="form-group"><label>แผนก / ฝ่าย</label><input id="user-dept" placeholder="เช่น Maintenance, Tooling, Store"/></div>
     </div>
+
+    <div class="form-group" style="margin-top:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <label style="margin:0;font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;">
+          <span>📋</span> <span>กำหนดสิทธิ์รายระบบ (Permissions Matrix)</span>
+        </label>
+        <span style="font-size:11px;color:var(--text-muted);">ปรับแต่งติ๊กเลือกได้ตามต้องการ</span>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface2);">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center;">
+          <thead>
+            <tr style="background:var(--surface);border-bottom:1px solid var(--border);color:var(--text-muted);font-weight:600;">
+              <th style="text-align:left;padding:8px 12px;">โมดูล / ระบบ</th>
+              <th style="padding:8px;width:75px;" title="เข้าดูหน้านี้และเปิดดูรูปภาพได้">👁️ ดู (View)</th>
+              <th style="padding:8px;width:80px;" title="เพิ่ม/แก้ไข/บันทึกผลงานได้">✏️ บันทึก (Edit)</th>
+              <th style="padding:8px;width:75px;" title="ลบข้อมูลออกจากระบบได้">🗑️ ลบ (Del)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">🧩 ข้อมูลโมล (Mold)</td>
+              <td><input type="checkbox" id="perm-molds-view" onchange="onPermCheckboxChange('molds','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-molds-edit" onchange="onPermCheckboxChange('molds','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-molds-delete" onchange="onPermCheckboxChange('molds','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">🏭 เครื่องจักร (Machine)</td>
+              <td><input type="checkbox" id="perm-machines-view" onchange="onPermCheckboxChange('machines','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-machines-edit" onchange="onPermCheckboxChange('machines','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-machines-delete" onchange="onPermCheckboxChange('machines','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">🔧 แผนซ่อมบำรุง (TPM)</td>
+              <td><input type="checkbox" id="perm-tpm-view" onchange="onPermCheckboxChange('tpm','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-tpm-edit" onchange="onPermCheckboxChange('tpm','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-tpm-delete" onchange="onPermCheckboxChange('tpm','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">🚨 แจ้งปัญหา / ซ่อม (Issues)</td>
+              <td><input type="checkbox" id="perm-issues-view" onchange="onPermCheckboxChange('issues','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-issues-edit" onchange="onPermCheckboxChange('issues','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-issues-delete" onchange="onPermCheckboxChange('issues','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">📦 คลังอะไหล่ (Stock)</td>
+              <td><input type="checkbox" id="perm-stock-view" onchange="onPermCheckboxChange('stock','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-stock-edit" onchange="onPermCheckboxChange('stock','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-stock-delete" onchange="onPermCheckboxChange('stock','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">📈 รายงาน / สถิติ (Reports)</td>
+              <td><input type="checkbox" id="perm-reports-view" onchange="onPermCheckboxChange('reports','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td style="color:var(--text-faint);">-</td>
+              <td style="color:var(--text-faint);">-</td>
+            </tr>
+            <tr>
+              <td style="text-align:left;padding:8px 12px;font-weight:600;">👥 จัดการผู้ใช้ (Users / Admin)</td>
+              <td><input type="checkbox" id="perm-settings-view" onchange="onPermCheckboxChange('settings','view')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-settings-edit" onchange="onPermCheckboxChange('settings','edit')" style="cursor:pointer;width:16px;height:16px;"/></td>
+              <td><input type="checkbox" id="perm-settings-delete" onchange="onPermCheckboxChange('settings','delete')" style="cursor:pointer;width:16px;height:16px;"/></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
   <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('user-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveUser()">💾 บันทึกผู้ใช้</button></div>
   </div>
@@ -2102,18 +2172,174 @@ async function api(actionStr, payload = null) {
 // ============================================
 //  USER IDENTITY & ROLE PERMISSION SYSTEM
 // ============================================
+var PERM_PRESETS = {
+  'Admin': {
+    molds: { view: true, edit: true, delete: true },
+    machines: { view: true, edit: true, delete: true },
+    tpm: { view: true, edit: true, delete: true },
+    issues: { view: true, edit: true, delete: true },
+    stock: { view: true, edit: true, delete: true },
+    reports: { view: true },
+    settings: { view: true, edit: true, delete: true }
+  },
+  'Technician': {
+    molds: { view: true, edit: true, delete: false },
+    machines: { view: true, edit: true, delete: false },
+    tpm: { view: true, edit: true, delete: false },
+    issues: { view: true, edit: true, delete: false },
+    stock: { view: true, edit: true, delete: false },
+    reports: { view: true },
+    settings: { view: false, edit: false, delete: false }
+  },
+  'Engineer': {
+    molds: { view: true, edit: true, delete: false },
+    machines: { view: true, edit: true, delete: false },
+    tpm: { view: true, edit: true, delete: false },
+    issues: { view: true, edit: true, delete: false },
+    stock: { view: true, edit: true, delete: false },
+    reports: { view: true },
+    settings: { view: false, edit: false, delete: false }
+  },
+  'MoldSpecialist': {
+    molds: { view: true, edit: true, delete: false },
+    machines: { view: false, edit: false, delete: false },
+    tpm: { view: true, edit: true, delete: false },
+    issues: { view: true, edit: true, delete: false },
+    stock: { view: false, edit: false, delete: false },
+    reports: { view: true },
+    settings: { view: false, edit: false, delete: false }
+  },
+  'MachineSpecialist': {
+    molds: { view: false, edit: false, delete: false },
+    machines: { view: true, edit: true, delete: false },
+    tpm: { view: true, edit: true, delete: false },
+    issues: { view: true, edit: true, delete: false },
+    stock: { view: false, edit: false, delete: false },
+    reports: { view: true },
+    settings: { view: false, edit: false, delete: false }
+  },
+  'StockKeeper': {
+    molds: { view: false, edit: false, delete: false },
+    machines: { view: false, edit: false, delete: false },
+    tpm: { view: false, edit: false, delete: false },
+    issues: { view: false, edit: false, delete: false },
+    stock: { view: true, edit: true, delete: false },
+    reports: { view: false },
+    settings: { view: false, edit: false, delete: false }
+  },
+  'Viewer': {
+    molds: { view: true, edit: false, delete: false },
+    machines: { view: true, edit: false, delete: false },
+    tpm: { view: true, edit: false, delete: false },
+    issues: { view: true, edit: false, delete: false },
+    stock: { view: true, edit: false, delete: false },
+    reports: { view: true },
+    settings: { view: false, edit: false, delete: false }
+  }
+};
+
 function getCurrentRole() {
   return (STATE.currentUser && STATE.currentUser.Role) ? STATE.currentUser.Role : 'Technician';
 }
 
-function canEdit() {
-  var r = getCurrentRole();
-  return r === 'Admin' || r === 'Technician' || r === 'Engineer';
+function can(module, action) {
+  var u = STATE.currentUser;
+  if (!u) return false;
+  var role = u.Role || 'Technician';
+  if (role === 'Admin') return true;
+
+  if (u.Permissions && typeof u.Permissions === 'object') {
+    var pMod = u.Permissions[module];
+    if (pMod && typeof pMod === 'object') {
+      if (pMod[action] !== undefined) return Boolean(pMod[action]);
+    }
+  }
+
+  // Fallback to role presets if permissions object not explicitly set
+  if (PERM_PRESETS[role]) {
+    var pDef = PERM_PRESETS[role][module];
+    if (pDef && pDef[action] !== undefined) return Boolean(pDef[action]);
+  }
+
+  // General legacy fallback
+  if (action === 'delete') return role === 'Admin';
+  if (action === 'edit') return role === 'Admin' || role === 'Technician' || role === 'Engineer';
+  if (action === 'view') return module !== 'settings' || role === 'Admin';
+  return false;
 }
 
-function canDelete() {
-  var r = getCurrentRole();
-  return r === 'Admin';
+function canEdit(module) {
+  if (!module) {
+    var r = getCurrentRole();
+    return r === 'Admin' || r === 'Technician' || r === 'Engineer';
+  }
+  return can(module, 'edit');
+}
+
+function canDelete(module) {
+  if (!module) return can('settings', 'delete');
+  return can(module, 'delete');
+}
+
+function onPermCheckboxChange(mod, act) {
+  var viewCb = document.getElementById('perm-' + mod + '-view');
+  var editCb = document.getElementById('perm-' + mod + '-edit');
+  var delCb = document.getElementById('perm-' + mod + '-delete');
+  
+  if (act === 'edit' && editCb && editCb.checked && viewCb) {
+    viewCb.checked = true;
+  }
+  if (act === 'delete' && delCb && delCb.checked) {
+    if (viewCb) viewCb.checked = true;
+    if (editCb) editCb.checked = true;
+  }
+  if (act === 'view' && viewCb && !viewCb.checked) {
+    if (editCb) editCb.checked = false;
+    if (delCb) delCb.checked = false;
+  }
+  
+  var sel = document.getElementById('user-role-select');
+  if (sel && sel.value !== 'Custom' && sel.value !== 'Admin') {
+    sel.value = 'Custom';
+  }
+}
+
+function onUserRolePresetChange() {
+  var sel = document.getElementById('user-role-select');
+  if (!sel) return;
+  var r = sel.value;
+  if (PERM_PRESETS[r]) {
+    applyPermsToUI(PERM_PRESETS[r]);
+  }
+}
+
+function applyPermsToUI(perms) {
+  var modules = ['molds', 'machines', 'tpm', 'issues', 'stock', 'reports', 'settings'];
+  modules.forEach(function(m) {
+    var p = (perms && perms[m]) || {};
+    var vCb = document.getElementById('perm-' + m + '-view');
+    var eCb = document.getElementById('perm-' + m + '-edit');
+    var dCb = document.getElementById('perm-' + m + '-delete');
+    if (vCb) vCb.checked = Boolean(p.view);
+    if (eCb) eCb.checked = Boolean(p.edit);
+    if (dCb) dCb.checked = Boolean(p.delete);
+  });
+}
+
+function collectPermsFromUI() {
+  var modules = ['molds', 'machines', 'tpm', 'issues', 'stock', 'reports', 'settings'];
+  var perms = {};
+  modules.forEach(function(m) {
+    var vCb = document.getElementById('perm-' + m + '-view');
+    var eCb = document.getElementById('perm-' + m + '-edit');
+    var dCb = document.getElementById('perm-' + m + '-delete');
+    perms[m] = {
+      view: vCb ? vCb.checked : false,
+      edit: eCb ? eCb.checked : false,
+      delete: dCb ? dCb.checked : false
+    };
+  });
+  return perms;
 }
 
 function parseJson(str, fallback) {
@@ -2145,7 +2371,7 @@ function updateUserDisplay() {
   var role = u.Role || 'Technician';
   
   var icon = '👷‍♂️';
-  var roleLabel = 'Technician (ช่าง)';
+  var roleLabel = 'Technician (ช่างซ่อมบำรุง)';
   var roleBadgeBg = 'rgba(99,102,241,0.2)';
   var roleBadgeColor = 'var(--primary)';
 
@@ -2156,12 +2382,34 @@ function updateUserDisplay() {
     roleBadgeColor = '#ef4444';
   } else if (role === 'Viewer') {
     icon = '👨‍💼';
-    roleLabel = 'Viewer (หัวหน้า / ดูข้อมูล)';
-    roleBadgeBg = 'rgba(16,185,129,0.2)';
-    roleBadgeColor = '#10b981';
+    roleLabel = 'Viewer (ดูข้อมูลอย่างเดียว)';
+    roleBadgeBg = 'rgba(100,116,139,0.2)';
+    roleBadgeColor = '#64748b';
   } else if (role === 'Engineer') {
     icon = '🛠️';
     roleLabel = 'Engineer (วิศวกร)';
+    roleBadgeBg = 'rgba(245,158,11,0.2)';
+    roleBadgeColor = '#f59e0b';
+  } else if (role === 'MoldSpecialist') {
+    icon = '🧩';
+    roleLabel = 'Mold Specialist (ช่างโมล)';
+    roleBadgeBg = 'rgba(139,92,246,0.2)';
+    roleBadgeColor = '#8b5cf6';
+  } else if (role === 'MachineSpecialist') {
+    icon = '🏭';
+    roleLabel = 'Machine Specialist (ช่างเครื่องจักร)';
+    roleBadgeBg = 'rgba(14,165,233,0.2)';
+    roleBadgeColor = '#0ea5e9';
+  } else if (role === 'StockKeeper') {
+    icon = '📦';
+    roleLabel = 'Stock Keeper (สโตร์/คลัง)';
+    roleBadgeBg = 'rgba(16,185,129,0.2)';
+    roleBadgeColor = '#10b981';
+  } else if (role === 'Custom') {
+    icon = '🎛️';
+    roleLabel = 'Custom (กำหนดสิทธิ์เอง)';
+    roleBadgeBg = 'rgba(236,72,153,0.2)';
+    roleBadgeColor = '#ec4899';
   }
 
   // Top Bar User Widget
@@ -2188,7 +2436,54 @@ function updateUserDisplay() {
 function applyRolePermissions() {
   var role = getCurrentRole();
   document.body.classList.remove('role-admin', 'role-technician', 'role-viewer', 'role-engineer');
-  document.body.classList.add('role-' + role.toLowerCase());
+  document.body.classList.add('role-' + (role||'').toLowerCase());
+
+  // 1. Sidebar Nav Visibility
+  var navItems = {
+    'dashboard': true,
+    'molds': can('molds', 'view'),
+    'machines': can('machines', 'view'),
+    'tpm': can('tpm', 'view'),
+    'issues': can('issues', 'view'),
+    'stock': can('stock', 'view'),
+    'reports': can('reports', 'view'),
+    'settings': can('settings', 'view')
+  };
+  Object.keys(navItems).forEach(function(p) {
+    var el = document.querySelector('.sidebar-nav .nav-item[data-page="' + p + '"]');
+    if (el) el.style.display = navItems[p] ? '' : 'none';
+  });
+
+  // 2. Mobile Bottom Nav Visibility
+  var mobileItems = {
+    'dashboard': true,
+    'molds': can('molds', 'view'),
+    'tpm': can('tpm', 'view'),
+    'issues': can('issues', 'view')
+  };
+  Object.keys(mobileItems).forEach(function(p) {
+    var mEl = document.querySelector('#mobile-bottom-nav .mobile-nav-item[data-mobile-page="' + p + '"]');
+    if (mEl) mEl.style.display = mobileItems[p] ? '' : 'none';
+  });
+
+  // 3. Declarative Action Buttons [data-perm="module:action"]
+  document.querySelectorAll('[data-perm]').forEach(function(btn) {
+    var raw = btn.getAttribute('data-perm');
+    if (!raw) return;
+    var parts = raw.split(':');
+    var mod = parts[0];
+    var act = parts[1] || 'view';
+    btn.style.display = can(mod, act) ? '' : 'none';
+  });
+
+  // 4. Redirect if currently in unauthorized page
+  var activePageEl = document.querySelector('.page.active');
+  if (activePageEl) {
+    var pageId = activePageEl.id.replace('page-', '');
+    if (pageId !== 'dashboard' && !can(pageId, 'view')) {
+      nav('dashboard');
+    }
+  }
 }
 
 // ============================================
@@ -2243,105 +2538,57 @@ function openUserSelectModal(isWelcome) {
 
   // Build user profiles list dynamically from System Users
   var allUsers = getSystemUsers();
-  var profiles = [];
+  var rMap = {
+    'Admin': { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', icon: '⚙️', desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน' },
+    'Viewer': { color: '#64748b', bg: 'rgba(100,116,139,0.15)', icon: '👨‍💼', desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ดูข้อมูลอย่างเดียว)' },
+    'Engineer': { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: '🛠️', desc: 'วิศวกร: จัดการและวิเคราะห์ข้อมูลทุกระบบ, วางแผน TPM, เบิกจ่ายอะไหล่' },
+    'Technician': { color: '#6366f1', bg: 'rgba(99,102,241,0.15)', icon: '👷‍♂️', desc: 'ช่างซ่อมบำรุง: แจ้งปัญหา, ซ่อม/ปิดงาน, ตรวจเช็ค TPM, เบิกจ่ายอะไหล่' },
+    'MoldSpecialist': { color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', icon: '🧩', desc: 'ช่างเฉพาะโมล: ดูแลแม่พิมพ์, ตรวจเช็ค TPM โมล, บันทึกการซ่อม' },
+    'MachineSpecialist': { color: '#0ea5e9', bg: 'rgba(14,165,233,0.15)', icon: '🏭', desc: 'ช่างเฉพาะเครื่องจักร: ดูแลเครื่องจักร, ตรวจเช็ค TPM เครื่องจักร, บันทึกการซ่อม' },
+    'StockKeeper': { color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: '📦', desc: 'เจ้าหน้าที่สโตร์: ดูแลคลังอะไหล่, บันทึกรับเข้า-เบิกออก, สั่งซื้ออะไหล่' },
+    'Custom': { color: '#ec4899', bg: 'rgba(236,72,153,0.15)', icon: '🎛️', desc: 'กำหนดสิทธิ์เฉพาะรายระบบตามที่ Admin ตั้งค่าไว้' }
+  };
 
-  // 1. Viewer / Supervisor
-  var viewers = allUsers.filter(function(u) { return u.Role === 'Viewer'; });
-  if (viewers.length > 0) {
-    viewers.forEach(function(u) {
-      profiles.push({
-        ID: u.ID,
-        Name: u.Name,
-        Role: 'Viewer',
-        Email: u.Email || '',
-        Department: u.Department || 'Management',
-        Icon: '👨‍💼',
-        Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
-      });
-    });
-  } else {
-    profiles.push({
-      ID: 'usr_viewer',
-      Name: 'หัวหน้า / ผู้จัดการ (โหมดดูอย่างเดียว)',
-      Role: 'Viewer',
-      Email: 'viewer@tpm.local',
-      Department: 'Management',
-      Icon: '👨‍💼',
-      Desc: 'ดู Dashboard, สถิติ, ประวัติงานซ่อม, สั่งพิมพ์รายงาน A4 (ไม่สามารถแก้ไขข้อมูลได้)'
-    });
-  }
-
-  // 2. Technicians & Engineers
-  var teamMembers = allUsers.filter(function(u) { return u.Role !== 'Viewer' && u.Role !== 'Admin'; });
-  if (teamMembers.length > 0) {
-    teamMembers.forEach(function(u) {
-      profiles.push({
-        ID: u.ID,
-        Name: u.Name,
-        Role: u.Role || 'Technician',
-        Email: u.Email || '',
-        Department: u.Department || 'Maintenance',
-        Icon: u.Role === 'Engineer' ? '🛠️' : '👷‍♂️',
-        Desc: u.Role === 'Engineer'
-          ? 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, วางแผนและตรวจเช็ค TPM, เบิก/รับสต็อก'
-          : 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
-      });
-    });
-  } else {
-    profiles.push({
-      ID: 'usr_sarin',
-      Name: 'สาริน T.',
-      Role: 'Technician',
-      Email: 'sarin@tpm.local',
-      Department: 'Maintenance',
-      Icon: '👷‍♂️',
-      Desc: 'แจ้งปัญหา, บันทึกการซ่อม, ผล Trial, ติ๊กตรวจ PM 9 ข้อ, เบิก/รับสต็อก (ไม่สามารถลบข้อมูลหลักได้)'
-    });
-  }
-
-  // 3. Admin Profile
-  var admins = allUsers.filter(function(u) { return u.Role === 'Admin'; });
-  if (admins.length > 0) {
-    admins.forEach(function(u) {
-      profiles.push({
-        ID: u.ID,
-        Name: u.Name,
-        Role: 'Admin',
-        Email: u.Email || 'admin@tpm.local',
-        Department: u.Department || 'IT & System',
-        Icon: '⚙️',
-        Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
-      });
-    });
-  } else {
-    profiles.push({
-      ID: 'usr_admin',
-      Name: 'ผู้ดูแลระบบ (Admin)',
-      Role: 'Admin',
-      Email: 'admin@tpm.local',
-      Department: 'IT & System',
-      Icon: '⚙️',
-      Desc: 'สิทธิ์เต็ม 100% (เพิ่ม/แก้ไข/ลบข้อมูลหลัก, จัดการผู้ใช้) 🔒 ต้องใส่รหัสผ่าน'
-    });
-  }
+  var profiles = allUsers.map(function(u) {
+    var meta = rMap[u.Role] || rMap['Technician'];
+    var desc = meta.desc;
+    if (u.Role === 'Custom' && u.Permissions) {
+      var allowed = [];
+      if (u.Permissions.molds && u.Permissions.molds.view) allowed.push('โมล');
+      if (u.Permissions.machines && u.Permissions.machines.view) allowed.push('เครื่องจักร');
+      if (u.Permissions.tpm && u.Permissions.tpm.view) allowed.push('TPM');
+      if (u.Permissions.issues && u.Permissions.issues.view) allowed.push('แจ้งปัญหา');
+      if (u.Permissions.stock && u.Permissions.stock.view) allowed.push('สต็อก');
+      if (allowed.length) desc = 'เข้าถึงได้: ' + allowed.join(', ');
+    }
+    return {
+      ID: u.ID,
+      Name: u.Name,
+      Role: u.Role || 'Technician',
+      Email: u.Email || '',
+      Department: u.Department || 'Maintenance',
+      Permissions: u.Permissions || null,
+      Icon: meta.icon,
+      Color: meta.color,
+      Bg: meta.bg,
+      Desc: desc
+    };
+  });
 
   // Store profiles globally for click handler to reference by index
   STATE._userProfiles = profiles;
 
   listEl.innerHTML = profiles.map(function(p, idx) {
     var isActive = (curName === p.Name);
-    var badgeColor = p.Role === 'Admin' ? '#ef4444' : (p.Role === 'Viewer' ? '#10b981' : (p.Role === 'Engineer' ? '#f59e0b' : '#6366f1'));
-    var badgeBg = p.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (p.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : (p.Role === 'Engineer' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)'));
-
     return '<div class="user-profile-card ' + (isActive ? 'active' : '') + '" onclick="selectUserProfileByIndex(' + idx + ')">' +
       '<div style="display:flex;align-items:center;gap:12px;">' +
         '<div style="font-size:26px;width:44px;height:44px;border-radius:10px;background:var(--surface);display:flex;align-items:center;justify-content:center;border:1px solid var(--border);">' + p.Icon + '</div>' +
         '<div>' +
           '<div style="display:flex;align-items:center;gap:8px;">' +
-            '<strong style="font-size:14px;color:var(--text);">' + p.Name + '</strong>' +
-            '<span class="badge" style="background:' + badgeBg + ';color:' + badgeColor + ';font-size:10px;padding:2px 6px;">' + p.Role + '</span>' +
+            '<strong style="font-size:14px;color:var(--text);">' + esc(p.Name) + '</strong>' +
+            '<span class="badge" style="background:' + p.Bg + ';color:' + p.Color + ';font-size:10px;padding:2px 6px;">' + esc(p.Role) + '</span>' +
           '</div>' +
-          '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.3;">' + p.Desc + '</div>' +
+          '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px;line-height:1.3;">' + esc(p.Desc) + '</div>' +
         '</div>' +
       '</div>' +
       '<div>' + (isActive ? '<span style="font-size:18px;color:#10b981;">✔</span>' : '<span style="font-size:14px;color:var(--text-muted);">➔</span>') + '</div>' +
@@ -2704,6 +2951,10 @@ function closeMobileSidebar() {
 
 function nav(page) {
   try {
+    if (page !== 'dashboard' && !can(page, 'view')) {
+      showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'warning');
+      page = 'dashboard';
+    }
     closeMobileSidebar();
     var backBtn = document.getElementById('mobile-back-btn');
     if (backBtn) {
@@ -3151,8 +3402,8 @@ function filterMolds(){
       '<td style="white-space:nowrap;">'+
         '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="ดูรายละเอียด & แผน PM" style="margin-right:2px">📋 แผน PM</button>'+
         '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button>'+
-        (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '')+
-        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '')+
+        (can('molds', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '')+
+        (can('molds', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
@@ -3403,7 +3654,7 @@ function filterMachines(){
     var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
       return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
     }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
-    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td>' + (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
+    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td>' + (can('machines', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (can('machines', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
   }).join('');
 }
 function openMachineModal(data){
@@ -3523,9 +3774,9 @@ function renderTPMList(container){
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
     var actionBtns = !isDone
-      ? (canEdit() ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
-      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (canEdit() ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
-    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(canDelete() ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+      ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
+      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
+    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -4362,10 +4613,10 @@ function filterIssues() {
       '<td>' + trialThumbs + '</td>' +
       '<td style="white-space:nowrap">' +
         '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
-        (canEdit() ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
+        (can('issues', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
-        (canEdit() && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
-        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
+        (can('issues', 'edit') && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
+        (can('issues', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
       '</td>' +
     '</tr>';
   }).join('');
@@ -5441,7 +5692,7 @@ function filterStock(){
       '</td>'+
       '<td>'+(p.Location||'-')+'</td>'+
       '<td style="white-space:nowrap">'+
-        (canEdit() ? (
+        (can('stock', 'edit') ? (
           '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
           (p.OnOrderQty > 0 ?
             '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="รับของที่สั่งเข้าสต็อกทันที (PO: '+(p.PONo||'-')+')">✅ รับของ ('+p.OnOrderQty+')</button> ' :
@@ -5449,7 +5700,7 @@ function filterStock(){
           ) +
           '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '
         ) : '') +
-        (canDelete() ? '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>' : '')+
+        (can('stock', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
@@ -6001,14 +6252,38 @@ async function loadUsers(){
       return;
     }
     utb.innerHTML = users.map(function(u){
-      var rColor = u.Role === 'Admin' ? '#ef4444' : (u.Role === 'Viewer' ? '#10b981' : (u.Role === 'Engineer' ? '#f59e0b' : '#6366f1'));
-      var rBg = u.Role === 'Admin' ? 'rgba(239,68,68,0.15)' : (u.Role === 'Viewer' ? 'rgba(16,185,129,0.15)' : (u.Role === 'Engineer' ? 'rgba(245,158,11,0.15)' : 'rgba(99,102,241,0.15)'));
-      var icon = u.Role === 'Admin' ? '⚙️' : (u.Role === 'Viewer' ? '👨‍💼' : (u.Role === 'Engineer' ? '🛠️' : '👷‍♂️'));
+      var rMap = {
+        'Admin': { color: '#ef4444', bg: 'rgba(239,68,68,0.15)', icon: '⚙️', label: 'Admin (ผู้ดูแลระบบ)' },
+        'Viewer': { color: '#64748b', bg: 'rgba(100,116,139,0.15)', icon: '👨‍💼', label: 'Viewer (ดูอย่างเดียว)' },
+        'Engineer': { color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: '🛠️', label: 'Engineer (วิศวกร)' },
+        'Technician': { color: '#6366f1', bg: 'rgba(99,102,241,0.15)', icon: '👷‍♂️', label: 'Technician (ช่างซ่อมบำรุง)' },
+        'MoldSpecialist': { color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', icon: '🧩', label: 'Mold Specialist (ช่างโมล)' },
+        'MachineSpecialist': { color: '#0ea5e9', bg: 'rgba(14,165,233,0.15)', icon: '🏭', label: 'Machine Specialist (ช่างเครื่องจักร)' },
+        'StockKeeper': { color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: '📦', label: 'Stock Keeper (สโตร์/คลัง)' },
+        'Custom': { color: '#ec4899', bg: 'rgba(236,72,153,0.15)', icon: '🎛️', label: 'Custom (กำหนดสิทธิ์เอง)' }
+      };
+      var meta = rMap[u.Role] || rMap['Technician'];
       var uJson = JSON.stringify(u).replace(/"/g, '&quot;');
+
+      // Permission tags
+      var pTags = [];
+      var p = u.Permissions || (PERM_PRESETS[u.Role] || {});
+      if (u.Role === 'Admin') {
+        pTags.push('<span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444;font-size:10px;">🌟 ทุกระบบ (Full Admin)</span>');
+      } else {
+        if (p.molds && p.molds.view) pTags.push('<span class="badge" style="background:rgba(139,92,246,.15);color:#8b5cf6;font-size:10px;" title="' + (p.molds.edit ? 'ดู+แก้ไข' : 'ดูอย่างเดียว') + '">🧩 โมล' + (p.molds.edit ? ' ✏️' : '') + '</span>');
+        if (p.machines && p.machines.view) pTags.push('<span class="badge" style="background:rgba(14,165,233,.15);color:#0ea5e9;font-size:10px;" title="' + (p.machines.edit ? 'ดู+แก้ไข' : 'ดูอย่างเดียว') + '">🏭 เครื่องจักร' + (p.machines.edit ? ' ✏️' : '') + '</span>');
+        if (p.tpm && p.tpm.view) pTags.push('<span class="badge" style="background:rgba(59,130,246,.15);color:#3b82f6;font-size:10px;" title="' + (p.tpm.edit ? 'ดู+บันทึก PM' : 'ดูอย่างเดียว') + '">🔧 TPM' + (p.tpm.edit ? ' ✏️' : '') + '</span>');
+        if (p.issues && p.issues.view) pTags.push('<span class="badge" style="background:rgba(245,158,11,.15);color:#f59e0b;font-size:10px;" title="' + (p.issues.edit ? 'ดู+แจ้ง/ปิดงาน' : 'ดูอย่างเดียว') + '">🚨 ปัญหา' + (p.issues.edit ? ' ✏️' : '') + '</span>');
+        if (p.stock && p.stock.view) pTags.push('<span class="badge" style="background:rgba(16,185,129,.15);color:#10b981;font-size:10px;" title="' + (p.stock.edit ? 'ดู+เบิกจ่าย' : 'ดูอย่างเดียว') + '">📦 สต็อก' + (p.stock.edit ? ' ✏️' : '') + '</span>');
+        if (p.reports && p.reports.view) pTags.push('<span class="badge" style="background:rgba(100,116,139,.15);color:#94a3b8;font-size:10px;">📈 รายงาน</span>');
+      }
+      var permStr = pTags.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">' + pTags.join('') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีสิทธิ์</span>';
+
       return '<tr>' +
-        '<td><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">' + icon + '</span><strong>' + esc(u.Name || '-') + '</strong></div></td>' +
+        '<td><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">' + meta.icon + '</span><strong>' + esc(u.Name || '-') + '</strong></div></td>' +
         '<td>' + esc(u.Email || '-') + '</td>' +
-        '<td><span class="badge" style="background:' + rBg + ';color:' + rColor + ';font-weight:600;">' + esc(u.Role || 'Technician') + '</span></td>' +
+        '<td><span class="badge" style="background:' + meta.bg + ';color:' + meta.color + ';font-weight:600;">' + esc(u.Role || 'Technician') + '</span>' + permStr + '</td>' +
         '<td>' + esc(u.Department || '-') + '</td>' +
         '<td>' +
           '<button class="btn btn-ghost btn-sm" onclick=\'openUserModal(' + uJson + ')\' title="แก้ไข">✏️</button>' +
@@ -6032,9 +6307,17 @@ function openUserModal(data){
     v_set('user-name-input', data.Name || '');
     v_set('user-role-select', data.Role || 'Technician');
     v_set('user-dept', data.Department || 'Maintenance');
+    if (data.Permissions) {
+      applyPermsToUI(data.Permissions);
+    } else if (PERM_PRESETS[data.Role]) {
+      applyPermsToUI(PERM_PRESETS[data.Role]);
+    } else {
+      applyPermsToUI(PERM_PRESETS['Technician']);
+    }
   } else {
     v_set('user-role-select', 'Technician');
     v_set('user-dept', 'Maintenance');
+    applyPermsToUI(PERM_PRESETS['Technician']);
   }
   openModal('user-modal');
   setTimeout(function(){ var inp = document.getElementById('user-name-input'); if(inp) inp.focus(); }, 200);
@@ -6050,7 +6333,8 @@ async function saveUser(){
   var id = v('user-id') || ('usr_' + Date.now());
   var role = v('user-role-select') || 'Technician';
   var dept = v('user-dept') || 'Maintenance';
-  var data = { ID: id, Name: name, Email: email, Role: role, Department: dept, Status: 'Active' };
+  var perms = collectPermsFromUI();
+  var data = { ID: id, Name: name, Email: email, Role: role, Department: dept, Status: 'Active', Permissions: perms };
   
   var r = await api('saveUser', { data: data });
   if(r && r.success){
