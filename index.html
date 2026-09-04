@@ -503,6 +503,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="tpm-year" onchange="loadTPMPlans()"></select>
     <select id="tpm-month" onchange="renderTPM()"><option value="">ทุกเดือน</option></select>
     <select id="tpm-filter-status" onchange="renderTPM()"><option value="">ทุกสถานะ</option><option value="Overdue">🔴 Overdue (ช้ากว่ากำหนด)</option><option value="Due Soon">🟡 Due Soon (ใกล้ถึงแผน)</option><option value="Planned">🔵 Planned (ตามแผน)</option><option value="Done">🟢 Done (เสร็จแล้ว)</option></select>
+    <select id="tpm-target-type-filter" onchange="renderTPM()" style="width:145px;"><option value="">🔄 ทุกประเภท</option><option value="Mold">🧩 เฉพาะโมล</option><option value="Machine">🏭 เฉพาะเครื่องจักร</option></select>
     <div style="flex:1"></div>
     <button class="btn btn-outline" data-perm="tpm:edit" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary" data-perm="tpm:edit" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
   </div>
@@ -531,6 +532,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <input class="search-input" type="text" placeholder="🔍 ค้นหาอะไหล่..." oninput="filterStock()"/>
     <select id="stock-vendor-filter" style="width:160px" onchange="filterStock()"><option value="">🏢 ทุก Vendor</option></select>
     <select id="stock-link-filter" style="width:160px" onchange="filterStock()"><option value="">🔗 ทุก Machine/Mold</option></select>
+    <select id="stock-target-type-filter" style="width:145px" onchange="filterStock()"><option value="">🔄 ทุกประเภท</option><option value="Mold">🧩 อะไหล่โมล</option><option value="Machine">🏭 อะไหล่เครื่องจักร</option><option value="General">📦 อะไหล่ทั่วไป</option></select>
     <select id="stock-level-filter" style="width:130px" onchange="filterStock()"><option value="">ทุก Level</option><option value="low">⚠️ Low Stock</option><option value="ok">✅ ปกติ</option></select>
     <div style="flex:1"></div>
     <button class="btn btn-outline" data-perm="stock:edit" onclick="openStockTxModal()">📦 รับ/เบิก</button>
@@ -2484,6 +2486,40 @@ function applyRolePermissions() {
       nav('dashboard');
     }
   }
+
+  // 5. Smart Target Filter Dropdowns according to role scope
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+
+  var tpmTypeFilter = document.getElementById('tpm-target-type-filter');
+  if (tpmTypeFilter) {
+    if (canMold && !canMachine) {
+      tpmTypeFilter.innerHTML = '<option value="Mold" selected>🧩 เฉพาะโมล</option>';
+      tpmTypeFilter.value = 'Mold';
+    } else if (!canMold && canMachine) {
+      tpmTypeFilter.innerHTML = '<option value="Machine" selected>🏭 เฉพาะเครื่องจักร</option>';
+      tpmTypeFilter.value = 'Machine';
+    } else {
+      var prevTpm = tpmTypeFilter.value;
+      tpmTypeFilter.innerHTML = '<option value="">🔄 ทุกประเภท</option><option value="Mold">🧩 เฉพาะโมล</option><option value="Machine">🏭 เฉพาะเครื่องจักร</option>';
+      tpmTypeFilter.value = prevTpm || '';
+    }
+  }
+
+  var stockTypeFilter = document.getElementById('stock-target-type-filter');
+  if (stockTypeFilter) {
+    if (canMold && !canMachine) {
+      stockTypeFilter.innerHTML = '<option value="Mold" selected>🧩 อะไหล่โมล</option><option value="General">📦 อะไหล่ทั่วไป</option>';
+      stockTypeFilter.value = 'Mold';
+    } else if (!canMold && canMachine) {
+      stockTypeFilter.innerHTML = '<option value="Machine" selected>🏭 อะไหล่เครื่องจักร</option><option value="General">📦 อะไหล่ทั่วไป</option>';
+      stockTypeFilter.value = 'Machine';
+    } else {
+      var prevStock = stockTypeFilter.value;
+      stockTypeFilter.innerHTML = '<option value="">🔄 ทุกประเภท</option><option value="Mold">🧩 อะไหล่โมล</option><option value="Machine">🏭 อะไหล่เครื่องจักร</option><option value="General">📦 อะไหล่ทั่วไป</option>';
+      stockTypeFilter.value = prevStock || '';
+    }
+  }
 }
 
 // ============================================
@@ -3064,25 +3100,65 @@ function updateBadges() {
 let tpmCh=null, issCh=null;
 async function loadDashboard() {
   try {
+    const canMold = can('molds', 'view');
+    const canMachine = can('machines', 'view');
+    const canIssues = can('issues', 'view');
+    const canTPM = can('tpm', 'view');
+    const canStock = can('stock', 'view');
+
     const r = await api('getDashboard');
-    const d = (r && r.success) ? (r.data || {}) : {
-      totalMolds: (STATE.molds||[]).length,
-      totalMachines: (STATE.machines||[]).length,
-      openIssues: (STATE.issues||[]).filter(i=>i.Status!=='Closed').length,
-      criticalIssues: (STATE.issues||[]).filter(i=>i.Status!=='Closed'&&i.Severity==='Critical').length,
-      tpmThisMonth: 0, tpmDone: 0, tpmOverdue: 0, tpmDueSoon: 0,
-      lowStock: (STATE.stockParts||[]).filter(p=>Number(p.CurrentStock||p.Qty||0)<=Number(p.MinStock||p.MinQty||0)&&Number(p.MinStock||p.MinQty||0)>0).length,
-      tpmChart: [], issueChart: [], recentIssues: (STATE.issues||[]).slice(0,5), overdueTPM: [], lowStockList: []
-    };
-    
+    const d = (r && r.success) ? (r.data || {}) : {};
+
+    // Calculate scoped metrics
+    var scopedMolds = (STATE.molds||[]).length;
+    var scopedMachines = (STATE.machines||[]).length;
+    var scopedIssues = (STATE.issues||[]).filter(function(i){
+      if (!canMold && i.TargetType === 'Mold') return false;
+      if (!canMachine && i.TargetType === 'Machine') return false;
+      return true;
+    });
+    var openIssues = scopedIssues.filter(i=>i.Status!=='Closed').length;
+    var criticalIssues = scopedIssues.filter(i=>i.Status!=='Closed'&&i.Severity==='Critical').length;
+
+    var scopedStock = (STATE.stockParts||[]).filter(function(p){
+      if (p.ID === '__SYS_USERS_CONFIG__') return false;
+      if (!canMold && p.LinkedType === 'Mold') return false;
+      if (!canMachine && p.LinkedType === 'Machine') return false;
+      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+      var min = Number(p.MinStock ?? p.MinQty ?? 0);
+      return cur <= min && min > 0;
+    }).length;
+
+    var scopedTPM = (STATE.tpmPlans||[]).filter(function(p){
+      if (!canMold && p.TargetType === 'Mold') return false;
+      if (!canMachine && p.TargetType === 'Machine') return false;
+      return true;
+    });
+    var thisMonthPlans = scopedTPM.filter(p => p.PlannedDate && new Date(p.PlannedDate).getMonth() === new Date().getMonth());
+    var tpmThisMonth = thisMonthPlans.length;
+    var tpmDone = thisMonthPlans.filter(p => p.Status === 'Done').length;
+    var tpmOverdue = scopedTPM.filter(p => getTPMStatus(p) === 'Overdue').length;
+    var tpmDueSoon = scopedTPM.filter(p => getTPMStatus(p) === 'Due Soon').length;
+
     const dashStats = document.getElementById('dash-stats');
     if (dashStats) {
-      dashStats.innerHTML =
-        '<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+(d.totalMolds||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>'+
-        '<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+(d.totalMachines||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>'+
-        '<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+(d.openIssues||0)+'</div><div class="stat-sub">Critical: '+(d.criticalIssues||0)+' <span style="color:var(--primary);font-size:10px">→ คลิก</span></div></div>'+
-        '<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+(d.tpmDone||0)+'/'+(d.tpmThisMonth||0)+'</div><div class="stat-sub">Overdue: '+(d.tpmOverdue||0)+' | Due Soon: '+(d.tpmDueSoon||0)+'</div></div>'+
-        '<div class="stat-card '+(d.lowStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+(d.lowStock||0)+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>';
+      var statCards = [];
+      if (canMold) {
+        statCards.push('<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+scopedMolds+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+      }
+      if (canMachine) {
+        statCards.push('<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+scopedMachines+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+      }
+      if (canIssues) {
+        statCards.push('<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+openIssues+'</div><div class="stat-sub">Critical: '+criticalIssues+' <span style="color:var(--primary);font-size:10px">→ คลิก</span></div></div>');
+      }
+      if (canTPM) {
+        statCards.push('<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+tpmDone+'/'+tpmThisMonth+'</div><div class="stat-sub">Overdue: '+tpmOverdue+' | Due Soon: '+tpmDueSoon+'</div></div>');
+      }
+      if (canStock) {
+        statCards.push('<div class="stat-card '+(scopedStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+scopedStock+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+      }
+      dashStats.innerHTML = statCards.join('');
     }
 
     if (tpmCh) { tpmCh.destroy(); tpmCh=null; }
@@ -3131,21 +3207,28 @@ async function loadDashboard() {
     }
 
     const issuesEl = document.getElementById('dash-issues');
-    const recentIssues = d.recentIssues || [];
+    const recentIssues = scopedIssues.slice(0, 5);
     if (issuesEl) {
       issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มี Issue ค้าง', '') :
         recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="nav(\'issues\')" title="คลิกเพื่อไปหน้ารายการปัญหา"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">' + (i.TargetName||'-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-faint)">(' + (i.IssueType||'-') + ')</span></div><div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (i.Description||'') + '</div></div><span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span></div>').join('');
     }
 
     const overdueEl = document.getElementById('dash-tpm-overdue');
-    const overdueTPM = d.overdueTPM || [];
+    const overdueTPM = scopedTPM.filter(p => getTPMStatus(p) === 'Overdue');
     if (overdueEl) {
       overdueEl.innerHTML = overdueTPM.length === 0 ? emptyState('✅', 'ไม่มี TPM เกินกำหนด', '') :
         overdueTPM.map(t => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">' + (t.TargetName||'-') + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.PlannedDate||'') + '</div></div><span class="badge overdue">Overdue</span></div>').join('');
     }
 
     const stockEl = document.getElementById('dash-low-stock');
-    const lowStockList = d.lowStockList || [];
+    const lowStockList = (STATE.stockParts || []).filter(function(p) {
+      if (p.ID === '__SYS_USERS_CONFIG__') return false;
+      if (!canMold && p.LinkedType === 'Mold') return false;
+      if (!canMachine && p.LinkedType === 'Machine') return false;
+      var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+      var min = Number(p.MinStock ?? p.MinQty ?? 0);
+      return cur <= min && min > 0;
+    });
     if (stockEl) {
       stockEl.innerHTML = lowStockList.length === 0 ? emptyState('✅', 'Stock ปกติ', '') :
         '<div class="table-wrapper"><table><thead><tr><th>Part Name</th><th>Current</th><th>Min</th></tr></thead><tbody>' + lowStockList.map(p => '<tr><td>' + (p.PartName||p.Name||'-') + '</td><td style="color:var(--danger)">' + (p.CurrentStock||p.Qty||0) + ' ' + (p.Unit||'') + '</td><td>' + (p.MinStock||p.MinQty||0) + ' ' + (p.Unit||'') + '</td></tr>').join('') + '</tbody></table></div>';
@@ -3744,8 +3827,16 @@ function renderTPMCalendar(container){
   var yr=parseInt(v('tpm-year'))||new Date().getFullYear();
   var mo=parseInt(v('tpm-month'))||new Date().getMonth()+1;
   var status=v('tpm-filter-status')||'';
+  var typeFilter=v('tpm-target-type-filter')||'';
+  var canMold=can('molds', 'view');
+  var canMachine=can('machines', 'view');
   var today=new Date();var firstDay=new Date(yr,mo-1,1);var lastDay=new Date(yr,mo,0);
-  var plans=STATE.tpmPlans.filter(function(p){return p.PlannedDate&&new Date(p.PlannedDate).getMonth()===mo-1;});
+  var plans=STATE.tpmPlans.filter(function(p){
+    if (!canMold && p.TargetType === 'Mold') return false;
+    if (!canMachine && p.TargetType === 'Machine') return false;
+    if (typeFilter && p.TargetType !== typeFilter) return false;
+    return p.PlannedDate&&new Date(p.PlannedDate).getMonth()===mo-1;
+  });
   if(status) plans=plans.filter(function(p){ return getTPMStatus(p) === status; });
   var dayHdrs=['\u0e2d\u0e32','\u0e08','\u0e2d','\u0e1e','\u0e1e\u0e24','\u0e28','\u0e2a'].map(function(d){return '<div class="cal-header-cell">'+d+'</div>';}).join('');
   var cells='';
@@ -3768,11 +3859,21 @@ function renderTPMCalendar(container){
 }
 function changeMonth(dir){var ms=document.getElementById('tpm-month');var ys=document.getElementById('tpm-year');var mo=parseInt(ms.value)||new Date().getMonth()+1;var yr=parseInt(ys.value)||new Date().getFullYear();mo+=dir;if(mo>12){mo=1;yr++;}if(mo<1){mo=12;yr--;}ms.value=mo;ys.value=yr;loadTPMPlans();}
 function renderTPMList(container){
-  var status=v('tpm-filter-status');var plans=STATE.tpmPlans.slice();
+  var status=v('tpm-filter-status');
+  var typeFilter=v('tpm-target-type-filter')||'';
+  var canMold=can('molds', 'view');
+  var canMachine=can('machines', 'view');
+  var plans=STATE.tpmPlans.filter(function(p){
+    if (!canMold && p.TargetType === 'Mold') return false;
+    if (!canMachine && p.TargetType === 'Machine') return false;
+    if (typeFilter && p.TargetType !== typeFilter) return false;
+    return true;
+  });
   if(status) plans=plans.filter(function(p){ return getTPMStatus(p) === status; });
   plans.sort(function(a,b){return new Date(a.PlannedDate)-new Date(b.PlannedDate);});
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
+    var isDone = p.Status === 'Done' || getTPMStatus(p) === 'Done';
     var actionBtns = !isDone
       ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
       : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
@@ -3780,7 +3881,28 @@ function renderTPMList(container){
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
-function openTPMModal(){['tpm-id','tpm-planned-date','tpm-assigned','tpm-vendor-resp'].forEach(function(i){v_set(i,'');});v_set('tpm-plan-year',new Date().getFullYear());loadTPMTargets();openModal('tpm-modal');}
+function openTPMModal(){
+  ['tpm-id','tpm-planned-date','tpm-assigned','tpm-vendor-resp'].forEach(function(i){v_set(i,'');});
+  v_set('tpm-plan-year',new Date().getFullYear());
+  var tt = document.getElementById('tpm-target-type');
+  if (tt) {
+    var canMold = can('molds', 'view');
+    var canMachine = can('machines', 'view');
+    if (canMold && !canMachine) {
+      tt.innerHTML = '<option value="Mold" selected>Mold</option>';
+      tt.value = 'Mold';
+    } else if (!canMold && canMachine) {
+      tt.innerHTML = '<option value="Machine" selected>Machine</option>';
+      tt.value = 'Machine';
+    } else {
+      tt.innerHTML = '<option value="Mold">Mold</option><option value="Machine">Machine</option>';
+      var curFilter = v('tpm-target-type-filter');
+      if (curFilter) tt.value = curFilter;
+    }
+  }
+  loadTPMTargets();
+  openModal('tpm-modal');
+}
 async function saveTPMPlan(){
   var targetId=v('tpm-target-id'),date=v('tpm-planned-date');
   if(!targetId||!date){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01 Machine/Mold \u0e41\u0e25\u0e30\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48','error');return;}
@@ -3840,7 +3962,24 @@ function loadBulkTargets(){
 }
 
 function openBulkTPMModal(targetType, targetId){
-  if (targetType) v_set('bulk-target-type', targetType);
+  var btt = document.getElementById('bulk-target-type');
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+  if (btt) {
+    if (canMold && !canMachine) {
+      btt.innerHTML = '<option value="Mold" selected>Mold</option>';
+      btt.value = 'Mold';
+    } else if (!canMold && canMachine) {
+      btt.innerHTML = '<option value="Machine" selected>Machine</option>';
+      btt.value = 'Machine';
+    } else {
+      btt.innerHTML = '<option value="Mold">Mold</option><option value="Machine">Machine</option>';
+      if (targetType) btt.value = targetType;
+      else if (v('tpm-target-type-filter')) btt.value = v('tpm-target-type-filter');
+    }
+  } else if (targetType) {
+    v_set('bulk-target-type', targetType);
+  }
   loadBulkTargets();
   if (targetId) {
     v_set('bulk-target-id', targetId);
@@ -4532,9 +4671,13 @@ function renderIssues(){
   var mf = document.getElementById('issue-mold-filter');
   if (mf) {
     var curVal = mf.value;
-    var allTargets = (STATE.molds || []).map(function(m){ return { id: m.ID, name: '\ud83e\udde9 ' + m.Name }; })
-      .concat((STATE.machines || []).map(function(m){ return { id: m.ID, name: '\ud83c\udfed ' + m.Name }; }));
-    mf.innerHTML = '<option value="">\ud83e\udde9 \u0e17\u0e38\u0e01 Mold / Machine</option>' +
+    var canMold = can('molds', 'view');
+    var canMachine = can('machines', 'view');
+    var moldTargets = canMold ? (STATE.molds || []).map(function(m){ return { id: m.ID, name: '🧩 ' + m.Name }; }) : [];
+    var machineTargets = canMachine ? (STATE.machines || []).map(function(m){ return { id: m.ID, name: '🏭 ' + m.Name }; }) : [];
+    var allTargets = moldTargets.concat(machineTargets);
+    var defaultLbl = (canMold && !canMachine) ? '🧩 ทุก Mold' : ((!canMold && canMachine) ? '🏭 ทุก Machine' : '🧩 ทุก Mold / Machine');
+    mf.innerHTML = '<option value="">' + defaultLbl + '</option>' +
       allTargets.map(function(t){
         return '<option value="' + t.id + '"' + (t.id === curVal ? ' selected' : '') + '>' + t.name + '</option>';
       }).join('');
@@ -4549,8 +4692,13 @@ function filterIssues() {
   var statusEl = document.getElementById('issue-status-filter');
   var status = statusEl ? statusEl.value : 'Active';
   var severity = (document.getElementById('issue-severity-filter') || {}).value || '';
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
 
   var filtered = (STATE.issues || []).filter(function(i) {
+    var targetType = i.TargetType || ((STATE.molds||[]).some(function(m){return m.ID===i.TargetID;}) ? 'Mold' : 'Machine');
+    if (!canMold && targetType === 'Mold') return false;
+    if (!canMachine && targetType === 'Machine') return false;
     var code = getIssueDisplayCode(i).toLowerCase();
     if (mold && i.TargetID !== mold) return false;
     if (status === 'Active') {
@@ -4749,6 +4897,20 @@ function openIssueModal(issueOrId){
   } else {
     if (titleEl) titleEl.textContent = '🚨 แจ้งปัญหา';
     v_set('issue-occurred', new Date().toISOString().slice(0,16));
+    var canMold = can('molds', 'view');
+    var canMachine = can('machines', 'view');
+    var issueTargetSel = document.getElementById('issue-target-type');
+    if (issueTargetSel) {
+      if (canMold && !canMachine) {
+        issueTargetSel.innerHTML = '<option value="Mold" selected>Mold</option>';
+        issueTargetSel.value = 'Mold';
+      } else if (!canMold && canMachine) {
+        issueTargetSel.innerHTML = '<option value="Machine" selected>Machine</option>';
+        issueTargetSel.value = 'Machine';
+      } else {
+        issueTargetSel.innerHTML = '<option value="Mold">Mold</option><option value="Machine">Machine</option>';
+      }
+    }
     loadIssueTargets();
     if (secAfter) secAfter.style.display = 'none';
     if (secTrial) secTrial.style.display = 'none';
@@ -5614,14 +5776,32 @@ async function delIssue(id){
 //  STOCK
 // ============================================
 function renderStock(){
-  var stockList = (STATE.stockParts||[]).filter(function(p){ return p.ID !== '__SYS_USERS_CONFIG__'; });
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+  var stockTypeFilter = (document.getElementById('stock-target-type-filter')||{}).value || '';
+
+  var stockList = (STATE.stockParts||[]).filter(function(p){
+    if (p.ID === '__SYS_USERS_CONFIG__') return false;
+    var lt = p.LinkedType || '';
+    if (!canMold && lt === 'Mold') return false;
+    if (!canMachine && lt === 'Machine') return false;
+    if (stockTypeFilter === 'Mold' && lt !== 'Mold') return false;
+    if (stockTypeFilter === 'Machine' && lt !== 'Machine') return false;
+    if (stockTypeFilter === 'General' && lt && lt !== 'None' && lt !== 'General') return false;
+    return true;
+  });
+
   var vendors=[]; stockList.forEach(function(p){
     var vname = p.Vendor || p.Category;
     if(vname && vendors.indexOf(vname)===-1) vendors.push(vname);
   });
   var vf=document.getElementById('stock-vendor-filter');
   if(vf){var cur=vf.value;vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===cur?' selected':'')+'>'+v+'</option>';}).join('');}
-  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'🧩 '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'🏭 '+m.Name};}));
+
+  var moldTargets = canMold ? (STATE.molds||[]).map(function(m){return {id:m.ID,name:'🧩 '+m.Name};}) : [];
+  var machineTargets = canMachine ? (STATE.machines||[]).map(function(m){return {id:m.ID,name:'🏭 '+m.Name};}) : [];
+  var allTargets = moldTargets.concat(machineTargets);
+
   var lf=document.getElementById('stock-link-filter');
   if(lf){var cur2=lf.value;lf.innerHTML='<option value="">🔗 ทุก Machine/Mold</option>'+allTargets.map(function(t){return '<option value="'+t.id+'"'+(t.id===cur2?' selected':'')+'>'+t.name+'</option>';}).join('');}
   filterStock();
@@ -5632,8 +5812,19 @@ function filterStock(){
   var vendor=(document.getElementById('stock-vendor-filter')||{}).value||'';
   var link=(document.getElementById('stock-link-filter')||{}).value||'';
   var level=(document.getElementById('stock-level-filter')||{}).value||'';
+  var stockTypeFilter = (document.getElementById('stock-target-type-filter')||{}).value || '';
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+
   var data=(STATE.stockParts||[]).filter(function(p){
     if (p.ID === '__SYS_USERS_CONFIG__') return false;
+    var lt = p.LinkedType || '';
+    if (!canMold && lt === 'Mold') return false;
+    if (!canMachine && lt === 'Machine') return false;
+    if (stockTypeFilter === 'Mold' && lt !== 'Mold') return false;
+    if (stockTypeFilter === 'Machine' && lt !== 'Machine') return false;
+    if (stockTypeFilter === 'General' && lt && lt !== 'None' && lt !== 'General') return false;
+
     var pVendor = p.Vendor || p.Category || '';
     var curStock = Number(p.CurrentStock ?? p.Qty ?? 0);
     var minStock = Number(p.MinStock ?? p.MinQty ?? 0);
@@ -5647,7 +5838,9 @@ function filterStock(){
   var tb=document.getElementById('stock-tbody');
   if(!tb) return;
   if(!data.length){tb.innerHTML='<tr><td colspan="10">'+emptyState('\ud83d\udce6','\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e21\u0e35\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48','\u0e04\u0e25\u0e34\u0e01 "+ \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48"')+'</td></tr>';return;}
-  var allTargets=(STATE.molds||[]).map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}).concat((STATE.machines||[]).map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}));
+  var moldTargets = canMold ? (STATE.molds||[]).map(function(m){return {id:m.ID,name:'\ud83e\udde9 '+m.Name};}) : [];
+  var machineTargets = canMachine ? (STATE.machines||[]).map(function(m){return {id:m.ID,name:'\ud83c\udfed '+m.Name};}) : [];
+  var allTargets = moldTargets.concat(machineTargets);
   tb.innerHTML=data.map(function(p){
     var cur=Number(p.CurrentStock ?? p.Qty ?? 0), min=Number(p.MinStock ?? p.MinQty ?? 0);
     var pct=min>0?Math.min((cur/min)*100,100):100;
@@ -5827,6 +6020,26 @@ function openStockPartModal(data){
   document.getElementById('stock-photos-preview').innerHTML='';
   STATE.pendingPhotos['stock-part']={files:[], existing:[]};
   document.getElementById('stock-modal-title').textContent=data?'✏️ แก้ไขอะไหล่':'+ เพิ่มอะไหล่';
+
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+  var linkTypeSel = document.getElementById('stock-link-type');
+  if (linkTypeSel) {
+    if (canMold && !canMachine) {
+      linkTypeSel.innerHTML = '<option value="">-- ไม่ระบุ (General) --</option><option value="Mold" selected>Mold</option>';
+      if (!data) { v_set('stock-link-type', 'Mold'); loadStockLinkTargets(); }
+    } else if (!canMold && canMachine) {
+      linkTypeSel.innerHTML = '<option value="">-- ไม่ระบุ (General) --</option><option value="Machine" selected>Machine</option>';
+      if (!data) { v_set('stock-link-type', 'Machine'); loadStockLinkTargets(); }
+    } else {
+      linkTypeSel.innerHTML = '<option value="">-- ไม่ระบุ (General) --</option><option value="Mold">Mold</option><option value="Machine">Machine</option>';
+      var curStockFilter = (document.getElementById('stock-target-type-filter')||{}).value || '';
+      if (!data && curStockFilter && curStockFilter !== 'General') {
+        v_set('stock-link-type', curStockFilter);
+        loadStockLinkTargets();
+      }
+    }
+  }
 
   populateStockVendorSelect(data ? (data.Category || data.Vendor || '') : '');
 
