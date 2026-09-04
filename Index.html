@@ -5312,6 +5312,8 @@ async function closeIssue(){
     console.error('closeIssue error:', err);
     showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
   }
+}
+
 async function updIssueStatus(id, status){
   var iss = (STATE.issues || []).find(function(x){ return x.ID === id; });
   var statusText = status === 'In Progress' ? 'กำลังดำเนินการ (In Progress)' : status;
