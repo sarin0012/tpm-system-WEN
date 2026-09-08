@@ -5824,6 +5824,10 @@ function loadIssueTargets(selectedTargetId){
 }
 
 function openIssueModal(issueOrId){
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์แจ้งหรือแก้ไขปัญหา (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
+    return;
+  }
   ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
   v_set('issue-reporter', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('issue-edit-closed-date','');
@@ -5951,6 +5955,10 @@ function openIssueModal(issueOrId){
 }
 
 async function saveIssue(){
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์บันทึกหรือแก้ไขปัญหา', 'error');
+    return;
+  }
   try {
     var targetId = v('issue-target-id'), desc = v('issue-description');
     if (!targetId || !desc) {
@@ -6134,11 +6142,12 @@ function openIssueDetailModal(id){
     '</div>';
 
   if (footer) {
+    var canEditIss = can('issues', 'edit');
     footer.innerHTML = 
       '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">ปิด</button> ' +
-      '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">✏️ แก้ไขข้อมูล (Before/After/Trial)</button> ' +
+      (canEditIss ? '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">✏️ แก้ไขข้อมูล (Before/After/Trial)</button> ' : '') +
       '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร</button> ' +
-      (iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">✅ ปิดงานนี้</button>' : '');
+      (canEditIss && iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">✅ ปิดงานนี้</button>' : '');
   }
 
   openModal('issue-detail-modal');
@@ -6606,6 +6615,10 @@ function removeCloseIssuePart(idx) {
 }
 
 function openCloseIssueModal(id){
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์ปิดงานหรือเบิกอะไหล่ (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
+    return;
+  }
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   v_set('close-issue-id', id);
@@ -6701,6 +6714,10 @@ function openCloseIssueModal(id){
 }
 
 async function closeIssue(){
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์ปิดงานหรือเบิกอะไหล่', 'error');
+    return;
+  }
   try {
     var id = v('close-issue-id');
     var rootCause = v('close-root-cause');
@@ -6770,6 +6787,10 @@ async function closeIssue(){
 }
 
 async function updIssueStatus(id, status){
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์เปลี่ยนสถานะงาน', 'error');
+    return;
+  }
   var iss = (STATE.issues || []).find(function(x){ return x.ID === id; });
   var statusText = status === 'In Progress' ? 'กำลังดำเนินการ (In Progress)' : status;
   var displayCode = iss ? getIssueDisplayCode(iss) : id;
@@ -6789,7 +6810,11 @@ async function updIssueStatus(id, status){
 }
 
 async function delIssue(id){
-  if(!confirm('\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49?')) return;
+  if (!can('issues', 'delete')) {
+    showToast('คุณไม่มีสิทธิ์ลบรายการปัญหา', 'error');
+    return;
+  }
+  if(!confirm('ลบรายการนี้?')) return;
   var r = await api('deleteIssue', { id: id });
   if(r && r.success){
     showToast('\u0e25\u0e1a\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08', 'success');
@@ -7042,6 +7067,10 @@ function loadStockLinkTargets(){
 }
 
 function openStockPartModal(data){
+  if (!can('stock', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์เพิ่มหรือแก้ไขอะไหล่', 'warning');
+    return;
+  }
   ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-location','stock-notes','stock-leadtime'].forEach(function(i){v_set(i,'');});
   v_set('stock-min','0');v_set('stock-current','0');
   v_set('stock-link-type','');v_set('stock-link-id','');
@@ -7280,6 +7309,10 @@ async function delStockPart(id,name){
 }
 
 function openStockTxModal(preSelectId){
+  if (!can('stock', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์ทำรายการรับ/เบิกสต็อก (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
+    return;
+  }
   var s=document.getElementById('tx-part-id');
   if(!s) return;
   s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+(STATE.stockParts||[]).map(function(p){return '<option value="'+p.ID+'"'+(p.ID===preSelectId?' selected':'')+'>'+p.PartName+'</option>';}).join('');
@@ -7312,6 +7345,10 @@ function showTxStockInfo(){
 }
 
 async function doTransaction(){
+  if (!can('stock', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์ทำรายการรับ/เบิกสต็อก', 'error');
+    return;
+  }
   var partId=v('tx-part-id'),type=v('tx-type'),qty=v('tx-qty'),reason=v('tx-reason'),by=v('tx-by')||'\u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38';
   if(!partId||!qty){showToast('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e2d\u0e30\u0e44\u0e2b\u0e25\u0e48\u0e41\u0e25\u0e30\u0e08\u0e33\u0e19\u0e27\u0e19','error');return;}
   var r=await api('stockTransaction',{data:{partId:partId,type:type,quantity:qty,reason:reason,by:by}});
