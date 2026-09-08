@@ -714,18 +714,59 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- REPORTS -->
 <div class="page" id="page-reports">
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-header"><div class="card-title">&#128202; Export &#3619;&#3634;&#3618;&#3591;&#3634;&#3609;</div></div>
-      <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
-        <button class="btn btn-primary" onclick="openGoogleSheet()">&#128202; &#3648;&#3611;&#3636;&#3604; Google Sheets</button>
-        <button class="btn btn-outline" onclick="exportCSV('tpm')">&#128203; Export TPM Plans (CSV)</button>
-        <button class="btn btn-outline" onclick="exportCSV('issues')">&#128680; Export Issues (CSV)</button>
-        <button class="btn btn-outline" onclick="exportCSV('stock')">&#128230; Export Stock (CSV)</button>
+  <!-- TOOLBAR & FILTERS -->
+  <div class="toolbar" style="flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:600;color:var(--text-muted);">📅 ช่วงเวลา:</span>
+      <select id="report-period-select" onchange="onReportPeriodChange()" style="width:165px;">
+        <option value="this_month" selected>🗓️ เดือนนี้ (This Month)</option>
+        <option value="last_month">🗓️ เดือนที่แล้ว</option>
+        <option value="this_quarter">📊 ไตรมาสนี้ (Q)</option>
+        <option value="this_year">📆 ประจำปีนี้ (Year)</option>
+        <option value="all">🌐 ทั้งหมด (All Time)</option>
+        <option value="custom">✏️ กำหนดช่วงวันเอง</option>
+      </select>
+    </div>
+
+    <div id="report-custom-date-wrap" style="display:none;align-items:center;gap:6px;">
+      <input type="date" id="report-start-date" onchange="loadReports()" style="width:135px;" />
+      <span style="color:var(--text-muted);font-size:12px;">ถึง</span>
+      <input type="date" id="report-end-date" onchange="loadReports()" style="width:135px;" />
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:13px;font-weight:600;color:var(--text-muted);">🎯 ขอบเขต:</span>
+      <select id="report-scope-select" onchange="loadReports()" style="width:170px;">
+        <option value="" selected>🔄 ทุกระบบ (Mold + Machine)</option>
+        <option value="Mold">🧩 เฉพาะแม่พิมพ์ (Molds)</option>
+        <option value="Machine">🏭 เฉพาะเครื่องจักร (Machines)</option>
+      </select>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-primary" onclick="printMonthlyExecutiveReport()" title="พิมพ์รายงานสรุปผลสำหรับผู้บริหาร / ประชุมประจำเดือน (ขนาด A4)">
+        🖨️ พิมพ์รายงานสรุป A4
+      </button>
+
+      <div style="position:relative;display:inline-block;">
+        <button class="btn btn-outline" onclick="toggleReportExportMenu(event)" title="ดาวน์โหลดไฟล์ CSV หรือเปิด Sheets">
+          📥 Export / Sheets ▾
+        </button>
+        <div id="report-export-dropdown" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:6px;min-width:190px;box-shadow:var(--shadow);z-index:100;">
+          <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start;padding:8px 10px;" onclick="exportCSV('tpm'); hideReportExportMenu();">📋 Export TPM Plans (CSV)</button>
+          <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start;padding:8px 10px;" onclick="exportCSV('issues'); hideReportExportMenu();">🚨 Export Issues (CSV)</button>
+          <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start;padding:8px 10px;" onclick="exportCSV('stock'); hideReportExportMenu();">📦 Export Stock (CSV)</button>
+          <div style="border-top:1px solid var(--border);margin:4px 0;"></div>
+          <button class="btn btn-ghost btn-sm" style="width:100%;justify-content:flex-start;padding:8px 10px;color:var(--primary);" onclick="openGoogleSheet(); hideReportExportMenu();">🌐 เปิด Google Sheets</button>
+        </div>
       </div>
     </div>
-    <div class="card"><div class="card-header"><div class="card-title">&#128200; KPI Summary</div></div><div id="kpi-summary"></div></div>
   </div>
+
+  <!-- DASHBOARD OVERVIEW CONTAINER -->
+  <div id="report-dashboard-content"></div>
 </div>
 
 <!-- USERS -->
@@ -7507,13 +7548,614 @@ document.addEventListener('keydown', function(e) {
 // ============================================
 //  REPORTS
 // ============================================
-function loadReports(){
-  var total=(STATE.tpmPlans||[]).length,done=(STATE.tpmPlans||[]).filter(function(p){return p.Status==='Done';}).length,overdue=(STATE.tpmPlans||[]).filter(function(p){return p.Status==='Overdue';}).length;
-  var ti=(STATE.issues||[]).length,ci=(STATE.issues||[]).filter(function(i){return i.Status==='Closed';}).length;
-  var kpi=document.getElementById('kpi-summary');
-  if(kpi){
-    kpi.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px"><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Completion Rate</div><div style="font-size:28px;font-weight:700;color:var(--success)">'+(total?Math.round(done/total*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Issue Close Rate</div><div style="font-size:28px;font-weight:700;color:var(--primary)">'+(ti?Math.round(ci/ti*100):0)+'%</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total TPM Plans</div><div style="font-size:28px;font-weight:700">'+total+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Total Issues</div><div style="font-size:28px;font-weight:700">'+ti+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">TPM Overdue</div><div style="font-size:28px;font-weight:700;color:var(--danger)">'+overdue+'</div></div><div><div style="font-size:11px;color:var(--text-faint);margin-bottom:2px">Low Stock</div><div style="font-size:28px;font-weight:700;color:var(--warning)">'+(STATE.stockParts||[]).filter(function(p){return Number(p.CurrentStock??p.Qty??0)<=Number(p.MinStock??p.MinQty??0)&&Number(p.MinStock??p.MinQty??0)>0;}).length+'</div></div></div>';
+// ============================================
+//  REPORTS & ANALYTICS DASHBOARD
+// ============================================
+
+function toggleReportExportMenu(e) {
+  if (e) e.stopPropagation();
+  var menu = document.getElementById('report-export-dropdown');
+  if (menu) {
+    var isShown = menu.style.display === 'block';
+    menu.style.display = isShown ? 'none' : 'block';
   }
+}
+
+function hideReportExportMenu() {
+  var menu = document.getElementById('report-export-dropdown');
+  if (menu) menu.style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  var menu = document.getElementById('report-export-dropdown');
+  if (menu && menu.style.display === 'block') {
+    if (!e.target.closest('#report-export-dropdown') && !e.target.closest('button[onclick*="toggleReportExportMenu"]')) {
+      menu.style.display = 'none';
+    }
+  }
+});
+
+function onReportPeriodChange() {
+  var sel = document.getElementById('report-period-select');
+  var customWrap = document.getElementById('report-custom-date-wrap');
+  if (!sel) return;
+  var val = sel.value;
+  if (val === 'custom') {
+    if (customWrap) customWrap.style.display = 'inline-flex';
+    var startInp = document.getElementById('report-start-date');
+    var endInp = document.getElementById('report-end-date');
+    if (startInp && !startInp.value) {
+      var now = new Date();
+      startInp.value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    }
+    if (endInp && !endInp.value) {
+      endInp.value = new Date().toISOString().split('T')[0];
+    }
+  } else {
+    if (customWrap) customWrap.style.display = 'none';
+  }
+  loadReports();
+}
+
+function getReportFilterRange() {
+  var sel = document.getElementById('report-period-select');
+  var period = sel ? sel.value : 'this_month';
+  var now = new Date();
+  var y = now.getFullYear();
+  var m = now.getMonth();
+
+  var start = null;
+  var end = null;
+  var label = 'ทั้งหมด (All Time)';
+
+  function toDateStr(d) {
+    var mm = String(d.getMonth() + 1).padStart(2, '0');
+    var dd = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + mm + '-' + dd;
+  }
+
+  if (period === 'this_month') {
+    var sDate = new Date(y, m, 1);
+    var eDate = new Date(y, m + 1, 0);
+    start = toDateStr(sDate);
+    end = toDateStr(eDate);
+    label = sDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  } else if (period === 'last_month') {
+    var sDate = new Date(y, m - 1, 1);
+    var eDate = new Date(y, m, 0);
+    start = toDateStr(sDate);
+    end = toDateStr(eDate);
+    label = sDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+  } else if (period === 'this_quarter') {
+    var q = Math.floor(m / 3);
+    var sDate = new Date(y, q * 3, 1);
+    var eDate = new Date(y, (q + 1) * 3, 0);
+    start = toDateStr(sDate);
+    end = toDateStr(eDate);
+    label = 'ไตรมาส ' + (q + 1) + ' / ' + (y + 543);
+  } else if (period === 'this_year') {
+    start = y + '-01-01';
+    end = y + '-12-31';
+    label = 'ประจำปี ' + (y + 543);
+  } else if (period === 'custom') {
+    start = (document.getElementById('report-start-date') || {}).value || null;
+    end = (document.getElementById('report-end-date') || {}).value || null;
+    if (start && end) {
+      label = start + ' ถึง ' + end;
+    } else {
+      label = 'กำหนดช่วงวันเอง';
+    }
+  }
+
+  return { start: start, end: end, label: label, period: period };
+}
+
+function loadReports() {
+  var container = document.getElementById('report-dashboard-content');
+  if (!container) return;
+
+  var range = getReportFilterRange();
+  var scopeSel = document.getElementById('report-scope-select');
+  var scope = scopeSel ? scopeSel.value : '';
+
+  // Filter TPM Plans
+  var rawPlans = STATE.tpmPlans || [];
+  var filteredPlans = rawPlans.filter(function(p) {
+    if (scope && p.TargetType !== scope) return false;
+    if (range.start || range.end) {
+      var d = p.PlannedDate ? p.PlannedDate.split('T')[0] : '';
+      if (!d) return false;
+      if (range.start && d < range.start) return false;
+      if (range.end && d > range.end) return false;
+    }
+    return true;
+  });
+
+  // Filter Issues
+  var rawIssues = STATE.issues || [];
+  var filteredIssues = rawIssues.filter(function(i) {
+    if (scope && i.TargetType !== scope) return false;
+    if (range.start || range.end) {
+      var d = i.OccurredAt ? i.OccurredAt.split('T')[0] : '';
+      if (!d) return false;
+      if (range.start && d < range.start) return false;
+      if (range.end && d > range.end) return false;
+    }
+    return true;
+  });
+
+  // TPM Metrics
+  var totalPlans = filteredPlans.length;
+  var donePlans = filteredPlans.filter(function(p) { return p.Status === 'Done'; });
+  var overduePlans = filteredPlans.filter(function(p) {
+    if (p.Status === 'Overdue') return true;
+    if (p.Status !== 'Done' && p.PlannedDate) {
+      var today = new Date().toISOString().split('T')[0];
+      return p.PlannedDate.split('T')[0] < today;
+    }
+    return false;
+  });
+  var pendingPlans = totalPlans - donePlans.length - overduePlans.length;
+  if (pendingPlans < 0) pendingPlans = 0;
+  var tpmCompRate = totalPlans > 0 ? Math.round((donePlans.length / totalPlans) * 100) : 0;
+
+  // On-time compliance
+  var onTimeCount = donePlans.filter(function(p) {
+    if (!p.ActualDate || !p.PlannedDate) return true;
+    return p.ActualDate.split('T')[0] <= p.PlannedDate.split('T')[0];
+  }).length;
+  var onTimeRate = donePlans.length > 0 ? Math.round((onTimeCount / donePlans.length) * 100) : 100;
+
+  // Issues Metrics
+  var totalIssues = filteredIssues.length;
+  var closedIssues = filteredIssues.filter(function(i) { return i.Status === 'Closed'; });
+  var openIssues = filteredIssues.filter(function(i) { return i.Status !== 'Closed'; });
+  var criticalIssues = filteredIssues.filter(function(i) { return i.Severity === 'Critical'; });
+  var closeRate = totalIssues > 0 ? Math.round((closedIssues.length / totalIssues) * 100) : 0;
+
+  // MTTR (Mean Time To Repair in hours)
+  var totalRepairHours = 0;
+  var mttrCount = 0;
+  closedIssues.forEach(function(i) {
+    if (i.OccurredAt && i.ClosedAt) {
+      var tOcc = Date.parse(i.OccurredAt);
+      var tClose = Date.parse(i.ClosedAt);
+      if (!isNaN(tOcc) && !isNaN(tClose) && tClose >= tOcc) {
+        var hrs = (tClose - tOcc) / 3600000;
+        totalRepairHours += hrs;
+        mttrCount++;
+      }
+    }
+  });
+  var mttrStr = '-';
+  if (mttrCount > 0) {
+    var avgHrs = totalRepairHours / mttrCount;
+    if (avgHrs < 24) {
+      mttrStr = avgHrs.toFixed(1) + ' ชม.';
+    } else {
+      mttrStr = (avgHrs / 24).toFixed(1) + ' วัน';
+    }
+  }
+
+  // Trial Quality
+  var trialIssues = filteredIssues.filter(function(i) { return i.TrialResult; });
+  var trialPassed = trialIssues.filter(function(i) { return i.TrialResult === 'Passed'; }).length;
+  var trialPassRate = trialIssues.length > 0 ? Math.round((trialPassed / trialIssues.length) * 100) : 0;
+  var totalShots = trialIssues.reduce(function(sum, i) { return sum + (Number(i.TrialShots) || 0); }, 0);
+
+  // Top 5 Breakdown Targets
+  var targetFreq = {};
+  filteredIssues.forEach(function(i) {
+    var name = i.TargetName || 'ไม่ระบุ';
+    targetFreq[name] = (targetFreq[name] || 0) + 1;
+  });
+  var sortedTargets = Object.keys(targetFreq).map(function(k) {
+    return { name: k, count: targetFreq[k] };
+  }).sort(function(a, b) { return b.count - a.count; });
+  var topTargets = sortedTargets.slice(0, 5);
+
+  // Issue Causes Breakdown
+  var typeFreq = {};
+  filteredIssues.forEach(function(i) {
+    var t = i.IssueType || 'ทั่วไป';
+    typeFreq[t] = (typeFreq[t] || 0) + 1;
+  });
+  var sortedTypes = Object.keys(typeFreq).map(function(k) {
+    return { type: k, count: typeFreq[k] };
+  }).sort(function(a, b) { return b.count - a.count; });
+
+  // Parts Used Analysis
+  var partsCountMap = {};
+  filteredIssues.forEach(function(i) {
+    if (i.PartsUsed) {
+      var partsStr = i.PartsUsed;
+      var partsList = partsStr.split(/,|\n/);
+      partsList.forEach(function(p) {
+        var trimmed = p.trim();
+        if (trimmed && trimmed !== '-') {
+          partsCountMap[trimmed] = (partsCountMap[trimmed] || 0) + 1;
+        }
+      });
+    }
+  });
+  var sortedParts = Object.keys(partsCountMap).map(function(k) {
+    return { part: k, count: partsCountMap[k] };
+  }).sort(function(a, b) { return b.count - a.count; }).slice(0, 5);
+
+  // Low stock parts
+  var lowStockParts = (STATE.stockParts || []).filter(function(p) {
+    return Number(p.CurrentStock ?? p.Qty ?? 0) <= Number(p.MinStock ?? p.MinQty ?? 0) && Number(p.MinStock ?? p.MinQty ?? 0) > 0;
+  });
+
+  // Store report context for printing
+  STATE._currentReportContext = {
+    range: range,
+    scope: scope,
+    metrics: {
+      totalPlans: totalPlans,
+      donePlans: donePlans.length,
+      overduePlans: overduePlans.length,
+      pendingPlans: pendingPlans,
+      tpmCompRate: tpmCompRate,
+      onTimeRate: onTimeRate,
+      totalIssues: totalIssues,
+      closedIssues: closedIssues.length,
+      openIssues: openIssues.length,
+      criticalIssues: criticalIssues.length,
+      closeRate: closeRate,
+      mttrStr: mttrStr,
+      trialCount: trialIssues.length,
+      trialPassed: trialPassed,
+      trialPassRate: trialPassRate,
+      totalShots: totalShots
+    },
+    topTargets: topTargets,
+    topTypes: sortedTypes,
+    topParts: sortedParts,
+    filteredIssues: filteredIssues
+  };
+
+  // Build HTML
+  var html = '';
+
+  // 1. SUMMARY CARDS ROW
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(230px, 1fr));gap:16px;margin-bottom:20px;">' +
+    // Card 1: TPM
+    '<div class="card" style="border-left:4px solid var(--success);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div>' +
+          '<div style="font-size:12px;color:var(--text-muted);font-weight:600;">🔧 แผนการตรวจ TPM</div>' +
+          '<div style="font-size:26px;font-weight:700;color:var(--success);margin:4px 0;">' + tpmCompRate + '%</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">สำเร็จ ' + donePlans.length + ' / ' + totalPlans + ' แผน</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<span class="badge ' + (onTimeRate >= 80 ? 'success' : 'warning') + '" style="font-size:10px;" title="ตรวจตรงเวลาหรือก่อนกำหนด">' + onTimeRate + '% ตรงเวลา</span>' +
+          '<div style="font-size:11px;color:var(--danger);margin-top:6px;">เกินกำหนด: ' + overduePlans.length + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stock-progress" style="margin-top:12px;"><div class="stock-progress-bar" style="width:' + tpmCompRate + '%;background:var(--success-g);"></div></div>' +
+    '</div>' +
+
+    // Card 2: MTTR & Breakdown
+    '<div class="card" style="border-left:4px solid var(--primary);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div>' +
+          '<div style="font-size:12px;color:var(--text-muted);font-weight:600;">⏱️ เวลาซ่อมเฉลี่ย (MTTR)</div>' +
+          '<div style="font-size:26px;font-weight:700;color:var(--primary);margin:4px 0;">' + mttrStr + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">ต่อ 1 งานที่ปิดสำเร็จ</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<span class="badge" style="background:rgba(99,102,241,0.2);color:#818cf8;font-size:10px;">ปิดงาน ' + closeRate + '%</span>' +
+          '<div style="font-size:11px;color:' + (criticalIssues.length ? 'var(--danger)' : 'var(--text-muted)') + ';margin-top:6px;">วิกฤต: ' + criticalIssues.length + ' งาน</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stock-progress" style="margin-top:12px;"><div class="stock-progress-bar" style="width:' + closeRate + '%;background:var(--primary-g);"></div></div>' +
+    '</div>' +
+
+    // Card 3: Issues Overview
+    '<div class="card" style="border-left:4px solid var(--danger);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div>' +
+          '<div style="font-size:12px;color:var(--text-muted);font-weight:600;">🚨 ปัญหาที่เกิดในงวด</div>' +
+          '<div style="font-size:26px;font-weight:700;color:var(--danger);margin:4px 0;">' + totalIssues + ' <span style="font-size:13px;font-weight:400;color:var(--text-muted);">เคส</span></div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">ปิดแล้ว ' + closedIssues.length + ' เคส</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<span class="badge warning" style="font-size:10px;">ค้างอยู่ ' + openIssues.length + ' เคส</span>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">รอดำเนินการ</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:4px;margin-top:12px;font-size:11px;color:var(--text-muted);">' +
+        '<span>Open: <strong style="color:var(--danger);">' + filteredIssues.filter(function(i){return i.Status==='Open';}).length + '</strong></span> | ' +
+        '<span>In Progress: <strong style="color:var(--warning);">' + filteredIssues.filter(function(i){return i.Status==='In Progress';}).length + '</strong></span>' +
+      '</div>' +
+    '</div>' +
+
+    // Card 4: Trial Quality & Parts
+    '<div class="card" style="border-left:4px solid var(--warning);">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;">' +
+        '<div>' +
+          '<div style="font-size:12px;color:var(--text-muted);font-weight:600;">🧪 ผลการ Trial ผ่านรอบแรก</div>' +
+          '<div style="font-size:26px;font-weight:700;color:var(--warning);margin:4px 0;">' + (trialIssues.length ? trialPassRate + '%' : '-') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);">' + (trialIssues.length ? 'ผ่าน ' + trialPassed + ' / ' + trialIssues.length + ' ครั้ง' : 'ไม่มีบันทึก Trial ในงวด') + '</div>' +
+        '</div>' +
+        '<div style="text-align:right;">' +
+          '<span class="badge ' + (lowStockParts.length ? 'danger' : 'success') + '" style="font-size:10px;">' + (lowStockParts.length ? ('⚠️ Low Stock: ' + lowStockParts.length) : '✅ สต็อกปกติ') + '</span>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:6px;">' + (totalShots > 0 ? (totalShots.toLocaleString() + ' Shots') : '') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="stock-progress" style="margin-top:12px;"><div class="stock-progress-bar" style="width:' + (trialIssues.length ? trialPassRate : 0) + '%;background:var(--warning-g);"></div></div>' +
+    '</div>' +
+  '</div>';
+
+  // 2. ANALYTICS DETAIL PANELS (3 Columns)
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:16px;margin-bottom:20px;">' +
+    // Panel 1: Top 5 Breakdown Targets
+    '<div class="card">' +
+      '<div class="card-header"><div class="card-title">🏆 5 อันดับอุปกรณ์ที่เสียบ่อยสุด (Top Breakdown)</div></div>' +
+      '<div style="margin-top:10px;">';
+  if (!topTargets.length) {
+    html += '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:12px;">🎉 ไม่มีรายงานปัญหาเกิดขึ้นในช่วงเวลานี้</div>';
+  } else {
+    var maxTargetCount = topTargets[0].count || 1;
+    topTargets.forEach(function(item, idx) {
+      var pct = Math.round((item.count / maxTargetCount) * 100);
+      var colors = ['#ef4444', '#f59e0b', '#6366f1', '#10b981', '#8b5cf6'];
+      var color = colors[idx % colors.length];
+      html += '<div style="margin-bottom:12px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">' +
+          '<span><strong style="color:' + color + ';">#' + (idx + 1) + '</strong> <strong>' + esc(item.name) + '</strong></span>' +
+          '<span style="color:var(--text-muted);">' + item.count + ' ครั้ง (' + Math.round((item.count / totalIssues) * 100) + '%)</span>' +
+        '</div>' +
+        '<div class="stock-progress"><div class="stock-progress-bar" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
+      '</div>';
+    });
+  }
+  html += '</div></div>' +
+
+    // Panel 2: Issue Type Breakdown
+    '<div class="card">' +
+      '<div class="card-header"><div class="card-title">🚨 สัดส่วนประเภทปัญหา (Issue Causes)</div></div>' +
+      '<div style="margin-top:10px;">';
+  if (!sortedTypes.length) {
+    html += '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:12px;">ไม่มีข้อมูลประเภทปัญหา</div>';
+  } else {
+    var maxTypeCount = sortedTypes[0].count || 1;
+    sortedTypes.slice(0, 6).forEach(function(item, idx) {
+      var pct = Math.round((item.count / maxTypeCount) * 100);
+      html += '<div style="margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;">' +
+          '<span><strong>' + esc(item.type) + '</strong></span>' +
+          '<span style="color:var(--text-muted);">' + item.count + ' เคส</span>' +
+        '</div>' +
+        '<div class="stock-progress"><div class="stock-progress-bar" style="width:' + pct + '%;background:var(--primary);"></div></div>' +
+      '</div>';
+    });
+  }
+  html += '</div></div>' +
+
+    // Panel 3: Parts Consumed
+    '<div class="card">' +
+      '<div class="card-header"><div class="card-title">📦 อะไหล่ที่ถูกเบิกใช้สูงสุด (Fast-Moving)</div></div>' +
+      '<div style="margin-top:10px;">';
+  if (!sortedParts.length) {
+    html += '<div style="padding:24px 0;text-align:center;color:var(--text-muted);font-size:12px;">ไม่มีการเบิกใช้อะไหล่ในงวดนี้</div>';
+  } else {
+    sortedParts.forEach(function(item, idx) {
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span class="badge" style="background:var(--surface2);color:var(--text-muted);font-size:10px;">#' + (idx + 1) + '</span>' +
+          '<strong style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(item.part) + '">' + esc(item.part) + '</strong>' +
+        '</div>' +
+        '<div style="font-weight:600;color:var(--warning);">' + item.count + ' ครั้ง</div>' +
+      '</div>';
+    });
+  }
+  html += '</div></div>' +
+  '</div>';
+
+  // 3. TABLE OF ISSUES IN PERIOD
+  html += '<div class="card">' +
+    '<div class="card-header">' +
+      '<div class="card-title">📋 รายการปัญหาและงานซ่อมในงวด (' + filteredIssues.length + ' รายการ)</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);">ช่วง: ' + esc(range.label) + '</div>' +
+    '</div>' +
+    '<div class="table-wrapper"><table style="font-size:12px;">' +
+      '<thead><tr><th>รหัส</th><th>อุปกรณ์</th><th>ประเภท</th><th>อาการเสีย</th><th>ความรุนแรง</th><th>สถานะ</th><th>เกิดเมื่อ</th><th>ปิดงานเมื่อ</th><th>ผู้ซ่อม</th><th>Actions</th></tr></thead>' +
+      '<tbody>';
+  if (!filteredIssues.length) {
+    html += '<tr><td colspan="10" style="text-align:center;color:var(--text-muted);padding:24px;">ไม่พบรายการปัญหาตามเงื่อนไขที่เลือก</td></tr>';
+  } else {
+    html += filteredIssues.slice().reverse().slice(0, 10).map(function(i) {
+      var displayCode = getIssueDisplayCode(i);
+      var sevBadge = '<span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span>';
+      var stBadge = '<span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span>';
+      return '<tr>' +
+        '<td><strong>#' + displayCode + '</strong></td>' +
+        '<td><strong>' + esc(i.TargetName || '-') + '</strong></td>' +
+        '<td>' + esc(i.IssueType || '-') + '</td>' +
+        '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(i.Description || '') + '">' + esc(i.Description || '-') + '</td>' +
+        '<td>' + sevBadge + '</td>' +
+        '<td>' + stBadge + '</td>' +
+        '<td>' + ((i.OccurredAt || '').split('T')[0] || '-') + '</td>' +
+        '<td>' + ((i.ClosedAt || '').split('T')[0] || '-') + '</td>' +
+        '<td>' + esc(i.ClosedBy || '-') + '</td>' +
+        '<td><button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด">🔍 ดู</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+  html += '</tbody></table></div></div>';
+
+  container.innerHTML = html;
+}
+
+function printMonthlyExecutiveReport() {
+  var ctx = STATE._currentReportContext;
+  if (!ctx) {
+    loadReports();
+    ctx = STATE._currentReportContext;
+  }
+  if (!ctx) return;
+
+  var range = ctx.range;
+  var scope = ctx.scope ? (ctx.scope === 'Mold' ? 'เฉพาะแม่พิมพ์ (Mold)' : 'เฉพาะเครื่องจักร (Machine)') : 'ทุกระบบ (แม่พิมพ์ + เครื่องจักร)';
+  var m = ctx.metrics;
+  var topTargets = ctx.topTargets || [];
+  var topTypes = ctx.topTypes || [];
+  var issues = ctx.filteredIssues || [];
+  var currentUser = STATE.currentUser || { Name: 'ผู้ดูแลระบบ', Role: 'Admin' };
+  var printDate = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  // Critical / Major issues in period
+  var majorIssues = issues.filter(function(i) {
+    return i.Severity === 'Critical' || i.Severity === 'High';
+  }).slice(0, 8);
+
+  var win = window.open('', '_blank');
+  if (!win) {
+    showToast('กรุณาอนุญาต Pop-up เพื่อเปิดหน้าต่างพิมพ์รายงาน', 'warning');
+    return;
+  }
+
+  var printHtml = '<!DOCTYPE html>' +
+    '<html><head><meta charset="utf-8"/><title>Monthly Executive TPM Report - ' + esc(range.label) + '</title>' +
+    '<link rel="preconnect" href="https://fonts.googleapis.com"/>' +
+    '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"/>' +
+    '<style>' +
+      '@page { size: A4 portrait; margin: 12mm 15mm; }' +
+      '* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
+      'body { font-family: "Sarabun", sans-serif; color: #1e293b; background: #fff; margin: 0; padding: 0; font-size: 11pt; line-height: 1.35; }' +
+      '.header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #334155; padding-bottom: 8px; margin-bottom: 12px; }' +
+      '.company-title { font-size: 16pt; font-weight: 700; color: #0f172a; }' +
+      '.doc-badge { background: #0f172a; color: #fff; font-size: 9pt; font-weight: 700; padding: 4px 8px; border-radius: 4px; }' +
+      '.report-title { text-align: center; font-size: 14pt; font-weight: 700; margin: 10px 0 4px; color: #1e293b; }' +
+      '.report-subtitle { text-align: center; font-size: 10.5pt; color: #64748b; margin-bottom: 12px; }' +
+      '.meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 12px; font-size: 9.5pt; margin-bottom: 14px; }' +
+      '.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }' +
+      '.kpi-box { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px; text-align: center; background: #f8fafc; }' +
+      '.kpi-val { font-size: 16pt; font-weight: 700; margin: 2px 0; color: #0f172a; }' +
+      '.kpi-lbl { font-size: 8.5pt; color: #64748b; font-weight: 600; text-transform: uppercase; }' +
+      '.kpi-sub { font-size: 8pt; color: #475569; }' +
+      'table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 9pt; }' +
+      'th, td { border: 1px solid #cbd5e1; padding: 5px 7px; text-align: left; }' +
+      'th { background: #f1f5f9; font-weight: 700; color: #334155; }' +
+      '.sec-title { font-size: 10.5pt; font-weight: 700; margin: 12px 0 6px; color: #0f172a; border-left: 3px solid #6366f1; padding-left: 6px; }' +
+      '.sig-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 24px; page-break-inside: avoid; }' +
+      '.sig-box { border: 1px solid #94a3b8; border-radius: 4px; padding: 8px; text-align: center; font-size: 9pt; min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; }' +
+      '.sig-line { border-bottom: 1px dotted #94a3b8; margin: 36px 12px 4px; }' +
+      '@media print { .no-print { display: none !important; } }' +
+    '</style></head><body>' +
+    '<div class="no-print" style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<span>🖨️ ตัวอย่างก่อนพิมพ์ (Print Preview) - ขนาด A4</span>' +
+      '<div><button onclick="window.print()" style="background:#6366f1;color:#fff;border:none;border-radius:4px;padding:6px 16px;font-weight:600;cursor:pointer;">พิมพ์เอกสาร (Print)</button> <button onclick="window.close()" style="background:#e2e8f0;border:none;border-radius:4px;padding:6px 12px;margin-left:6px;cursor:pointer;">ปิด</button></div>' +
+    '</div>' +
+    '<div style="padding: 12px 16px;">' +
+      '<div class="header">' +
+        '<div><div class="company-title">TPM MANAGEMENT SYSTEM WEN</div><div style="font-size:8.5pt;color:#64748b;">ระบบบริหารจัดการการซ่อมบำรุงและแผนงาน TPM</div></div>' +
+        '<div class="doc-badge">EXECUTIVE SUMMARY</div>' +
+      '</div>' +
+      '<div class="report-title">รายงานสรุปผลการดำเนินงาน TPM และสถิติงานซ่อมบำรุง</div>' +
+      '<div class="report-subtitle">ประจำงวด: ' + esc(range.label) + ' (' + esc(scope) + ')</div>' +
+
+      '<div class="meta-grid">' +
+        '<div><strong>ช่วงเวลาข้อมูล:</strong> ' + (range.start ? (range.start + ' ถึง ' + range.end) : 'ทั้งหมด') + '</div>' +
+        '<div><strong>วันที่ออกรายงาน:</strong> ' + printDate + '</div>' +
+        '<div><strong>ขอบเขต:</strong> ' + esc(scope) + '</div>' +
+        '<div><strong>ผู้จัดทำรายงาน:</strong> ' + esc(currentUser.Name || 'ผู้ใช้งาน') + ' (' + esc(currentUser.Role || '-') + ')</div>' +
+      '</div>' +
+
+      '<div class="sec-title">1. ผลการดำเนินงานตามดัชนีชี้วัดหลัก (Key Performance Indicators)</div>' +
+      '<div class="kpi-grid">' +
+        '<div class="kpi-box">' +
+          '<div class="kpi-lbl">TPM Completion</div>' +
+          '<div class="kpi-val" style="color:#059669;">' + m.tpmCompRate + '%</div>' +
+          '<div class="kpi-sub">เสร็จ ' + m.donePlans + ' / ' + m.totalPlans + ' แผน</div>' +
+        '</div>' +
+        '<div class="kpi-box">' +
+          '<div class="kpi-lbl">MTTR (เวลาซ่อมเฉลี่ย)</div>' +
+          '<div class="kpi-val" style="color:#2563eb;">' + m.mttrStr + '</div>' +
+          '<div class="kpi-sub">จากงานปิดสำเร็จ ' + m.closedIssues + ' งาน</div>' +
+        '</div>' +
+        '<div class="kpi-box">' +
+          '<div class="kpi-lbl">Issue Close Rate</div>' +
+          '<div class="kpi-val" style="color:#7c3aed;">' + m.closeRate + '%</div>' +
+          '<div class="kpi-sub">เกิดทั้งหมด ' + m.totalIssues + ' งาน (ค้าง ' + m.openIssues + ')</div>' +
+        '</div>' +
+        '<div class="kpi-box">' +
+          '<div class="kpi-lbl">Trial Quality Pass</div>' +
+          '<div class="kpi-val" style="color:#d97706;">' + (m.trialCount ? (m.trialPassRate + '%') : '-') + '</div>' +
+          '<div class="kpi-sub">' + (m.trialCount ? ('ผ่าน ' + m.trialPassed + ' / ' + m.trialCount + ' ครั้ง') : 'ไม่มีการ Trial ในงวด') + '</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">' +
+        '<div>' +
+          '<div class="sec-title">2. อุปกรณ์ที่เสียบ่อยที่สุด (Top 5 Breakdown)</div>' +
+          '<table><thead><tr><th>อันดับ</th><th>อุปกรณ์</th><th>จำนวนครั้ง</th></tr></thead><tbody>';
+  if (!topTargets.length) {
+    printHtml += '<tr><td colspan="3" style="text-align:center;color:#64748b;">ไม่มีประวัติการเสียในงวดนี้</td></tr>';
+  } else {
+    topTargets.slice(0, 5).forEach(function(t, idx) {
+      printHtml += '<tr><td style="text-align:center;width:40px;">' + (idx + 1) + '</td><td><strong>' + esc(t.name) + '</strong></td><td style="text-align:right;font-weight:700;">' + t.count + ' ครั้ง</td></tr>';
+    });
+  }
+  printHtml += '</tbody></table></div>' +
+
+        '<div>' +
+          '<div class="sec-title">3. ประเภทปัญหาที่เกิดขึ้น (Issue Types)</div>' +
+          '<table><thead><tr><th>ประเภทปัญหา</th><th>จำนวนครั้ง</th><th>สัดส่วน</th></tr></thead><tbody>';
+  if (!topTypes.length) {
+    printHtml += '<tr><td colspan="3" style="text-align:center;color:#64748b;">ไม่มีข้อมูลปัญหาในงวดนี้</td></tr>';
+  } else {
+    topTypes.slice(0, 5).forEach(function(t) {
+      var pct = m.totalIssues > 0 ? Math.round((t.count / m.totalIssues) * 100) : 0;
+      printHtml += '<tr><td><strong>' + esc(t.type) + '</strong></td><td style="text-align:right;font-weight:700;">' + t.count + ' เคส</td><td style="text-align:right;">' + pct + '%</td></tr>';
+    });
+  }
+  printHtml += '</tbody></table></div>' +
+      '</div>';
+
+  if (majorIssues.length) {
+    printHtml += '<div class="sec-title">4. รายการปัญหาสำคัญ / ปัญหาวิกฤตในงวด (Major & Critical Incidents)</div>' +
+      '<table><thead><tr><th style="width:70px;">รหัส</th><th style="width:120px;">อุปกรณ์</th><th style="width:80px;">ความรุนแรง</th><th>รายละเอียด & สาเหตุ</th><th>วิธีแก้ไข / การป้องกัน</th><th style="width:75px;">สถานะ</th></tr></thead><tbody>';
+    majorIssues.forEach(function(iss) {
+      var code = getIssueDisplayCode(iss);
+      printHtml += '<tr>' +
+        '<td><strong>#' + code + '</strong></td>' +
+        '<td>' + esc(iss.TargetName || '-') + '</td>' +
+        '<td style="color:' + (iss.Severity === 'Critical' ? '#dc2626' : '#d97706') + ';font-weight:700;">' + esc(iss.Severity || '-') + '</td>' +
+        '<td>' + esc(iss.Description || '-') + (iss.RootCause ? ('<br><small style="color:#64748b;"><strong>สาเหตุ:</strong> ' + esc(iss.RootCause) + '</small>') : '') + '</td>' +
+        '<td>' + esc(iss.CleanCorrectiveAction || iss.CorrectiveAction || '-') + '</td>' +
+        '<td>' + esc(iss.Status || '-') + '</td>' +
+      '</tr>';
+    });
+    printHtml += '</tbody></table>';
+  }
+
+  printHtml += '<div class="sig-container">' +
+        '<div class="sig-box">' +
+          '<div><strong>ผู้จัดทำรายงาน</strong><br><span style="font-size:8pt;color:#64748b;">(Prepared by)</span></div>' +
+          '<div class="sig-line"></div>' +
+          '<div>ลงชื่อ: ' + esc(currentUser.Name || '....................................') + '<br>วันที่: ' + new Date().toLocaleDateString('th-TH') + '</div>' +
+        '</div>' +
+        '<div class="sig-box">' +
+          '<div><strong>หัวหน้างาน / ผู้ตรวจสอบ</strong><br><span style="font-size:8pt;color:#64748b;">(Reviewed by Supervisor)</span></div>' +
+          '<div class="sig-line"></div>' +
+          '<div>ลงชื่อ: ....................................<br>วันที่: ......./......./...........</div>' +
+        '</div>' +
+        '<div class="sig-box">' +
+          '<div><strong>ผู้จัดการ / ผู้อนุมัติ</strong><br><span style="font-size:8pt;color:#64748b;">(Approved by Manager)</span></div>' +
+          '<div class="sig-line"></div>' +
+          '<div>ลงชื่อ: ....................................<br>วันที่: ......./......./...........</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+    '<script>setTimeout(function(){ window.print(); }, 600);<\/script>' +
+    '</body></html>';
+
+  win.document.open();
+  win.document.write(printHtml);
+  win.document.close();
 }
 async function openGoogleSheet(){var r=await api('getSheetUrl');if(r&&r.success)window.open(r.url,'_blank');else showToast('\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e1b\u0e34\u0e14\u0e44\u0e14\u0e49','error');}
 function exportCSV(type){
