@@ -1287,9 +1287,12 @@ body.role-engineer .role-admin-only { display: none !important; }
         &#9898; &#3648;&#3623;&#3657;&#3609;&#3623;&#3656;&#3634;&#3591;&#3605;&#3635;&#3649;&#3627;&#3609;&#3656;&#3591;&#3609;&#3635;&#3657; (&#3648;&#3614;&#3639;&#3656;&#3629;&#3614;&#3636;&#3617;&#3614;&#3660;&#3629;&#3629;&#3585;&#3617;&#3634;&#3648;&#3595;&#3647;&#3609;&#3604;&#3657;&#3623;&#3618;&#3611;&#3634;&#3585;&#3585;&#3634;&#3592;&#3619;&#3636;&#3591;)
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('signature-manager-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button>
-      <button class="btn btn-primary" onclick="saveMainSignature()">&#128190; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3621;&#3634;&#3618;&#3648;&#3595;&#3647;&#3609;</button>
+    <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
+      <a id="main-sig-mobile-link" href="https://tpm-system-wen.vercel.app/?mobile_sign=1&role=sm" target="_blank" class="btn btn-outline btn-sm" style="color:var(--primary); border-color:var(--primary); text-decoration:none;">📱 เซ็นผ่านมือถือ / QR</a>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-outline" onclick="closeModal('signature-manager-modal')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveMainSignature()">💾 บันทึกลายเซ็น</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6582,8 +6585,8 @@ async function delUser(id){
 function triggerUpload(id){var el=document.getElementById(id);if(el)el.click();}
 
 function compressImage(file, maxDim, quality) {
-  maxDim = maxDim || 1200;
-  quality = quality || 0.75;
+  maxDim = maxDim || 800;
+  quality = quality || 0.65;
   return new Promise(function(resolve) {
     if (!file || !file.type || !file.type.startsWith('image/')) {
       var reader = new FileReader();
@@ -6606,12 +6609,12 @@ function compressDataUrl(dataUrl, maxDim, quality) {
       resolve(dataUrl);
       return;
     }
-    if (dataUrl.length < 250000) {
+    if (dataUrl.length < 60000) {
       resolve(dataUrl);
       return;
     }
-    maxDim = maxDim || 1200;
-    quality = quality || 0.75;
+    maxDim = maxDim || 800;
+    quality = quality || 0.65;
     var img = new Image();
     img.onload = function() {
       var w = img.width, h = img.height;
@@ -6633,7 +6636,7 @@ function compressDataUrl(dataUrl, maxDim, quality) {
 function previewPhotos(input,previewId,key){
   if(!STATE.pendingPhotos[key])STATE.pendingPhotos[key]={files:[], existing:[]};
   Array.from(input.files).forEach(function(file){
-    compressImage(file, 1200, 0.75).then(function(compressedDataUrl) {
+    compressImage(file, 800, 0.65).then(function(compressedDataUrl) {
       if (!compressedDataUrl) return;
       var idx=STATE.pendingPhotos[key].files.length;
       STATE.pendingPhotos[key].files.push({file:file,dataUrl:compressedDataUrl});
@@ -6667,7 +6670,7 @@ async function uploadPendingPhotos(key, folder) {
   if (!state) return [];
   var rawExisting = (state.existing || []).filter(function(x) { return x !== null && x !== ''; });
   var existing = await Promise.all(rawExisting.map(function(url) {
-    return compressDataUrl(url, 1200, 0.75);
+    return compressDataUrl(url, 800, 0.65);
   }));
   var toUpload = (state.files || []).filter(function(f) { return f !== null; });
   var uploadedIds = [];
@@ -6803,6 +6806,12 @@ function openSignatureManagerModal(role) {
     switchMainSigTab('draw');
   }
 
+  var mobLink = document.getElementById('main-sig-mobile-link');
+  if (mobLink) {
+    var rawRole = mainCurRole.indexOf('vendor_') === 0 ? 'vendor' : mainCurRole;
+    mobLink.href = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&role=' + encodeURIComponent(rawRole);
+  }
+
   openModal('signature-manager-modal');
   setTimeout(initMainCanvas, 100);
 }
@@ -6810,6 +6819,11 @@ function openSignatureManagerModal(role) {
 function onMainSigRoleChange() {
   var sel = document.getElementById('main-sig-role').value;
   mainCurRole = sel;
+  var mobLink = document.getElementById('main-sig-mobile-link');
+  if (mobLink) {
+    var rawRole = mainCurRole.indexOf('vendor_') === 0 ? 'vendor' : mainCurRole;
+    mobLink.href = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&role=' + encodeURIComponent(rawRole);
+  }
   var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
   document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || roleLabel;
   document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
@@ -7566,6 +7580,8 @@ async function openPMPrintForm(moldId) {
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>PM Form - ' + mold.Name + '</title>' +
+    '<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><' + '/script>' +
+    '<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><' + '/script>' +
     '<style>' +
       '@page { size: A4 landscape; margin: 6mm 8mm; }' +
       '* { box-sizing: border-box; }' +
@@ -7581,11 +7597,11 @@ async function openPMPrintForm(moldId) {
     '</style></head><body>' +
 
     '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:6px; background:#f3f4f6; margin-bottom:6px; border-bottom:1px solid #ccc; flex-wrap:wrap; position:sticky; top:0; z-index:100;">' +
-      '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udda8\ufe0f \u0e2a\u0e31\u0e48\u0e07\u0e1e\u0e34\u0e21\u0e1e\u0e4c / Print (A4 \u0e41\u0e19\u0e27\u0e19\u0e2d\u0e19 ' + (totalPages > 1 ? totalPages + ' \u0e2b\u0e19\u0e49\u0e32' : '1 \u0e2b\u0e19\u0e49\u0e32') + ')</button>' +
-      '<button onclick="openSigModal(\'sm\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19 / \u0e08\u0e31\u0e14\u0e01\u0e32\u0e23\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
-      '<button onclick="openQRPanel()" style="padding:6px 14px; font-size:10.5pt; background:#7c3aed; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udcf1 QR \u0e40\u0e0b\u0e47\u0e19\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d</button>' +
-      '<button onclick="refreshSignatures()" style="padding:6px 14px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
-      '<button onclick="window.close()" style="padding:6px 14px; font-size:10.5pt; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">\u2715 \u0e1b\u0e34\u0e14</button>' +
+      '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน ' + (totalPages > 1 ? totalPages + ' หน้า' : '1 หน้า') + ')</button>' +
+      '<button onclick="openSigModal(\'sm\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✍️ เซ็น / จัดการลายเซ็น</button>' +
+      '<button onclick="openQRPanel()" style="padding:6px 14px; font-size:10.5pt; background:#7c3aed; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📱 QR เซ็นผ่านมือถือ</button>' +
+      '<button onclick="refreshSignatures()" style="padding:6px 14px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🔄 รีเฟรชลายเซ็น</button>' +
+      '<button onclick="window.close()" style="padding:6px 14px; font-size:10.5pt; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
 
     pagesHtml +
@@ -7596,55 +7612,58 @@ async function openPMPrintForm(moldId) {
     '<div id="sig-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; justify-content:center; align-items:center;">' +
       '<div style="background:#fff; border-radius:10px; width:480px; max-width:95%; padding:18px; box-shadow:0 12px 30px rgba(0,0,0,0.35); font-family:sans-serif;">' +
         '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
-          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34\u0e2b\u0e31\u0e27\u0e41\u0e1c\u0e19 PM</h3>' +
-          '<button onclick="closeSigModal()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">\u2715</button>' +
+          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">✍️ เซ็นชื่ออนุมัติหัวแผน PM</h3>' +
+          '<button onclick="closeSigModal()" style="background:none; border:none; font-size:16pt; cursor:color:#6b7280; line-height:1;">✕</button>' +
         '</div>' +
         '<div style="margin-bottom:12px;">' +
-          '<label style="font-size:9.5pt; font-weight:bold; color:#374151; display:block; margin-bottom:4px;">\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e17\u0e35\u0e48\u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e25\u0e07\u0e19\u0e32\u0e21:</label>' +
+          '<label style="font-size:9.5pt; font-weight:bold; color:#374151; display:block; margin-bottom:4px;">เลือกตำแหน่งที่ต้องการลงนาม:</label>' +
           '<select id="sig-role-select" onchange="onRoleChange()" style="width:100%; padding:7px 10px; font-size:10pt; border:1.5px solid #6366f1; border-radius:6px; background:#f8fafc; font-weight:600;">' +
-            '<option value="vendor">\u0e41\u0e1c\u0e19\u0e01\u0e32\u0e23\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e01\u0e32\u0e23 VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
+            '<option value="vendor">แผนการดำเนินการ VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
             '<option value="sm">SM (Section Manager - WEN/WP)</option>' +
             '<option value="sv">SV (Supervisor - WEN/WP)</option>' +
             '<option value="st">ST (Staff - WEN/WP)</option>' +
           '</select>' +
         '</div>' +
         '<div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:12px;">' +
-          '<button id="tab-btn-draw" onclick="switchSigTab(\'draw\')" style="flex:1; padding:7px; border:none; background:#2563eb; color:#fff; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:4px 0 0 0;">\u270f\ufe0f \u0e27\u0e32\u0e14\u0e2a\u0e14</button>' +
-          '<button id="tab-btn-image" onclick="switchSigTab(\'image\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">\ud83d\uddbc\ufe0f \u0e2d\u0e31\u0e1b\u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b</button>' +
-          '<button id="tab-btn-stamp" onclick="switchSigTab(\'stamp\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">\ud83d\udd34 \u0e15\u0e23\u0e32\u0e22\u0e32\u0e07 E-Stamp</button>' +
-          '<button id="tab-btn-none" onclick="switchSigTab(\'none\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:0 4px 0 0;">\u26aa \u0e40\u0e27\u0e49\u0e19\u0e27\u0e48\u0e32\u0e07</button>' +
+          '<button id="tab-btn-draw" onclick="switchSigTab(\'draw\')" style="flex:1; padding:7px; border:none; background:#2563eb; color:#fff; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:4px 0 0 0;">✏️ วาดสด</button>' +
+          '<button id="tab-btn-image" onclick="switchSigTab(\'image\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">🖼️ อัปโหลดรูป</button>' +
+          '<button id="tab-btn-stamp" onclick="switchSigTab(\'stamp\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">🔴 ตรายาง E-Stamp</button>' +
+          '<button id="tab-btn-none" onclick="switchSigTab(\'none\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:0 4px 0 0;">⚪ เว้นว่าง</button>' +
         '</div>' +
         '<div id="sig-pane-draw" style="display:block;">' +
           '<div style="border:1.5px solid #d1d5db; border-radius:6px; background:#fff; text-align:center; position:relative;">' +
             '<canvas id="sig-canvas" width="440" height="130" style="display:block; width:100%; cursor:crosshair; touch-action:none; background:#fff; border-radius:6px;"></canvas>' +
-            '<div style="position:absolute; bottom:4px; left:8px; font-size:7.5pt; color:#9ca3af; pointer-events:none;">(\u0e43\u0e0a\u0e49\u0e19\u0e34\u0e49\u0e27\u0e2b\u0e23\u0e37\u0e2d\u0e40\u0e21\u0e32\u0e2a\u0e4c\u0e27\u0e32\u0e14\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19)</div>' +
+            '<div style="position:absolute; bottom:4px; left:8px; font-size:7.5pt; color:#9ca3af; pointer-events:none;">(ใช้นิ้วหรือเมาส์วาดลายเซ็น)</div>' +
           '</div>' +
           '<div style="margin-top:6px; text-align:right;">' +
-            '<button onclick="clearCanvas()" style="padding:4px 10px; font-size:8.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">\ud83e\uddf9 \u0e25\u0e49\u0e32\u0e07\u0e40\u0e2a\u0e49\u0e19\u0e27\u0e32\u0e14</button>' +
+            '<button onclick="clearCanvas()" style="padding:4px 10px; font-size:8.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">🧹 ล้างเส้นวาด</button>' +
           '</div>' +
         '</div>' +
         '<div id="sig-pane-image" style="display:none; text-align:center; padding:10px 0;">' +
           '<input type="file" id="sig-file-input" accept="image/*" onchange="handleImageUpload(event)" style="display:block; margin:0 auto 10px auto; font-size:9pt;" />' +
           '<div id="sig-image-preview-wrap" style="height:100px; border:1px dashed #d1d5db; border-radius:4px; display:flex; align-items:center; justify-content:center; background:#fafafa;">' +
-            '<span style="color:#9ca3af; font-size:8.5pt;">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG)</span>' +
+            '<span style="color:#9ca3af; font-size:8.5pt;">ตัวอย่างรูปภาพลายเซ็น (PNG/JPG)</span>' +
           '</div>' +
         '</div>' +
         '<div id="sig-pane-stamp" style="display:none; padding:6px 0;">' +
           '<div style="margin-bottom:8px;">' +
-            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">\u0e0a\u0e37\u0e48\u0e2d\u0e1a\u0e19\u0e15\u0e23\u0e32\u0e22\u0e32\u0e07:</label>' +
-            '<input id="stamp-name-input" placeholder="\u0e40\u0e0a\u0e48\u0e19 SARIN T." style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
+            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">ชื่อบนตรายาง:</label>' +
+            '<input id="stamp-name-input" placeholder="เช่น SARIN T." style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
           '</div>' +
           '<div style="margin-bottom:10px;">' +
-            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e2d\u0e19\u0e38\u0e21\u0e31\u0e15\u0e34:</label>' +
+            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">วันที่อนุมัติ:</label>' +
             '<input id="stamp-date-input" type="date" style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
           '</div>' +
         '</div>' +
         '<div id="sig-pane-none" style="display:none; padding:16px 0; text-align:center; color:#6b7280; font-size:9pt;">' +
-          '\u26aa \u0e25\u0e1a\u0e01\u0e32\u0e23\u0e25\u0e07\u0e19\u0e32\u0e21\u0e02\u0e2d\u0e07\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e19\u0e35\u0e49 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e27\u0e49\u0e19\u0e27\u0e48\u0e32\u0e07\u0e43\u0e2b\u0e49\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2d\u0e2d\u0e01\u0e21\u0e34\u0e40\u0e0b\u0e47\u0e19\u0e14\u0e49\u0e27\u0e22\u0e1b\u0e34\u0e32\u0e01\u0e01\u0e32\u0e08\u0e23\u0e34\u0e07' +
+          '⚪ ลบการลงนามของตำแหน่งนี้ เพื่อเว้นว่างให้พิมพ์ออกมาเซ็นด้วยปากกาจริง' +
         '</div>' +
-        '<div style="display:flex; justify-content:flex-end; gap:8px; border-top:1px solid #e5e7eb; padding-top:12px; margin-top:14px;">' +
-          '<button onclick="closeSigModal()" style="padding:7px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01</button>' +
-          '<button onclick="saveCurrentSignature()" style="padding:7px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">\ud83d\udcbe \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
+        '<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e5e7eb; padding-top:12px; margin-top:14px;">' +
+          '<button type="button" onclick="closeSigModal(); openQRPanel();" style="padding:7px 12px; font-size:9pt; background:#f5f3ff; color:#6d28d9; border:1.5px solid #c4b5fd; border-radius:4px; cursor:pointer; font-weight:600;">📱 สแกน QR ผ่านมือถือ</button>' +
+          '<div style="display:flex; gap:8px;">' +
+            '<button onclick="closeSigModal()" style="padding:7px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">ยกเลิก</button>' +
+            '<button onclick="saveCurrentSignature()" style="padding:7px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 บันทึกลายเซ็น</button>' +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -7655,28 +7674,27 @@ async function openPMPrintForm(moldId) {
     '<div id="qr-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">' +
       '<div style="background:#fff; border-radius:12px; width:520px; max-width:95%; padding:20px; box-shadow:0 12px 35px rgba(0,0,0,0.4); font-family:sans-serif;">' +
         '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
-          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">\ud83d\udcf1 \u0e2a\u0e41\u0e01\u0e19 QR Code \u0e40\u0e0b\u0e47\u0e19\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e1c\u0e48\u0e32\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d</h3>' +
-          '<button onclick="closeQRPanel()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">\u2715</button>' +
+          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">📱 สแกน QR Code เซ็นลายเซ็นผ่านมือถือ</h3>' +
+          '<button onclick="closeQRPanel()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">✕</button>' +
         '</div>' +
-        '<p style="color:#4b5563; font-size:9.5pt; margin:0 0 14px 0;">\u0e43\u0e0a\u0e49\u0e01\u0e25\u0e49\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d\u0e2a\u0e41\u0e01\u0e19 QR \u0e15\u0e32\u0e21\u0e15\u0e33\u0e41\u0e2b\u0e19\u0e48\u0e07\u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07 \u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e27\u0e32\u0e14\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e1a\u0e19\u0e2b\u0e19\u0e49\u0e32\u0e08\u0e2d\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d:</p>' +
+        '<p style="color:#4b5563; font-size:9.5pt; margin:0 0 14px 0;">ใช้กล้องมือถือสแกน QR ตามตำแหน่งด้านล่าง เพื่อวาดลายเซ็นบนหน้าจอมือถือ (ระบบจะอัปเดตอัตโนมัติ):</p>' +
         '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">' +
           ['vendor','sm','sv','st'].map(function(r){
             var roleTitle = r === 'vendor' ? 'VENDOR' : (r === 'sm' ? 'SM (Manager)' : (r === 'sv' ? 'SV (Supervisor)' : 'ST (Staff)'));
             var targetUrl = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&mold=' + encodeURIComponent(mold.ID) + '&role=' + r;
-            var qrImg = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(targetUrl);
             return '<div style="border:1px solid #e5e7eb; border-radius:8px; padding:8px; text-align:center; background:#fafafa;">' +
                      '<div style="font-size:9.5pt; font-weight:bold; color:#1e40af; margin-bottom:4px;">' + roleTitle + '</div>' +
-                     '<img src="' + qrImg + '" style="width:110px; height:110px; display:block; margin:0 auto;" />' +
-                     '<a href="' + targetUrl + '" target="_blank" style="font-size:7.5pt; color:#6366f1; display:block; margin-top:4px; text-decoration:none;">\u0e40\u0e1b\u0e34\u0e14\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e42\u0e14\u0e22\u0e15\u0e23\u0e07 \u2197</a>' +
+                     '<div id="qr-box-' + r + '" style="width:110px; height:110px; margin:0 auto; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e5e7eb; border-radius:4px;"></div>' +
+                     '<a href="' + targetUrl + '" target="_blank" style="font-size:7.5pt; color:#6366f1; display:block; margin-top:4px; text-decoration:none;">เปิดลิงก์โดยตรง ↗</a>' +
                    '</div>';
           }).join('') +
         '</div>' +
         '<div style="margin-top:12px; padding:8px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:8.5pt; color:#166534;">' +
-          '\u2705 \u0e40\u0e21\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19\u0e1a\u0e19\u0e21\u0e37\u0e2d\u0e16\u0e37\u0e2d\u0e40\u0e2a\u0e23\u0e47\u0e08\u0e41\u0e25\u0e49\u0e27 \u0e43\u0e2b\u0e49\u0e01\u0e14\u0e1b\u0e38\u0e48\u0e21 <strong>\u201c\u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u201d</strong> \u0e14\u0e49\u0e32\u0e19\u0e25\u0e48\u0e32\u0e07\u0e19\u0e35\u0e49' +
+          '✅ เมื่อเซ็นบนมือถือเสร็จแล้ว หน้านี้จะซิงค์ลายเซ็นเข้ามาอัตโนมัติทุก 3 วินาที หรือกดปุ่ม <strong>“รีเฟรชลายเซ็น”</strong> ด้านล่าง' +
         '</div>' +
         '<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">' +
-          '<button onclick="refreshSignatures()" style="padding:7px 16px; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt; font-weight:bold;">\ud83d\udd04 \u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19</button>' +
-          '<button onclick="closeQRPanel()" style="padding:7px 16px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt;">\u0e1b\u0e34\u0e14</button>' +
+          '<button onclick="refreshSignatures()" style="padding:7px 16px; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt; font-weight:bold;">🔄 รีเฟรชลายเซ็น</button>' +
+          '<button onclick="closeQRPanel()" style="padding:7px 16px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt;">ปิด</button>' +
         '</div>' +
       '</div>' +
     '</div>' +
@@ -7686,12 +7704,45 @@ async function openPMPrintForm(moldId) {
     // ============================================
     '<script>' +
       'var sigStore = ' + JSON.stringify(resolvedSigs) + ';' +
-      'var moldVendorName = "' + (mold.Vendor || '').replace(/"/g, '\"') + '";' +
-      'var moldIdForSync = "' + mold.ID + '";' +
+      'var moldVendorName = ' + JSON.stringify(mold.Vendor || '') + ';' +
+      'var moldIdForSync = ' + JSON.stringify(mold.ID || '') + ';' +
       'var curRole = "sm";' +
       'var curTab = "draw";' +
       'var curUploadedImage = "";' +
       'var canvas, ctx, isDrawing = false;' +
+      'var SUPABASE_URL = "https://kkghaqgdlxomoskrycgp.supabase.co";' +
+      'var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtrZ2hhcWdkbHhvbW9za3J5Y2dwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3Mjk5OTYsImV4cCI6MjEwMTMwNTk5Nn0.-py2OSn6CN7yKNnPLdD-BPqsBtQaLCngpHk0R_1s-_Y";' +
+      'var directSbClient = null;' +
+      'var qrPollTimer = null;' +
+      'var qrRendered = false;' +
+
+      'function initDirectSb() {' +
+        'if(!directSbClient && window.supabase && window.supabase.createClient) {' +
+          'directSbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);' +
+        '}' +
+        'return directSbClient;' +
+      '}' +
+
+      'function renderQRCodes() {' +
+        'if(qrRendered) return;' +
+        'var roles = ["vendor","sm","sv","st"];' +
+        'roles.forEach(function(r){' +
+          'var el = document.getElementById("qr-box-" + r);' +
+          'if(!el) return;' +
+          'var targetUrl = "https://tpm-system-wen.vercel.app/?mobile_sign=1&mold=" + encodeURIComponent(moldIdForSync) + "&role=" + r;' +
+          'try {' +
+            'if(window.QRCode) {' +
+              'el.innerHTML = "";' +
+              'new QRCode(el, { text: targetUrl, width: 110, height: 110, correctLevel: QRCode.CorrectLevel.M });' +
+            '} else {' +
+              'el.innerHTML = "<img src=\\"https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=" + encodeURIComponent(targetUrl) + "\\" style=\\"width:110px;height:110px;display:block;\\" />";' +
+            '}' +
+          '} catch(e){' +
+            'el.innerHTML = "<img src=\\"https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=" + encodeURIComponent(targetUrl) + "\\" style=\\"width:110px;height:110px;display:block;\\" />";' +
+          '}' +
+        '});' +
+        'qrRendered = true;' +
+      '}' +
       
       'function initCanvas() {' +
         'canvas = document.getElementById("sig-canvas");' +
@@ -7749,7 +7800,7 @@ async function openPMPrintForm(moldId) {
           'clearCanvas();' +
           'curUploadedImage = "";' +
           'var prevEl = document.getElementById("sig-image-preview-wrap");' +
-          'if(prevEl) prevEl.innerHTML = "<span style=\"color:#9ca3af;font-size:8.5pt;\">\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 (PNG/JPG)</span>";' +
+          'if(prevEl) prevEl.innerHTML = "<span style=\"color:#9ca3af;font-size:8.5pt;\">ตัวอย่างรูปภาพลายเซ็น (PNG/JPG)</span>";' +
           'var existing = sigStore[curRole];' +
           'if(existing && existing.type){' +
             'switchSigTab(existing.type);' +
@@ -7794,14 +7845,14 @@ async function openPMPrintForm(moldId) {
         'reader.readAsDataURL(file);' +
       '}' +
 
-      'function saveCurrentSignature() {' +
+      'async function saveCurrentSignature() {' +
         'var role = document.getElementById("sig-role-select").value;' +
         'if(curTab === "draw") {' +
           'if(!canvas) initCanvas();' +
           'var dataUrl = canvas.toDataURL("image/png");' +
           'sigStore[role] = { type: "draw", data: dataUrl };' +
         '} else if(curTab === "image") {' +
-          'if(!curUploadedImage){ alert("\u0e01\u0e23\u0e38\u0e13\u0e32\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e44\u0e1f\u0e25\u0e4c\u0e23\u0e39\u0e1b\u0e20\u0e32\u0e1e\u0e01\u0e48\u0e2d\u0e19\u0e04\u0e23\u0e31\u0e1a"); return; }' +
+          'if(!curUploadedImage){ alert("กรุณาเลือกไฟล์รูปภาพก่อนครับ"); return; }' +
           'sigStore[role] = { type: "image", data: curUploadedImage };' +
         '} else if(curTab === "stamp") {' +
           'var stName = (document.getElementById("stamp-name-input").value || "").trim() || role.toUpperCase();' +
@@ -7821,8 +7872,31 @@ async function openPMPrintForm(moldId) {
           '}' +
           'localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(rootSigs));' +
         '} catch(e){}' +
+        'var savedToCloud = false;' +
         'if(window.opener && window.opener.api){' +
-          'window.opener.api("saveMoldHeaderSig", { moldId: moldIdForSync, role: role, sigData: sigStore[role] });' +
+          'try {' +
+            'await window.opener.api("saveMoldHeaderSig", { moldId: moldIdForSync, role: role, sigData: sigStore[role] });' +
+            'savedToCloud = true;' +
+          '} catch(e){}' +
+        '}' +
+        'var sb = initDirectSb();' +
+        'if(!savedToCloud && sb && moldIdForSync){' +
+          'try {' +
+            'var moldRes = await sb.from("molds").select("ID, Notes").eq("ID", moldIdForSync).single();' +
+            'if(moldRes && moldRes.data){' +
+              'var curNotes = moldRes.data.Notes || "";' +
+              'var curHeaderSigs = {};' +
+              'var match = curNotes.match(/\\[HEADER_SIGS:(.*?)\\]/);' +
+              'if(match && match[1]){' +
+                'try { curHeaderSigs = JSON.parse(match[1]); } catch(ex){}' +
+              '}' +
+              'if(sigStore[role]) curHeaderSigs[role] = sigStore[role];' +
+              'else delete curHeaderSigs[role];' +
+              'var cleanNotes = curNotes.replace(/\\[HEADER_SIGS:.*?\\]/g, "").trim();' +
+              'var newNotes = (cleanNotes + " [HEADER_SIGS:" + JSON.stringify(curHeaderSigs) + "]").trim();' +
+              'await sb.from("molds").update({ Notes: newNotes }).eq("ID", moldIdForSync);' +
+            '}' +
+          '} catch(err){ console.error("direct save error:", err); }' +
         '}' +
         'updateCellInDom(role);' +
         'closeSigModal();' +
@@ -7832,7 +7906,7 @@ async function openPMPrintForm(moldId) {
         'var cells = document.querySelectorAll(".sig-cell-" + role);' +
         'if(!cells.length) return;' +
         'var s = sigStore[role];' +
-        'var inner = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;\">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>";' +
+        'var inner = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;\">✍️ เซ็นชื่อ</span>";' +
         'if(s) {' +
           'if(s.type === "draw" || s.type === "image") {' +
             'inner = "<img src=\"" + s.data + "\" style=\"max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;\" />";' +
@@ -7851,38 +7925,60 @@ async function openPMPrintForm(moldId) {
       'function openQRPanel() {' +
         'var qrModal = document.getElementById("qr-modal-backdrop");' +
         'if(qrModal) qrModal.style.display = "flex";' +
+        'renderQRCodes();' +
+        'if(qrPollTimer) clearInterval(qrPollTimer);' +
+        'qrPollTimer = setInterval(function(){ refreshSignatures(true); }, 3000);' +
       '}' +
 
       'function closeQRPanel() {' +
         'var qrModal = document.getElementById("qr-modal-backdrop");' +
         'if(qrModal) qrModal.style.display = "none";' +
+        'if(qrPollTimer){ clearInterval(qrPollTimer); qrPollTimer = null; }' +
       '}' +
 
-      'async function refreshSignatures() {' +
+      'async function refreshSignatures(silent) {' +
         'try {' +
           'var rootSigs = {};' +
           'try { rootSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}"); } catch(e){}' +
           'if(rootSigs.st_sv && !rootSigs.st) rootSigs.st = rootSigs.st_sv;' +
           '[\"sm\",\"sv\",\"st\"].forEach(function(r){ if(rootSigs[r]) sigStore[r] = rootSigs[r]; });' +
           'if(moldVendorName && rootSigs[\"vendor_\" + moldVendorName]) sigStore[\"vendor\"] = rootSigs[\"vendor_\" + moldVendorName];' +
-          'if(window.opener && window.opener.api) {' +
-            'var r = await window.opener.api("getMolds");' +
-            'if(r.success && r.data) {' +
-              'var m = r.data.find(function(x){ return x.ID === moldIdForSync; });' +
-              'if(m && m.Notes && m.Notes.indexOf("[HEADER_SIGS:") !== -1) {' +
-                'var sigMatch = m.Notes.match(/\\[HEADER_SIGS:(.*?)\\]/);' +
+          'var loadedFromCloud = false;' +
+          'var sb = initDirectSb();' +
+          'if(sb && moldIdForSync) {' +
+            'try {' +
+              'var res = await sb.from("molds").select("ID, Notes").eq("ID", moldIdForSync).single();' +
+              'if(res && res.data && res.data.Notes && res.data.Notes.indexOf("[HEADER_SIGS:") !== -1) {' +
+                'var sigMatch = res.data.Notes.match(/\\[HEADER_SIGS:(.*?)\\]/);' +
                 'if(sigMatch && sigMatch[1]) {' +
                   'var cloudSigs = JSON.parse(sigMatch[1]);' +
                   'if(cloudSigs.st_sv && !cloudSigs.st) cloudSigs.st = cloudSigs.st_sv;' +
                   'sigStore = Object.assign({}, sigStore, cloudSigs);' +
+                  'loadedFromCloud = true;' +
                 '}' +
               '}' +
-            '}' +
+            '} catch(dbErr){ console.warn("directSb error:", dbErr); }' +
+          '}' +
+          'if(!loadedFromCloud && window.opener && window.opener.api) {' +
+            'try {' +
+              'var r = await window.opener.api("getMolds");' +
+              'if(r && r.success && r.data) {' +
+                'var m = r.data.find(function(x){ return x.ID === moldIdForSync; });' +
+                'if(m && m.Notes && m.Notes.indexOf("[HEADER_SIGS:") !== -1) {' +
+                  'var sigMatch = m.Notes.match(/\\[HEADER_SIGS:(.*?)\\]/);' +
+                  'if(sigMatch && sigMatch[1]) {' +
+                    'var cloudSigs = JSON.parse(sigMatch[1]);' +
+                    'if(cloudSigs.st_sv && !cloudSigs.st) cloudSigs.st = cloudSigs.st_sv;' +
+                    'sigStore = Object.assign({}, sigStore, cloudSigs);' +
+                  '}' +
+                '}' +
+              '}' +
+            '} catch(opErr){ console.warn("window.opener error:", opErr); }' +
           '}' +
           '["vendor","sm","sv","st"].forEach(updateCellInDom);' +
-          'alert("\u2705 \u0e23\u0e35\u0e40\u0e1f\u0e23\u0e0a\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e25\u0e48\u0e32\u0e2a\u0e38\u0e14\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22");' +
+          'if(!silent) alert("✅ รีเฟรชลายเซ็นล่าสุดเรียบร้อย");' +
         '} catch(err) {' +
-          'alert("\u26a0\ufe0f \u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e14\u0e36\u0e07\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19\u0e44\u0e14\u0e49: " + err.message);' +
+          'if(!silent) alert("⚠️ ไม่สามารถดึงลายเซ็นได้: " + err.message);' +
         '}' +
       '}' +
     '<' + '/script>' +
