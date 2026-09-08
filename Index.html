@@ -185,6 +185,101 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 #setup-screen{position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;padding:24px;text-align:center;}
 .setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:32px;max-width:500px;width:100%;}
 
+/* LOGIN SCREEN */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: radial-gradient(circle at 50% 30%, #151c2e 0%, #080b12 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow: hidden;
+  user-select: none;
+}
+.login-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(140px);
+  pointer-events: none;
+  opacity: 0.28;
+}
+.login-bg-glow-1 {
+  width: 520px;
+  height: 520px;
+  background: #6366f1;
+  top: -120px;
+  left: -100px;
+}
+.login-bg-glow-2 {
+  width: 560px;
+  height: 560px;
+  background: #0ea5e9;
+  bottom: -160px;
+  right: -100px;
+}
+.login-watermark {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+.login-wm-text {
+  font-size: clamp(34px, 7vw, 84px);
+  font-weight: 900;
+  letter-spacing: 6px;
+  color: rgba(255, 255, 255, 0.038);
+  text-align: center;
+  line-height: 1.2;
+  text-transform: uppercase;
+  max-width: 90%;
+  transform: rotate(-7deg);
+  text-shadow: 0 0 40px rgba(99, 102, 241, 0.06);
+}
+.login-card {
+  position: relative;
+  z-index: 2;
+  background: rgba(18, 24, 38, 0.88);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.25);
+  border-radius: 18px;
+  padding: 34px 28px;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  animation: loginCardFadeIn 0.35s ease-out;
+}
+@keyframes loginCardFadeIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.login-logo {
+  font-size: 44px;
+  margin-bottom: 8px;
+  display: inline-block;
+  filter: drop-shadow(0 4px 14px rgba(99, 102, 241, 0.45));
+}
+.login-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #f8fafc;
+  margin: 0 0 6px 0;
+  letter-spacing: 0.4px;
+}
+.login-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0 0 20px 0;
+  line-height: 1.4;
+}
+
 /* LAYOUT */
 .chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;}
 .chart-wrap{position:relative;height:220px;}
@@ -380,6 +475,73 @@ body.role-engineer .role-admin-only { display: none !important; }
 </head>
 <body>
 
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:flex;">
+  <!-- Ambient background graphics & watermark -->
+  <div class="login-bg-glow login-bg-glow-1"></div>
+  <div class="login-bg-glow login-bg-glow-2"></div>
+  <div class="login-watermark">
+    <div class="login-wm-text">TPM MANAGEMENT SYSTEM WEN</div>
+  </div>
+
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">⚙️</div>
+      <h2 class="login-title">TPM Management System WEN</h2>
+      <p class="login-subtitle">ระบบบริหารจัดการงานบำรุงรักษาเชิงป้องกันแม่พิมพ์และเครื่องจักร</p>
+    </div>
+
+    <form id="login-form" onsubmit="event.preventDefault(); submitLogin();" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="form-group" style="text-align:left;">
+        <label for="login-user-select" style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <span>👤</span> <span>เลือกผู้ใช้งาน (Select User)</span>
+        </label>
+        <select id="login-user-select" class="form-control" onchange="onLoginUserChange()" style="width:100%;height:44px;font-size:14px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:0 12px;outline:none;">
+          <option value="" disabled selected>-- กำลังโหลดรายชื่อผู้ใช้... --</option>
+        </select>
+        <div id="login-role-badge-display" style="display:none;margin-top:8px;font-size:12px;color:var(--text-muted);align-items:center;gap:6px;">
+          <span>ตำแหน่ง/บทบาท:</span> <span id="login-selected-role-name" class="badge" style="font-size:11px;padding:3px 8px;"></span>
+        </div>
+      </div>
+
+      <!-- Password Field for Admin -->
+      <div id="login-password-group" class="form-group" style="display:none;text-align:left;">
+        <label for="login-password-input" style="font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="display:flex;align-items:center;gap:6px;color:#f87171;">
+            <span>🔒</span> <span>รหัสผ่านผู้ดูแลระบบ (Admin Password)</span>
+          </span>
+          <span style="font-size:11px;color:var(--text-faint);">(ค่าเริ่มต้น: 1234)</span>
+        </label>
+        <div style="position:relative;display:flex;align-items:center;">
+          <input id="login-password-input" type="password" class="form-control" placeholder="กรอกรหัสผ่าน Admin..." autocomplete="current-password" style="width:100%;height:44px;font-size:14px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:0 40px 0 12px;outline:none;" />
+          <button type="button" onclick="toggleLoginPasswordVisibility()" style="position:absolute;right:10px;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:4px;font-size:16px;" title="แสดง/ซ่อนรหัสผ่าน" id="login-pwd-toggle-btn">👁️</button>
+        </div>
+        <div id="login-password-error" style="display:none;color:#ef4444;font-size:12px;margin-top:6px;background:rgba(239,68,68,0.1);padding:6px 10px;border-radius:6px;border:1px solid rgba(239,68,68,0.25);text-align:left;">
+          ❌ รหัสผ่าน Admin ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง
+        </div>
+      </div>
+
+      <!-- Session Remember Me Option -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12.5px;color:var(--text-muted);user-select:none;">
+          <input type="checkbox" id="login-remember-me" checked style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;" />
+          <span>จำการเข้าสู่ระบบในอุปกรณ์นี้ (Remember me)</span>
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" id="login-submit-btn" class="btn btn-primary" style="width:100%;height:46px;font-size:15px;font-weight:600;border-radius:8px;justify-content:center;margin-top:6px;box-shadow:0 4px 14px rgba(99,102,241,0.35);">
+        🚀 เข้าสู่ระบบ (Login)
+      </button>
+
+      <div style="font-size:11.5px;color:var(--text-faint);line-height:1.4;margin-top:4px;">
+        💡 ช่างทั่วไปและผู้ดูข้อมูล เลือกชื่อแล้วกดเข้าสู่ระบบได้ทันที<br>
+        🔒 สิทธิ์ผู้ดูแลระบบ (Admin) ต้องใส่รหัสผ่านเพื่อความปลอดภัย
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- SETUP SCREEN -->
 <div id="setup-screen" style="display:none">
   <div class="setup-card">
@@ -427,6 +589,9 @@ body.role-engineer .role-admin-only { display: none !important; }
         <div class="user-role" id="sidebar-user-role" style="color:#38bdf8">Technician (ช่าง)</div>
       </div>
     </div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="performLogout()" style="width:100%;margin-top:8px;color:var(--text-muted);justify-content:center;gap:6px;border:1px solid var(--border);" title="ออกจากระบบ">
+      <span>🚪</span> <span>ออกจากระบบ (Logout)</span>
+    </button>
   </div>
 </nav>
 
@@ -448,6 +613,9 @@ body.role-engineer .role-admin-only { display: none !important; }
         <span style="font-size:9px;color:var(--text-muted);margin-left:2px;">▼</span>
       </button>
       <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
+      <button class="btn btn-outline btn-sm" onclick="performLogout()" style="display:flex;align-items:center;gap:4px;color:var(--text-muted);" title="ออกจากระบบ">
+        <span>🚪</span> <span class="hide-mobile">ออก</span>
+      </button>
     </div>
   </header>
   <div id="content">
@@ -2543,18 +2711,277 @@ function parseJson(str, fallback) {
   }
 }
 
-function initCurrentUser() {
-  var saved = parseJson(localStorage.getItem('TPM_CURRENT_USER'));
-  if (saved && saved.Name) {
-    STATE.currentUser = saved;
-    updateUserDisplay();
-    applyRolePermissions();
-  } else {
-    STATE.currentUser = { Name: 'สาริน T.', Role: 'Technician', Email: 'sarin@tpm.local', Department: 'Maintenance' };
-    updateUserDisplay();
-    applyRolePermissions();
-    setTimeout(function() { openUserSelectModal(true); }, 400);
+// ============================================
+//  AUTHENTICATION & LOGIN SCREEN LIFECYCLE
+// ============================================
+var _inactivityTimer = null;
+var _lastActivityTime = Date.now();
+
+function checkLoginState() {
+  var isMobileSign = false;
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mobile_sign') === '1') isMobileSign = true;
+  } catch(e) {}
+  if (isMobileSign) {
+    hideLoginScreen();
+    return true; // Bypass login for mobile signature page
   }
+
+  var loggedInSession = sessionStorage.getItem('TPM_LOGGED_IN');
+  var loggedInLocal = localStorage.getItem('TPM_LOGGED_IN');
+  var savedUser = parseJson(localStorage.getItem('TPM_CURRENT_USER'));
+  var loginTime = Number(localStorage.getItem('TPM_LOGIN_TIME') || 0);
+  var now = Date.now();
+
+  var isValid = false;
+  if (savedUser && savedUser.Name) {
+    if (loggedInSession === '1') {
+      if (savedUser.Role === 'Admin') {
+        // Admin session valid for 8 hours
+        if (loginTime > 0 && (now - loginTime) < (8 * 3600 * 1000)) {
+          isValid = true;
+        }
+      } else {
+        isValid = true;
+      }
+    } else if (loggedInLocal === '1') {
+      if (savedUser.Role === 'Admin') {
+        // Admin: valid for 8 hours only
+        if (loginTime > 0 && (now - loginTime) < (8 * 3600 * 1000)) {
+          isValid = true;
+        }
+      } else {
+        // Regular users: remember for 30 days
+        if (loginTime > 0 && (now - loginTime) < (30 * 24 * 3600 * 1000)) {
+          isValid = true;
+        }
+      }
+    }
+  }
+
+  if (isValid) {
+    STATE.currentUser = savedUser;
+    updateUserDisplay();
+    applyRolePermissions();
+    hideLoginScreen();
+    startInactivityTracker();
+    return true;
+  } else {
+    showLoginScreen();
+    return false;
+  }
+}
+
+function showLoginScreen() {
+  var screen = document.getElementById('login-screen');
+  if (!screen) return;
+  screen.style.display = 'flex';
+  populateLoginUserDropdown();
+}
+
+function hideLoginScreen() {
+  var screen = document.getElementById('login-screen');
+  if (screen) screen.style.display = 'none';
+}
+
+function populateLoginUserDropdown() {
+  var select = document.getElementById('login-user-select');
+  if (!select) return;
+
+  var users = getSystemUsers();
+  var curUser = STATE.currentUser || parseJson(localStorage.getItem('TPM_CURRENT_USER'));
+  var curName = curUser ? curUser.Name : '';
+
+  var rIcons = {
+    'Admin': '⚙️',
+    'Viewer': '👨‍💼',
+    'Engineer': '🛠️',
+    'Technician': '👷‍♂️',
+    'MoldSpecialist': '🧩',
+    'MachineSpecialist': '🏭',
+    'StockKeeper': '📦',
+    'Custom': '🎛️'
+  };
+
+  var opts = ['<option value="" disabled ' + (!curName ? 'selected' : '') + '>-- กรุณาเลือกผู้ใช้งาน --</option>'];
+  users.forEach(function(u) {
+    var icon = rIcons[u.Role] || '👤';
+    var isSel = (curName && curName === u.Name) ? 'selected' : '';
+    opts.push('<option value="' + esc(u.Name) + '" data-role="' + esc(u.Role || '') + '" ' + isSel + '>' + icon + ' ' + esc(u.Name) + ' (' + esc(u.Role || 'Technician') + ')</option>');
+  });
+  select.innerHTML = opts.join('');
+
+  onLoginUserChange();
+}
+
+function onLoginUserChange() {
+  var select = document.getElementById('login-user-select');
+  var pwdGroup = document.getElementById('login-password-group');
+  var pwdInput = document.getElementById('login-password-input');
+  var pwdErr = document.getElementById('login-password-error');
+  var badgeDisplay = document.getElementById('login-role-badge-display');
+  var roleNameEl = document.getElementById('login-selected-role-name');
+
+  if (pwdErr) pwdErr.style.display = 'none';
+
+  if (!select || select.selectedIndex <= 0) {
+    if (pwdGroup) pwdGroup.style.display = 'none';
+    if (badgeDisplay) badgeDisplay.style.display = 'none';
+    return;
+  }
+
+  var opt = select.options[select.selectedIndex];
+  var uName = opt.value;
+  var users = getSystemUsers();
+  var u = users.find(function(x) { return x.Name === uName; });
+  var role = u ? (u.Role || 'Technician') : (opt.getAttribute('data-role') || 'Technician');
+
+  if (badgeDisplay && roleNameEl) {
+    badgeDisplay.style.display = 'inline-flex';
+    roleNameEl.textContent = role;
+    roleNameEl.className = 'badge ' + (role === 'Admin' ? 'danger' : (role === 'Viewer' ? 'secondary' : 'primary'));
+  }
+
+  if (role === 'Admin') {
+    if (pwdGroup) pwdGroup.style.display = 'block';
+    if (pwdInput) {
+      pwdInput.value = '';
+      setTimeout(function() { pwdInput.focus(); }, 150);
+    }
+  } else {
+    if (pwdGroup) pwdGroup.style.display = 'none';
+    if (pwdInput) pwdInput.value = '';
+  }
+}
+
+function toggleLoginPasswordVisibility() {
+  var inp = document.getElementById('login-password-input');
+  var btn = document.getElementById('login-pwd-toggle-btn');
+  if (!inp) return;
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    if (btn) btn.textContent = '🙈';
+  } else {
+    inp.type = 'password';
+    if (btn) btn.textContent = '👁️';
+  }
+}
+
+function submitLogin() {
+  var select = document.getElementById('login-user-select');
+  var pwdInput = document.getElementById('login-password-input');
+  var pwdErr = document.getElementById('login-password-error');
+  var rememberMe = document.getElementById('login-remember-me');
+
+  if (!select || select.selectedIndex <= 0) {
+    showToast('กรุณาเลือกผู้ใช้งานก่อนเข้าสู่ระบบ', 'error');
+    if (select) select.focus();
+    return;
+  }
+
+  var uName = select.value;
+  var users = getSystemUsers();
+  var user = users.find(function(x) { return x.Name === uName; });
+  if (!user) {
+    showToast('ไม่พบข้อมูลผู้ใช้ในระบบ', 'error');
+    return;
+  }
+
+  // Check Admin Password
+  if (user.Role === 'Admin') {
+    var entered = pwdInput ? pwdInput.value.trim() : '';
+    var realPass = localStorage.getItem('TPM_ADMIN_PASS') || '1234';
+    if (entered !== realPass && entered !== 'TPM-MASTER-2026') {
+      if (pwdErr) {
+        pwdErr.style.display = 'block';
+        pwdErr.textContent = '❌ รหัสผ่าน Admin ไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง';
+      }
+      if (pwdInput) {
+        pwdInput.focus();
+        pwdInput.select();
+      }
+      return;
+    }
+  }
+
+  // Login successful
+  var isRemember = rememberMe ? rememberMe.checked : true;
+  var now = Date.now();
+
+  sessionStorage.setItem('TPM_LOGGED_IN', '1');
+  if (isRemember) {
+    localStorage.setItem('TPM_LOGGED_IN', '1');
+    localStorage.setItem('TPM_LOGIN_TIME', String(now));
+  } else {
+    localStorage.removeItem('TPM_LOGGED_IN');
+    localStorage.removeItem('TPM_LOGIN_TIME');
+  }
+
+  STATE.currentUser = user;
+  localStorage.setItem('TPM_CURRENT_USER', JSON.stringify(user));
+  updateUserDisplay();
+  applyRolePermissions();
+  hideLoginScreen();
+  startInactivityTracker();
+
+  showToast('ยินดีต้อนรับคุณ ' + user.Name + ' เข้าสู่ระบบ 🚀', 'success');
+
+  var activePage = document.querySelector('.page.active');
+  if (activePage) {
+    var pName = activePage.id.replace('page-', '');
+    if (pName === 'molds') renderMolds();
+    else if (pName === 'machines') renderMachines();
+    else if (pName === 'tpm') renderTPM();
+    else if (pName === 'issues') renderIssues();
+    else if (pName === 'stock') renderStock();
+  }
+}
+
+function performLogout() {
+  sessionStorage.removeItem('TPM_LOGGED_IN');
+  localStorage.removeItem('TPM_LOGGED_IN');
+  localStorage.removeItem('TPM_LOGIN_TIME');
+
+  stopInactivityTracker();
+  showLoginScreen();
+  showToast('ออกจากระบบเรียบร้อยแล้ว 👋', 'info');
+}
+
+function startInactivityTracker() {
+  stopInactivityTracker();
+  _lastActivityTime = Date.now();
+
+  var resetTimer = function() {
+    _lastActivityTime = Date.now();
+  };
+
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(function(evt) {
+    window.addEventListener(evt, resetTimer, { passive: true });
+  });
+
+  _inactivityTimer = setInterval(function() {
+    var u = STATE.currentUser;
+    if (u && u.Role === 'Admin') {
+      var diff = Date.now() - _lastActivityTime;
+      if (diff > (45 * 60 * 1000)) { // 45 mins inactivity for Admin
+        console.warn('Admin inactive for > 45 mins. Auto-locking session.');
+        performLogout();
+        showToast('🔒 เซสชันผู้ดูแลระบบหมดเวลาเนื่องจากไม่มีการใช้งาน (Auto-locked)', 'warning');
+      }
+    }
+  }, 60000);
+}
+
+function stopInactivityTracker() {
+  if (_inactivityTimer) {
+    clearInterval(_inactivityTimer);
+    _inactivityTimer = null;
+  }
+}
+
+function initCurrentUser() {
+  checkLoginState();
 }
 
 function updateUserDisplay() {
@@ -3047,6 +3474,10 @@ async function initApp() {
     var sb = await getSupabase(12000);
     if (sb) {
       await loadAllData();
+      var loginScreen = document.getElementById('login-screen');
+      if (loginScreen && loginScreen.style.display !== 'none') {
+        populateLoginUserDropdown();
+      }
       var page = document.querySelector('.page.active');
       if (page) {
         var pageName = page.id.replace('page-','');
