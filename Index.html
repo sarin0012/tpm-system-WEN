@@ -2130,21 +2130,27 @@ async function _apiInternal(actionStr, payload = null) {
         return { success: true };
       }
 
-      // HEADER SIGNATURES (CLOUD SYNCED CENTRAL SYSTEM)
+      // HEADER SIGNATURES (CLOUD SYNCED CENTRAL DATABASE SYSTEM)
       case 'getHeaderSignatures': {
         try {
-          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').single();
+          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
           if (!cfgErr && cfg && cfg.Notes) {
-            const sigs = parseJson(cfg.Notes);
+            let sigs = null;
+            try { sigs = JSON.parse(cfg.Notes); } catch(e){}
             if (sigs && typeof sigs === 'object') {
-              localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(sigs));
+              try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(sigs)); } catch(e){}
               return { success: true, data: sigs };
             }
+          } else if (!cfgErr && !cfg) {
+            try { localStorage.setItem('TPM_HEADER_SIGS', '{}'); } catch(e){}
+            return { success: true, data: {} };
           }
-        } catch(e) {}
+        } catch(e) {
+          console.warn('getHeaderSignatures Cloud fetch error:', e);
+        }
         var localSigs = {};
         try { localSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
-        return { success: true, data: localSigs };
+        return { success: true, data: localSigs, fromCache: true };
       }
       case 'saveHeaderSignature': {
         const d = payload || {};
@@ -2152,19 +2158,33 @@ async function _apiInternal(actionStr, payload = null) {
           try {
             await sb.from('stock_parts').delete().eq('ID', '__SYS_HEADER_SIGS_CONFIG__');
           } catch(e){}
-          localStorage.removeItem('TPM_HEADER_SIGS');
+          try { localStorage.removeItem('TPM_HEADER_SIGS'); } catch(e){}
           return { success: true, data: {} };
         }
         const role = d.role;
         const sigData = d.sigData;
         var currentSigs = {};
-        try { currentSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+
+        // 1. Always fetch authoritative state directly from Cloud Database first!
+        try {
+          const { data: existCfg } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
+          if (existCfg && existCfg.Notes) {
+            try { currentSigs = JSON.parse(existCfg.Notes) || {}; } catch(e){}
+          } else {
+            try { currentSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+          }
+        } catch(e) {
+          try { currentSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(ex){}
+        }
+
+        // 2. Apply the role's signature
         if (sigData && sigData.type !== 'none') {
           currentSigs[role] = sigData;
         } else {
           delete currentSigs[role];
         }
-        localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(currentSigs));
+
+        // 3. Persist to Cloud Database
         try {
           await sb.from('stock_parts').upsert({
             ID: '__SYS_HEADER_SIGS_CONFIG__',
@@ -2175,7 +2195,13 @@ async function _apiInternal(actionStr, payload = null) {
             MinQty: 0,
             Unit: 'config'
           });
-        } catch(e) { console.warn('Cloud sync header sig error', e); }
+        } catch(e) {
+          console.error('Cloud sync header sig error', e);
+          return { success: false, error: e.message };
+        }
+
+        // 4. Update local cache
+        try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(currentSigs)); } catch(e){}
         return { success: true, data: currentSigs };
       }
 
@@ -6857,73 +6883,67 @@ function populateMainSigRoleSelect(selectedRole) {
   else if (!sel.value) sel.value = 'sm';
 }
 
-function openSignatureManagerModal(role) {
+async function openSignatureManagerModal(role) {
+  var roleToUse = role || 'sm';
+  
+  // 1. Initial quick load from local cache for instant UI rendering
   try { MAIN_SIG_STORE = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
   
-  populateMainSigRoleSelect(role || 'sm');
-  mainCurRole = document.getElementById('main-sig-role').value || role || 'sm';
-  
-  var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
-  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || roleLabel;
-  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
-  clearMainCanvas();
-  mainUploadedImage = '';
-  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 (PNG/JPG \u0E1E\u0E37\u0E49\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2A\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E32\u0E27)</span>';
+  populateMainSigRoleSelect(roleToUse);
+  mainCurRole = document.getElementById('main-sig-role').value || roleToUse;
+  updateMainSigRoleUI(mainCurRole);
 
-  var existing = MAIN_SIG_STORE[mainCurRole];
-  if(existing && existing.type){
-    switchMainSigTab(existing.type);
-    if(existing.type === 'draw' && existing.data){
-      var img = new Image();
-      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
-      img.src = existing.data;
-    } else if(existing.type === 'image' && existing.data){
-      mainUploadedImage = existing.data;
-      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+  openModal('signature-manager-modal');
+  setTimeout(initMainCanvas, 100);
+
+  // 2. Authoritative real-time sync directly from Supabase Cloud Database
+  try {
+    var res = await api('getHeaderSignatures');
+    if (res && res.success && res.data) {
+      MAIN_SIG_STORE = res.data;
+      try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE)); } catch(e){}
+      var currentSel = document.getElementById('main-sig-role') ? document.getElementById('main-sig-role').value : mainCurRole;
+      updateMainSigRoleUI(currentSel);
     }
-  } else {
-    switchMainSigTab('draw');
+  } catch(err) {
+    console.warn('Real-time signature cloud sync failed, using cached state:', err);
   }
+}
 
+function updateMainSigRoleUI(roleKey) {
+  mainCurRole = roleKey;
   var mobLink = document.getElementById('main-sig-mobile-link');
   if (mobLink) {
     var rawRole = mainCurRole.indexOf('vendor_') === 0 ? 'vendor' : mainCurRole;
     mobLink.href = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&role=' + encodeURIComponent(rawRole);
   }
+  var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
+  var currentSig = MAIN_SIG_STORE[mainCurRole];
+  
+  document.getElementById('main-stamp-name').value = (currentSig && currentSig.name) || roleLabel;
+  document.getElementById('main-stamp-date').value = (currentSig && currentSig.date) || new Date().toISOString().substring(0,10);
+  clearMainCanvas();
+  mainUploadedImage = '';
+  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">ตัวอย่างรูปภาพลายเซ็น (PNG/JPG พื้นหลังใสหรือขาว)</span>';
 
-  openModal('signature-manager-modal');
-  setTimeout(initMainCanvas, 100);
+  if (currentSig && currentSig.type) {
+    switchMainSigTab(currentSig.type);
+    if (currentSig.type === 'draw' && currentSig.data) {
+      var img = new Image();
+      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
+      img.src = currentSig.data;
+    } else if (currentSig.type === 'image' && currentSig.data) {
+      mainUploadedImage = currentSig.data;
+      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + currentSig.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
+    }
+  } else {
+    switchMainSigTab('draw');
+  }
 }
 
 function onMainSigRoleChange() {
   var sel = document.getElementById('main-sig-role').value;
-  mainCurRole = sel;
-  var mobLink = document.getElementById('main-sig-mobile-link');
-  if (mobLink) {
-    var rawRole = mainCurRole.indexOf('vendor_') === 0 ? 'vendor' : mainCurRole;
-    mobLink.href = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&role=' + encodeURIComponent(rawRole);
-  }
-  var roleLabel = mainCurRole.indexOf('vendor_') === 0 ? mainCurRole.replace('vendor_', '') : mainCurRole.toUpperCase();
-  document.getElementById('main-stamp-name').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].name) || roleLabel;
-  document.getElementById('main-stamp-date').value = (MAIN_SIG_STORE[mainCurRole] && MAIN_SIG_STORE[mainCurRole].date) || new Date().toISOString().substring(0,10);
-  clearMainCanvas();
-  mainUploadedImage = '';
-  document.getElementById('main-sig-image-preview').innerHTML = '<span style="color:var(--text-muted); font-size:12px;">\u0E15\u0E31\u0E27\u0E2D\u0E22\u0E48\u0E32\u0E07\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 (PNG/JPG \u0E1E\u0E37\u0E49\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2A\u0E2B\u0E23\u0E37\u0E2D\u0E02\u0E32\u0E27)</span>';
-
-  var existing = MAIN_SIG_STORE[mainCurRole];
-  if(existing && existing.type){
-    switchMainSigTab(existing.type);
-    if(existing.type === 'draw' && existing.data){
-      var img = new Image();
-      img.onload = function(){ if(mainCtx) mainCtx.drawImage(img, 0, 0); };
-      img.src = existing.data;
-    } else if(existing.type === 'image' && existing.data){
-      mainUploadedImage = existing.data;
-      document.getElementById('main-sig-image-preview').innerHTML = '<img src="' + existing.data + '" style="max-height:90px; max-width:90%; object-fit:contain;" />';
-    }
-  } else {
-    switchMainSigTab('draw');
-  }
+  updateMainSigRoleUI(sel);
 }
 
 function handleMainImageUpload(e) {
@@ -6945,7 +6965,7 @@ async function saveMainSignature() {
     var dataUrl = mainCanvas.toDataURL('image/png');
     sigData = { type: 'draw', data: dataUrl };
   } else if(mainCurTab === 'image') {
-    if(!mainUploadedImage){ showToast('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E44\u0E1F\u0E25\u0E4C\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E01\u0E48\u0E2D\u0E19\u0E04\u0E23\u0E31\u0E1A','warning'); return; }
+    if(!mainUploadedImage){ showToast('กรุณาเลือกไฟล์รูปภาพก่อนครับ','warning'); return; }
     sigData = { type: 'image', data: mainUploadedImage };
   } else if(mainCurTab === 'stamp') {
     var defaultLabel = role.indexOf('vendor_') === 0 ? role.replace('vendor_', '') : role.toUpperCase();
@@ -6956,35 +6976,55 @@ async function saveMainSignature() {
     sigData = null;
   }
 
-  if (sigData) {
-    MAIN_SIG_STORE[role] = sigData;
-  } else {
-    delete MAIN_SIG_STORE[role];
+  showGlobalLoading(true);
+  try {
+    // Save directly to Cloud Database first!
+    var res = await api('saveHeaderSignature', { role: role, sigData: sigData });
+    if (res && res.success && res.data) {
+      MAIN_SIG_STORE = res.data;
+      try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE)); } catch(e){}
+    } else {
+      if (sigData) MAIN_SIG_STORE[role] = sigData; else delete MAIN_SIG_STORE[role];
+      try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE)); } catch(e){}
+    }
+
+    var displayRole = role.indexOf('vendor_') === 0 ? 'VENDOR (' + role.replace('vendor_', '') + ')' : role.toUpperCase();
+    showToast('บันทึกลายเซ็น ' + displayRole + ' ลงฐานข้อมูล Cloud เรียบร้อย ✅', 'success');
+    closeModal('signature-manager-modal');
+  } catch(err) {
+    console.error('Save signature error:', err);
+    showToast('เกิดข้อผิดพลาดในการบันทึก: ' + err.message, 'error');
+  } finally {
+    showGlobalLoading(false);
   }
-
-  try {
-    localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(MAIN_SIG_STORE));
-  } catch(e){}
-
-  // Sync to Supabase Cloud Central Config immediately
-  try {
-    await api('saveHeaderSignature', { role: role, sigData: sigData });
-  } catch(err) { console.warn('Cloud saveHeaderSignature error:', err); }
-
-  var displayRole = role.indexOf('vendor_') === 0 ? 'VENDOR (' + role.replace('vendor_', '') + ')' : role.toUpperCase();
-  showToast('บันทึกลายเซ็น ' + displayRole + ' ขึ้นระบบ Cloud สำเร็จแล้ว ✅', 'success');
-  closeModal('signature-manager-modal');
 }
 
 async function resetAllSignaturesPrompt() {
-  if (!confirm('ยืนยันการล้าง/รีเซ็ตลายเซ็นทั้งหมดในระบบ?\n\nระบบจะลบลายเซ็นทุกตำแหน่งออกจาก Cloud และอุปกรณ์ เพื่อให้ท่านสามารถตั้งค่าลายเซ็นใหม่ได้อย่างสะอาดหมดจด 100%')) return;
-  MAIN_SIG_STORE = {};
-  try { localStorage.removeItem('TPM_HEADER_SIGS'); } catch(e){}
+  var confirmation = prompt(
+    '⚠️ คำเตือนความปลอดภัย (ระบบป้องกันการล้างข้อมูล):\n\n' +
+    'การดำเนินการนี้จะลบลายเซ็นทุกตำแหน่ง (SM, SV, ST และ VENDOR ทั้งหมด) ออกจากฐานข้อมูล Cloud ส่วนกลางอย่างถาวร!\n\n' +
+    'เพื่อป้องกันการกดพลาดหรือคนมือบอน:\n' +
+    '👉 กรุณาพิมพ์คำว่า "RESET" (ตัวพิมพ์ใหญ่ทั้งหมด) เพื่อยืนยันการล้างข้อมูล:'
+  );
+
+  if (confirmation === null) return; // กดยกเลิก
+  if (confirmation.trim() !== 'RESET') {
+    alert('❌ การยืนยันไม่ถูกต้อง ยกเลิกการล้างข้อมูลแล้ว (คุณต้องพิมพ์คำว่า RESET ตัวพิมพ์ใหญ่เท่านั้น)');
+    return;
+  }
+
+  showGlobalLoading(true);
   try {
+    MAIN_SIG_STORE = {};
+    try { localStorage.removeItem('TPM_HEADER_SIGS'); } catch(e){}
     await api('saveHeaderSignature', { resetAll: true });
-  } catch(e){}
-  showToast('รีเซ็ตระบบลายเซ็นทั้งหมดสำเร็จเรียบร้อย ✅ ท่านสามารถเริ่มบันทึกลายเซ็นใหม่ได้เลยครับ', 'success');
-  openSignatureManagerModal('sm');
+    showToast('ล้างลายเซ็นทั้งหมดใน Cloud และอุปกรณ์เรียบร้อย ✅', 'success');
+    openSignatureManagerModal('sm');
+  } catch(err) {
+    showToast('เกิดข้อผิดพลาดในการล้างข้อมูล: ' + err.message, 'error');
+  } finally {
+    showGlobalLoading(false);
+  }
 }
 
 // ============================================
@@ -7075,16 +7115,30 @@ async function initMobileSignPage(moldId, defaultRole) {
 
   if (mobMoldId) {
     try {
-      const res = await api('getMolds');
-      if (res.success && res.data) {
-        mobMoldData = res.data.find(m => m.ID === mobMoldId);
+      const [resMolds, resSigs] = await Promise.all([
+        api('getMolds'),
+        api('getHeaderSignatures')
+      ]);
+      if (resMolds && resMolds.success && resMolds.data) {
+        mobMoldData = resMolds.data.find(m => m.ID === mobMoldId);
         if (mobMoldData) {
-          document.getElementById('mob-target-title').innerText = '\u0E41\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C: ' + mobMoldData.Name + ' (' + (mobMoldData.AssetNo || '-') + ')';
+          document.getElementById('mob-target-title').innerText = 'แม่พิมพ์: ' + mobMoldData.Name + ' (' + (mobMoldData.AssetNo || '-') + ')';
         }
       }
+      if (resSigs && resSigs.success && resSigs.data) {
+        try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(resSigs.data)); } catch(e){}
+      }
+      setMobRole(mobCurRole);
     } catch(e){}
   } else {
-    document.getElementById('mob-target-title').innerText = '\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E2B\u0E31\u0E27\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23\u0E2A\u0E48\u0E27\u0E19\u0E01\u0E25\u0E32\u0E07';
+    document.getElementById('mob-target-title').innerText = 'ลายเซ็นหัวเอกสารส่วนกลาง';
+    try {
+      var rSig = await api('getHeaderSignatures');
+      if (rSig && rSig.success && rSig.data) {
+        try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(rSig.data)); } catch(e){}
+      }
+      setMobRole(mobCurRole);
+    } catch(e){}
   }
 }
 
@@ -7138,10 +7192,36 @@ function setMobRole(role) {
     }
   });
 
+  var localSigs = {};
+  try { localSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  var targetKey = (role === 'vendor' && mobMoldData && mobMoldData.Vendor)
+    ? ('vendor_' + mobMoldData.Vendor.trim())
+    : role;
+  var existing = localSigs[targetKey];
+
   var stampName = document.getElementById('mob-stamp-name');
-  if (stampName) stampName.value = role.toUpperCase();
+  if (stampName) stampName.value = (existing && existing.name) || (role === 'vendor' && mobMoldData && mobMoldData.Vendor ? mobMoldData.Vendor : role.toUpperCase());
   var stampDate = document.getElementById('mob-stamp-date');
-  if (stampDate) stampDate.value = new Date().toISOString().substring(0, 10);
+  if (stampDate) stampDate.value = (existing && existing.date) || new Date().toISOString().substring(0, 10);
+
+  clearMobCanvas();
+  mobUploadedImage = '';
+  var prev = document.getElementById('mob-image-preview');
+  if (prev) prev.innerHTML = '<span style="color:#64748b;font-size:11.5px;">เลือกไฟล์รูปภาพลายเซ็น (PNG/JPG)</span>';
+
+  if (existing && existing.type) {
+    switchMobTab(existing.type);
+    if (existing.type === 'draw' && existing.data) {
+      var img = new Image();
+      img.onload = function(){ if(mobCtx) mobCtx.drawImage(img, 0, 0); };
+      img.src = existing.data;
+    } else if (existing.type === 'image' && existing.data) {
+      mobUploadedImage = existing.data;
+      if (prev) prev.innerHTML = '<img src="' + existing.data + '" style="max-height:90px;max-width:90%;object-fit:contain;" />';
+    }
+  } else {
+    switchMobTab('draw');
+  }
 }
 
 function switchMobTab(tab) {
@@ -7194,39 +7274,35 @@ async function saveMobSignature() {
     sigData = { type: 'stamp', name: stName, date: stDate };
   }
 
-  // 1. Save to LocalStorage
+  // 1. Save to Central Cloud Database immediately
+  var targetRole = (mobCurRole === 'vendor' && mobMoldData && mobMoldData.Vendor)
+    ? ('vendor_' + mobMoldData.Vendor.trim())
+    : mobCurRole;
+  try {
+    await api('saveHeaderSignature', {
+      role: targetRole,
+      sigData: sigData
+    });
+  } catch(err) {
+    console.error('Supabase central sig save error:', err);
+  }
+
+  // 2. Save to LocalStorage cache
   try {
     var localSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}');
-    if (mobCurRole === 'vendor' && mobMoldData && mobMoldData.Vendor) {
-      localSigs['vendor_' + mobMoldData.Vendor.trim()] = sigData;
-    } else {
-      localSigs[mobCurRole] = sigData;
-    }
+    localSigs[targetRole] = sigData;
     localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(localSigs));
   } catch(e){}
 
-  // 2. Save to Supabase (if moldId is provided)
-  if (mobMoldId) {
-    try {
-      await api('saveMoldHeaderSig', {
-        moldId: mobMoldId,
-        role: mobCurRole,
-        sigData: sigData
-      });
-    } catch(err) {
-      console.error('Supabase sig save error:', err);
-    }
-  }
-
   btn.disabled = false;
-  btn.innerText = '\uD83D\uDCBE \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E25\u0E07\u0E23\u0E30\u0E1A\u0E1A';
+  btn.innerText = '💾 บันทึกลายเซ็นลงระบบ';
 
   if (statusBox) {
     statusBox.style.display = 'block';
     statusBox.style.background = 'rgba(16,185,129,0.2)';
     statusBox.style.border = '1px solid #10b981';
     statusBox.style.color = '#34d399';
-    statusBox.innerHTML = '\u2705 <strong>\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19 [' + mobCurRole.toUpperCase() + '] \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!</strong><br><span style="font-size:11px;color:#94a3b8;">\u0E40\u0E2D\u0E01\u0E2A\u0E32\u0E23 PM \u0E1A\u0E19\u0E04\u0E2D\u0E21\u0E1E\u0E34\u0E27\u0E40\u0E15\u0E2D\u0E23\u0E4C\u0E08\u0E32\u0E2D\u0E31\u0E1B\u0E40\u0E14\u0E15\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E19\u0E35\u0E49\u0E17\u0E31\u0E19\u0E17\u0E35</span>';
+    statusBox.innerHTML = '✅ <strong>บันทึกลายเซ็น [' + mobCurRole.toUpperCase() + '] ลงฐานข้อมูลหลักเรียบร้อยแล้ว!</strong><br><span style="font-size:11px;color:#94a3b8;">เอกสาร PM บนคอมพิวเตอร์และมือถือจะอัปเดตลายเซ็นนี้ทันที</span>';
   }
 }
 
@@ -7246,11 +7322,23 @@ async function openPMPrintForm(moldId) {
   var yr = nowDate.getFullYear();
   var fy = nowDate.getMonth() >= 3 ? yr : yr - 1;
   var allPlans = STATE.tpmPlans || [];
+  var headerSigs = {};
+
   try {
-    var r = await api('getTPMPlans&fyear=' + fy);
-    if (r && r.success && r.data) allPlans = r.data;
+    var [rPlans, rSigs] = await Promise.all([
+      api('getTPMPlans&fyear=' + fy),
+      api('getHeaderSignatures')
+    ]);
+    if (rPlans && rPlans.success && rPlans.data) allPlans = rPlans.data;
+    if (rSigs && rSigs.success && rSigs.data) {
+      headerSigs = rSigs.data;
+      try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(headerSigs)); } catch(e){}
+    } else {
+      try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+    }
   } catch(e) {
-    console.warn('Could not fetch TPM plans from cloud, using local plans:', e);
+    console.warn('Could not fetch TPM plans or signatures from cloud, using local cache:', e);
+    try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(ex){}
   }
   showGlobalLoading(false);
   var moldPlans = allPlans.filter(function(p){ return p.TargetID === moldId && p.TargetType === 'Mold'; }).sort(function(a,b){ return new Date(a.PlannedDate) - new Date(b.PlannedDate); });
@@ -7295,9 +7383,10 @@ async function openPMPrintForm(moldId) {
 
   var thMonths = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
 
-  // Load Signatures: Authoritative Central Signatures (LocalStorage + Cloud)
-  var headerSigs = {};
-  try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  // Ensure headerSigs has data (from cloud fetch or local cache)
+  if (!headerSigs || !Object.keys(headerSigs).length) {
+    try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
+  }
 
   var moldVendorName = (mold.Vendor || '').trim();
   var vSig = null;
