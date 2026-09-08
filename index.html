@@ -1288,7 +1288,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       </div>
     </div>
     <div class="modal-footer" style="display:flex; justify-content:space-between; align-items:center;">
-      <a id="main-sig-mobile-link" href="https://tpm-system-wen.vercel.app/?mobile_sign=1&role=sm" target="_blank" class="btn btn-outline btn-sm" style="color:var(--primary); border-color:var(--primary); text-decoration:none;">📱 เซ็นผ่านมือถือ / QR</a>
+      <button type="button" class="btn btn-outline" style="color:#ef4444; border-color:#fca5a5;" onclick="resetAllSignaturesPrompt()">🗑️ ล้างลายเซ็นทั้งหมด</button>
       <div style="display:flex; gap:8px;">
         <button class="btn btn-outline" onclick="closeModal('signature-manager-modal')">ยกเลิก</button>
         <button class="btn btn-primary" onclick="saveMainSignature()">💾 บันทึกลายเซ็น</button>
@@ -2148,6 +2148,13 @@ async function _apiInternal(actionStr, payload = null) {
       }
       case 'saveHeaderSignature': {
         const d = payload || {};
+        if (d.resetAll) {
+          try {
+            await sb.from('stock_parts').delete().eq('ID', '__SYS_HEADER_SIGS_CONFIG__');
+          } catch(e){}
+          localStorage.removeItem('TPM_HEADER_SIGS');
+          return { success: true, data: {} };
+        }
         const role = d.role;
         const sigData = d.sigData;
         var currentSigs = {};
@@ -6828,21 +6835,21 @@ function populateMainSigRoleSelect(selectedRole) {
       vendors.push(m.Vendor.trim());
     }
   });
+  vendors.sort();
 
-  var html = '<optgroup label="\uD83C\uDFE2 \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E41\u0E22\u0E01\u0E15\u0E32\u0E21 VENDOR">';
+  var html = '<optgroup label="🏢 ลายเซ็นแยกตาม VENDOR (ผู้รับผิดชอบ)">';
   if (vendors.length === 0) {
-    html += '<option value="vendor">\uD83C\uDFE2 VENDOR (\u0E17\u0E31\u0E48\u0E27\u0E44\u0E1B)</option>';
+    html += '<option value="vendor">🏢 VENDOR</option>';
   } else {
     vendors.forEach(function(v) {
-      html += '<option value="vendor_' + v + '">\uD83C\uDFE2 VENDOR: ' + v + '</option>';
+      html += '<option value="vendor_' + v + '">🏢 VENDOR: ' + v + '</option>';
     });
-    html += '<option value="vendor">\uD83C\uDFE2 VENDOR (\u0E2D\u0E37\u0E48\u0E19\u0E46 / \u0E17\u0E31\u0E48\u0E27\u0E44\u0E1B)</option>';
   }
   html += '</optgroup>';
-  html += '<optgroup label="\uD83C\uDFED \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E20\u0E32\u0E22\u0E43\u0E19\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19 (WEN / WP)">';
-  html += '<option value="sm">\uD83D\uDC64 SM (Section Manager - WEN/WP)</option>';
-  html += '<option value="sv">\uD83D\uDC77 SV (Supervisor - WEN/WP)</option>';
-  html += '<option value="st">\uD83D\uDCCB ST (Staff - WEN/WP)</option>';
+  html += '<optgroup label="🏭 ลายเซ็นผู้อนุมัติภายใน (WEN / WP)">';
+  html += '<option value="sm">👤 SM (Section Manager - WEN/WP)</option>';
+  html += '<option value="sv">👷 SV (Supervisor - WEN/WP)</option>';
+  html += '<option value="st">📋 ST / ผู้รับผิดชอบ (Staff - WEN/WP)</option>';
   html += '</optgroup>';
 
   sel.innerHTML = html;
@@ -6964,21 +6971,20 @@ async function saveMainSignature() {
     await api('saveHeaderSignature', { role: role, sigData: sigData });
   } catch(err) { console.warn('Cloud saveHeaderSignature error:', err); }
 
-  // If saving vendor signature, sync to Supabase for all molds of that vendor
-  if (role.indexOf('vendor_') === 0) {
-    var vendorName = role.replace('vendor_', '');
-    var matchingMolds = (STATE.molds || []).filter(function(m) { return (m.Vendor || '').trim() === vendorName; });
-    if (matchingMolds.length > 0) {
-      showToast('กำลังซิงค์ลายเซ็น VENDOR ' + vendorName + ' ไปยัง ' + matchingMolds.length + ' โมล...', 'info');
-      for (var i = 0; i < matchingMolds.length; i++) {
-        await api('saveMoldHeaderSig', { moldId: matchingMolds[i].ID, role: 'vendor', sigData: sigData });
-      }
-    }
-  }
-
   var displayRole = role.indexOf('vendor_') === 0 ? 'VENDOR (' + role.replace('vendor_', '') + ')' : role.toUpperCase();
   showToast('บันทึกลายเซ็น ' + displayRole + ' ขึ้นระบบ Cloud สำเร็จแล้ว ✅', 'success');
   closeModal('signature-manager-modal');
+}
+
+async function resetAllSignaturesPrompt() {
+  if (!confirm('ยืนยันการล้าง/รีเซ็ตลายเซ็นทั้งหมดในระบบ?\n\nระบบจะลบลายเซ็นทุกตำแหน่งออกจาก Cloud และอุปกรณ์ เพื่อให้ท่านสามารถตั้งค่าลายเซ็นใหม่ได้อย่างสะอาดหมดจด 100%')) return;
+  MAIN_SIG_STORE = {};
+  try { localStorage.removeItem('TPM_HEADER_SIGS'); } catch(e){}
+  try {
+    await api('saveHeaderSignature', { resetAll: true });
+  } catch(e){}
+  showToast('รีเซ็ตระบบลายเซ็นทั้งหมดสำเร็จเรียบร้อย ✅ ท่านสามารถเริ่มบันทึกลายเซ็นใหม่ได้เลยครับ', 'success');
+  openSignatureManagerModal('sm');
 }
 
 // ============================================
@@ -7292,36 +7298,31 @@ async function openPMPrintForm(moldId) {
   // Load Signatures: Authoritative Central Signatures (LocalStorage + Cloud)
   var headerSigs = {};
   try { headerSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
-  var moldSpecificSigs = {};
-  if (mold.Notes && mold.Notes.indexOf('[HEADER_SIGS:') !== -1) {
-    try {
-      var sigMatch = mold.Notes.match(/\[HEADER_SIGS:(.*?)\]/);
-      if (sigMatch && sigMatch[1]) {
-        moldSpecificSigs = JSON.parse(sigMatch[1]);
-      }
-    } catch(e){}
-  }
 
   var moldVendorName = (mold.Vendor || '').trim();
   var vSig = null;
-  if (moldVendorName && headerSigs['vendor_' + moldVendorName]) {
-    vSig = headerSigs['vendor_' + moldVendorName];
-  } else if (headerSigs['vendor']) {
-    vSig = headerSigs['vendor'];
-  } else if (moldSpecificSigs['vendor']) {
-    vSig = moldSpecificSigs['vendor'];
+  // STRICT VENDOR MATCHING: Only match vendor_VENDORNAME, NEVER fall back to another vendor!
+  if (moldVendorName) {
+    if (headerSigs['vendor_' + moldVendorName]) {
+      vSig = headerSigs['vendor_' + moldVendorName];
+    } else {
+      var vKey = Object.keys(headerSigs).find(function(k){
+        return k.toLowerCase() === ('vendor_' + moldVendorName).toLowerCase();
+      });
+      if (vKey) vSig = headerSigs[vKey];
+    }
   }
 
   var resolvedSigs = {
     vendor: vSig,
-    sm: headerSigs['sm'] || moldSpecificSigs['sm'] || null,
-    sv: headerSigs['sv'] || moldSpecificSigs['sv'] || null,
-    st: headerSigs['st'] || headerSigs['st_sv'] || moldSpecificSigs['st'] || null
+    sm: headerSigs['sm'] || null,
+    sv: headerSigs['sv'] || null,
+    st: headerSigs['st'] || headerSigs['st_sv'] || null
   };
 
   function getSigHtml(role, defaultName) {
     var s = resolvedSigs[role];
-    if(!s) return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>';
+    if(!s) return '';
     if(s.type === 'draw' || s.type === 'image') {
       if(s.data) return '<img src="' + s.data + '" style="max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;" />';
     } else if(s.type === 'stamp') {
@@ -7334,7 +7335,7 @@ async function openPMPrintForm(moldId) {
                (dFormatted ? '<div style="font-size:5.5pt; font-weight:normal;">' + dFormatted + '</div>' : '') +
              '</div>';
     }
-    return '<span class="no-print" style="color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;">\u270d\ufe0f \u0e40\u0e0b\u0e47\u0e19\u0e0a\u0e37\u0e48\u0e2d</span>';
+    return '';
   }
 
   var respPerson = '';
@@ -7544,15 +7545,15 @@ async function openPMPrintForm(moldId) {
                 '<td colspan="3" style="border: 1px solid #333; padding: 2px 4px; text-align: center; font-weight: bold;">WEN / WP</td>' +
               '</tr>' +
               '<tr>' +
-                '<td rowspan="2" class="sig-clickable sig-cell-vendor" onclick="openSigModal(\'vendor\')" style="border: 1px solid #333; height: 50px; text-align: center; vertical-align: middle; width: 38%; padding: 2px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 VENDOR">' + vendorSigHtml + '</td>' +
+                '<td rowspan="2" style="border: 1px solid #333; height: 48px; text-align: center; vertical-align: middle; width: 38%; padding: 2px;">' + (vendorSigHtml || '<span style="color:#9ca3af;font-size:7.5pt;">( ' + (mold.Vendor || 'VENDOR') + ' )</span>') + '</td>' +
                 '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.6%; font-weight:bold;">SM</td>' +
                 '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.6%; font-weight:bold;">SV</td>' +
                 '<td style="border: 1px solid #333; padding: 2px; text-align: center; width: 20.8%; font-weight:bold;">ST</td>' +
               '</tr>' +
               '<tr>' +
-                '<td class="sig-clickable sig-cell-sm" onclick="openSigModal(\'sm\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SM">' + smSigHtml + '</td>' +
-                '<td class="sig-clickable sig-cell-sv" onclick="openSigModal(\'sv\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 SV">' + svSigHtml + '</td>' +
-                '<td class="sig-clickable sig-cell-st" onclick="openSigModal(\'st\')" style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST (Staff)">' + stSigHtml + '</td>' +
+                '<td style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;">' + (smSigHtml || '&nbsp;') + '</td>' +
+                '<td style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;">' + (svSigHtml || '&nbsp;') + '</td>' +
+                '<td style="border: 1px solid #333; height: 35px; min-width: 58px; text-align: center; vertical-align: middle; padding: 1px;">' + (stSigHtml || '&nbsp;') + '</td>' +
               '</tr>' +
             '</table>' +
           '</td>' +
@@ -7597,8 +7598,8 @@ async function openPMPrintForm(moldId) {
             '<td rowspan="2" style="border: 1px solid #333; text-align: center;"></td>' +
             '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">PLAN</td>' +
             planWeekCells +
-            '<td rowspan="2" class="sig-clickable sig-cell-vendor" onclick="openSigModal(\'vendor\')" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 VENDOR">' + (resolvedSigs.vendor ? vendorSigHtml : (vendorResp || '-')) + '</td>' +
-            '<td rowspan="2" class="sig-clickable sig-cell-st" onclick="openSigModal(\'st\')" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;" title="\u0e04\u0e25\u0e34\u0e01\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e40\u0e0b\u0e47\u0e19/\u0e41\u0e01\u0e49\u0e44\u0e02\u0e25\u0e32\u0e22\u0e40\u0e0b\u0e47\u0e19 ST">' + (resolvedSigs.st ? stSigHtml : (respPerson || 'WEN / WP')) + '</td>' +
+            '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (resolvedSigs.vendor ? vendorSigHtml : (mold.Vendor || vendorResp || '-')) + '</td>' +
+            '<td rowspan="2" style="border: 1px solid #333; text-align: center; font-size: 8pt; padding: 2px;">' + (resolvedSigs.st ? stSigHtml : (respPerson || 'WEN / WP')) + '</td>' +
           '</tr>' +
           '<tr>' +
             '<td style="border: 1px solid #333; text-align: center; font-weight: bold; font-size: 8.5pt; padding: 1px;">ACTUAL</td>' +
@@ -7677,326 +7678,17 @@ async function openPMPrintForm(moldId) {
       'th, td { border: 1px solid #333; padding: 2px 3px; vertical-align: middle; }' +
       '.header-title { font-size: 13pt; font-weight: bold; margin-bottom: 2px; }' +
       '.section-bar { text-align: center; font-weight: bold; font-size: 9pt; background: #d9d9d9; border: 1px solid #333; padding: 2px; margin-top: 3px; }' +
-      '.sig-clickable { cursor: pointer; transition: all 0.2s; background: #fafafa; }' +
-      '.sig-clickable:hover { background: #eff6ff !important; outline: 1.5px dashed #2563eb; }' +
       '.pm-page { width: 100%; box-sizing: border-box; }' +
-      '@media print { .no-print { display: none !important; } .sig-clickable { cursor: default; background: transparent !important; outline: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .pm-page { page-break-after: always; break-after: page; } .pm-page:last-child { page-break-after: avoid; break-after: avoid; } }' +
+      '@media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .pm-page { page-break-after: always; break-after: page; } .pm-page:last-child { page-break-after: avoid; break-after: avoid; } }' +
     '</style></head><body>' +
 
-    '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:6px; background:#f3f4f6; margin-bottom:6px; border-bottom:1px solid #ccc; flex-wrap:wrap; position:sticky; top:0; z-index:100;">' +
-      '<button onclick="window.print()" style="padding:6px 18px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน ' + (totalPages > 1 ? totalPages + ' หน้า' : '1 หน้า') + ')</button>' +
-      '<button onclick="openSigModal(\'sm\')" style="padding:6px 14px; font-size:10.5pt; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">✍️ จัดการลายเซ็น</button>' +
-      '<button onclick="openQRPanel()" style="padding:6px 14px; font-size:10.5pt; background:#7c3aed; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📱 QR เซ็นผ่านมือถือ</button>' +
-      '<button onclick="refreshSignatures()" style="padding:6px 14px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">🔄 รีเฟรชลายเซ็น</button>' +
-      '<button onclick="window.close()" style="padding:6px 14px; font-size:10.5pt; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
+    '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:10px; padding:8px 12px; background:#f8fafc; margin-bottom:8px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap; position:sticky; top:0; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.05);">' +
+      '<button onclick="window.print()" style="padding:7px 20px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.12);">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน ' + (totalPages > 1 ? totalPages + ' หน้า' : '1 หน้า') + ')</button>' +
+      '<button onclick="if(window.opener&&window.opener.openPMPrintForm){window.close();window.opener.openPMPrintForm(\'' + mold.ID + '\');}else{location.reload();}" style="padding:7px 16px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔄 รีเฟรชข้อมูล</button>' +
+      '<button onclick="window.close()" style="padding:7px 16px; font-size:10.5pt; background:#64748b; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-left:auto;">✕ ปิดหน้าต่าง</button>' +
     '</div>' +
 
     pagesHtml +
-
-    // ============================================
-    //  SIGNATURE MODAL (INSIDE PRINT WINDOW)
-    // ============================================
-    '<div id="sig-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); z-index:9999; justify-content:center; align-items:center;">' +
-      '<div style="background:#fff; border-radius:10px; width:480px; max-width:95%; padding:18px; box-shadow:0 12px 30px rgba(0,0,0,0.35); font-family:sans-serif;">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
-          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">✍️ จัดการลายเซ็นเอกสาร PM</h3>' +
-          '<button onclick="closeSigModal()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">✕</button>' +
-        '</div>' +
-        '<div style="margin-bottom:12px;">' +
-          '<label style="font-size:9.5pt; font-weight:bold; color:#374151; display:block; margin-bottom:4px;">เลือกตำแหน่งที่ต้องการลงนาม:</label>' +
-          '<select id="sig-role-select" onchange="onRoleChange()" style="width:100%; padding:7px 10px; font-size:10pt; border:1.5px solid #6366f1; border-radius:6px; background:#f8fafc; font-weight:600;">' +
-            '<option value="vendor">ผู้รับผิดชอบ / แผนการดำเนินการ VENDOR ( ' + (mold.Vendor || 'VENDOR') + ' )</option>' +
-            '<option value="sm">SM (Section Manager - WEN/WP)</option>' +
-            '<option value="sv">SV (Supervisor - WEN/WP)</option>' +
-            '<option value="st">ST / ผู้รับผิดชอบ WEN/WP (Staff)</option>' +
-          '</select>' +
-        '</div>' +
-        '<div style="display:flex; border-bottom:1px solid #e5e7eb; margin-bottom:12px;">' +
-          '<button id="tab-btn-draw" onclick="switchSigTab(\'draw\')" style="flex:1; padding:7px; border:none; background:#2563eb; color:#fff; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:4px 0 0 0;">✏️ วาดสด</button>' +
-          '<button id="tab-btn-image" onclick="switchSigTab(\'image\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">🖼️ อัปโหลดรูป</button>' +
-          '<button id="tab-btn-stamp" onclick="switchSigTab(\'stamp\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer;">🔴 ตรายาง E-Stamp</button>' +
-          '<button id="tab-btn-none" onclick="switchSigTab(\'none\')" style="flex:1; padding:7px; border:none; background:#f3f4f6; color:#4b5563; font-size:9pt; font-weight:bold; cursor:pointer; border-radius:0 4px 0 0;">⚪ เว้นว่าง</button>' +
-        '</div>' +
-        '<div id="sig-pane-draw" style="display:block;">' +
-          '<div style="border:1.5px solid #d1d5db; border-radius:6px; background:#fff; text-align:center; position:relative;">' +
-            '<canvas id="sig-canvas" width="440" height="130" style="display:block; width:100%; cursor:crosshair; touch-action:none; background:#fff; border-radius:6px;"></canvas>' +
-            '<div style="position:absolute; bottom:4px; left:8px; font-size:7.5pt; color:#9ca3af; pointer-events:none;">(ใช้นิ้วหรือเมาส์วาดลายเซ็น)</div>' +
-          '</div>' +
-          '<div style="margin-top:6px; text-align:right;">' +
-            '<button onclick="clearCanvas()" style="padding:4px 10px; font-size:8.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">🧹 ล้างเส้นวาด</button>' +
-          '</div>' +
-        '</div>' +
-        '<div id="sig-pane-image" style="display:none; text-align:center; padding:10px 0;">' +
-          '<input type="file" id="sig-file-input" accept="image/*" onchange="handleImageUpload(event)" style="display:block; margin:0 auto 10px auto; font-size:9pt;" />' +
-          '<div id="sig-image-preview-wrap" style="height:100px; border:1px dashed #d1d5db; border-radius:4px; display:flex; align-items:center; justify-content:center; background:#fafafa;">' +
-            '<span style="color:#9ca3af; font-size:8.5pt;">ตัวอย่างรูปภาพลายเซ็น (PNG/JPG)</span>' +
-          '</div>' +
-        '</div>' +
-        '<div id="sig-pane-stamp" style="display:none; padding:6px 0;">' +
-          '<div style="margin-bottom:8px;">' +
-            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">ชื่อบนตรายาง:</label>' +
-            '<input id="stamp-name-input" placeholder="เช่น SARIN T." style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
-          '</div>' +
-          '<div style="margin-bottom:10px;">' +
-            '<label style="font-size:8.5pt; font-weight:bold; color:#4b5563;">วันที่อนุมัติ:</label>' +
-            '<input id="stamp-date-input" type="date" style="width:100%; padding:6px 8px; font-size:9.5pt; border:1px solid #d1d5db; border-radius:4px; margin-top:2px; box-sizing:border-box;" />' +
-          '</div>' +
-        '</div>' +
-        '<div id="sig-pane-none" style="display:none; padding:16px 0; text-align:center; color:#6b7280; font-size:9pt;">' +
-          '⚪ ลบการลงนามของตำแหน่งนี้ เพื่อเว้นว่างให้พิมพ์ออกมาเซ็นด้วยปากกาจริง' +
-        '</div>' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid #e5e7eb; padding-top:12px; margin-top:14px;">' +
-          '<button type="button" onclick="closeSigModal(); openQRPanel();" style="padding:7px 12px; font-size:9pt; background:#f5f3ff; color:#6d28d9; border:1.5px solid #c4b5fd; border-radius:4px; cursor:pointer; font-weight:600;">📱 สแกน QR ผ่านมือถือ</button>' +
-          '<div style="display:flex; gap:8px;">' +
-            '<button onclick="closeSigModal()" style="padding:7px 14px; font-size:9.5pt; background:#f3f4f6; border:1px solid #d1d5db; border-radius:4px; cursor:pointer;">ยกเลิก</button>' +
-            '<button onclick="saveCurrentSignature()" style="padding:7px 18px; font-size:9.5pt; background:#2563eb; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 บันทึกลายเซ็น</button>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // ============================================
-    //  QR CODE MODAL (INSIDE PRINT WINDOW)
-    // ============================================
-    '<div id="qr-modal-backdrop" class="no-print" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:10000; justify-content:center; align-items:center;">' +
-      '<div style="background:#fff; border-radius:12px; width:520px; max-width:95%; padding:20px; box-shadow:0 12px 35px rgba(0,0,0,0.4); font-family:sans-serif;">' +
-        '<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e5e7eb; padding-bottom:10px; margin-bottom:12px;">' +
-          '<h3 style="margin:0; font-size:13pt; color:#111827; font-weight:bold;">📱 สแกน QR Code เซ็นลายเซ็นผ่านมือถือ</h3>' +
-          '<button onclick="closeQRPanel()" style="background:none; border:none; font-size:16pt; cursor:pointer; color:#6b7280; line-height:1;">✕</button>' +
-        '</div>' +
-        '<p style="color:#4b5563; font-size:9.5pt; margin:0 0 14px 0;">ใช้กล้องมือถือสแกน QR ตามตำแหน่งด้านล่าง เพื่อวาดลายเซ็นบนหน้าจอมือถือ (ระบบจะอัปเดตอัตโนมัติ):</p>' +
-        '<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">' +
-          ['vendor','sm','sv','st'].map(function(r){
-            var roleTitle = r === 'vendor' ? 'VENDOR' : (r === 'sm' ? 'SM (Manager)' : (r === 'sv' ? 'SV (Supervisor)' : 'ST (Staff)'));
-            var targetUrl = 'https://tpm-system-wen.vercel.app/?mobile_sign=1&mold=' + encodeURIComponent(mold.ID) + '&role=' + r;
-            return '<div style="border:1px solid #e5e7eb; border-radius:8px; padding:8px; text-align:center; background:#fafafa;">' +
-                     '<div style="font-size:9.5pt; font-weight:bold; color:#1e40af; margin-bottom:4px;">' + roleTitle + '</div>' +
-                     '<div id="qr-box-' + r + '" style="width:110px; height:110px; margin:0 auto; display:flex; align-items:center; justify-content:center; background:#fff; border:1px solid #e5e7eb; border-radius:4px;">' +
-                       '<img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=' + encodeURIComponent(targetUrl) + '" style="width:110px;height:110px;display:block;" alt="QR ' + r + '" />' +
-                     '</div>' +
-                     '<a href="' + targetUrl + '" target="_blank" style="font-size:7.5pt; color:#6366f1; display:block; margin-top:4px; text-decoration:none;">เปิดลิงก์โดยตรง ↗</a>' +
-                   '</div>';
-          }).join('') +
-        '</div>' +
-        '<div style="margin-top:12px; padding:8px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:8.5pt; color:#166534;">' +
-          '✅ เมื่อเซ็นบนมือถือเสร็จแล้ว หน้านี้จะซิงค์ลายเซ็นเข้ามาอัตโนมัติทุก 3 วินาที หรือกดปุ่ม <strong>“รีเฟรชลายเซ็น”</strong> ด้านล่าง' +
-        '</div>' +
-        '<div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">' +
-          '<button onclick="refreshSignatures()" style="padding:7px 16px; background:#059669; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt; font-weight:bold;">🔄 รีเฟรชลายเซ็น</button>' +
-          '<button onclick="closeQRPanel()" style="padding:7px 16px; background:#6b7280; color:#fff; border:none; border-radius:4px; cursor:pointer; font-size:9.5pt;">ปิด</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-
-    // ============================================
-    //  SCRIPT INSIDE PRINT WINDOW
-    // ============================================
-    '<script>' +
-      'var sigStore = ' + JSON.stringify(resolvedSigs) + ';' +
-      'var moldVendorName = ' + JSON.stringify(mold.Vendor || '') + ';' +
-      'var moldIdForSync = ' + JSON.stringify(mold.ID || '') + ';' +
-      'var curRole = "sm";' +
-      'var curTab = "draw";' +
-      'var curUploadedImage = "";' +
-      'var canvas, ctx, isDrawing = false;' +
-      'var qrPollTimer = null;' +
-
-      'function initCanvas() {' +
-        'canvas = document.getElementById("sig-canvas");' +
-        'if(!canvas) return;' +
-        'ctx = canvas.getContext("2d");' +
-        'ctx.strokeStyle = "#000080";' +
-        'ctx.lineWidth = 2.5;' +
-        'ctx.lineCap = "round";' +
-        'ctx.lineJoin = "round";' +
-        'function getPos(e) {' +
-          'var r = canvas.getBoundingClientRect();' +
-          'var clientX = e.touches ? e.touches[0].clientX : e.clientX;' +
-          'var clientY = e.touches ? e.touches[0].clientY : e.clientY;' +
-          'return { x: (clientX - r.left) * (canvas.width / r.width), y: (clientY - r.top) * (canvas.height / r.height) };' +
-        '}' +
-        'function start(e) { isDrawing = true; var p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); if(e.touches) e.preventDefault(); }' +
-        'function move(e) { if(!isDrawing) return; var p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); if(e.touches) e.preventDefault(); }' +
-        'function end(e) { isDrawing = false; }' +
-        'canvas.addEventListener("mousedown", start);' +
-        'canvas.addEventListener("mousemove", move);' +
-        'window.addEventListener("mouseup", end);' +
-        'canvas.addEventListener("touchstart", start, {passive:false});' +
-        'canvas.addEventListener("touchmove", move, {passive:false});' +
-        'canvas.addEventListener("touchend", end);' +
-      '}' +
-
-      'function clearCanvas() {' +
-        'if(ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);' +
-      '}' +
-
-      'function switchSigTab(tab) {' +
-        'curTab = tab;' +
-        '["draw","image","stamp","none"].forEach(function(t){' +
-          'var btn = document.getElementById("tab-btn-" + t);' +
-          'var pane = document.getElementById("sig-pane-" + t);' +
-          'if(t === tab){' +
-            'btn.style.background = "#2563eb"; btn.style.color = "#fff";' +
-            'pane.style.display = "block";' +
-          '} else {' +
-            'btn.style.background = "#f3f4f6"; btn.style.color = "#4b5563";' +
-            'pane.style.display = "none";' +
-          '}' +
-        '});' +
-      '}' +
-
-      'function openSigModal(role, defaultName) {' +
-        'try {' +
-          'curRole = role || "sm";' +
-          'var roleSel = document.getElementById("sig-role-select");' +
-          'if(roleSel) roleSel.value = curRole;' +
-          'var stampNameEl = document.getElementById("stamp-name-input");' +
-          'if(stampNameEl) stampNameEl.value = (sigStore[curRole] && sigStore[curRole].name) || defaultName || curRole.toUpperCase();' +
-          'var stampDateEl = document.getElementById("stamp-date-input");' +
-          'if(stampDateEl) stampDateEl.value = (sigStore[curRole] && sigStore[curRole].date) || new Date().toISOString().substring(0,10);' +
-          'clearCanvas();' +
-          'curUploadedImage = "";' +
-          'var prevEl = document.getElementById("sig-image-preview-wrap");' +
-          'if(prevEl) prevEl.innerHTML = "<span style=\"color:#9ca3af;font-size:8.5pt;\">ตัวอย่างรูปภาพลายเซ็น (PNG/JPG)</span>";' +
-          'var existing = sigStore[curRole];' +
-          'if(existing && existing.type){' +
-            'switchSigTab(existing.type);' +
-            'if((existing.type === "draw" || existing.type === "image") && existing.data){' +
-              'if(existing.type === "draw"){' +
-                'var img = new Image();' +
-                'img.onload = function(){ if(ctx) ctx.drawImage(img, 0, 0); };' +
-                'img.src = existing.data;' +
-              '} else {' +
-                'curUploadedImage = existing.data;' +
-                'if(prevEl) prevEl.innerHTML = "<img src=\"" + existing.data + "\" style=\"max-height:80px;max-width:90%;object-fit:contain;\" />";' +
-              '}' +
-            '}' +
-          '} else {' +
-            'switchSigTab("draw");' +
-          '}' +
-          'var backdrop = document.getElementById("sig-modal-backdrop");' +
-          'if(backdrop) backdrop.style.display = "flex";' +
-          'setTimeout(initCanvas, 50);' +
-        '} catch(err){ console.error(err); }' +
-      '}' +
-
-      'function closeSigModal() {' +
-        'var backdrop = document.getElementById("sig-modal-backdrop");' +
-        'if(backdrop) backdrop.style.display = "none";' +
-      '}' +
-
-      'function onRoleChange() {' +
-        'var selRole = document.getElementById("sig-role-select").value;' +
-        'openSigModal(selRole);' +
-      '}' +
-
-      'function handleImageUpload(e) {' +
-        'var file = e.target.files[0];' +
-        'if(!file) return;' +
-        'var reader = new FileReader();' +
-        'reader.onload = function(evt) {' +
-          'curUploadedImage = evt.target.result;' +
-          'var prevEl = document.getElementById("sig-image-preview-wrap");' +
-          'if(prevEl) prevEl.innerHTML = "<img src=\"" + curUploadedImage + "\" style=\"max-height:80px;max-width:90%;object-fit:contain;\" />";' +
-        '};' +
-        'reader.readAsDataURL(file);' +
-      '}' +
-
-      'async function saveCurrentSignature() {' +
-        'var role = document.getElementById("sig-role-select").value;' +
-        'if(curTab === "draw") {' +
-          'if(!canvas) initCanvas();' +
-          'var dataUrl = canvas.toDataURL("image/png");' +
-          'sigStore[role] = { type: "draw", data: dataUrl };' +
-        '} else if(curTab === "image") {' +
-          'if(!curUploadedImage){ alert("กรุณาเลือกไฟล์รูปภาพก่อนครับ"); return; }' +
-          'sigStore[role] = { type: "image", data: curUploadedImage };' +
-        '} else if(curTab === "stamp") {' +
-          'var stName = (document.getElementById("stamp-name-input").value || "").trim() || role.toUpperCase();' +
-          'var stDate = document.getElementById("stamp-date-input").value || "";' +
-          'sigStore[role] = { type: "stamp", name: stName, date: stDate };' +
-        '} else if(curTab === "none") {' +
-          'delete sigStore[role];' +
-        '}' +
-        'var targetRole = (role === "vendor" && moldVendorName) ? ("vendor_" + moldVendorName) : role;' +
-        'try {' +
-          'var rootSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}");' +
-          'if(sigStore[role]) {' +
-            'rootSigs[targetRole] = sigStore[role];' +
-            'if(role === "vendor") rootSigs["vendor"] = sigStore[role];' +
-          '} else {' +
-            'delete rootSigs[targetRole];' +
-            'if(role === "vendor") delete rootSigs["vendor"];' +
-          '}' +
-          'localStorage.setItem("TPM_HEADER_SIGS", JSON.stringify(rootSigs));' +
-        '} catch(e){}' +
-        'if(window.opener && window.opener.api){' +
-          'try {' +
-            'await window.opener.api("saveHeaderSignature", { role: targetRole, sigData: sigStore[role] });' +
-            'if(role === "vendor") await window.opener.api("saveHeaderSignature", { role: "vendor", sigData: sigStore[role] });' +
-            'await window.opener.api("saveMoldHeaderSig", { moldId: moldIdForSync, role: role, sigData: sigStore[role] });' +
-          '} catch(e){ console.error("Cloud save error:", e); }' +
-        '}' +
-        'updateCellInDom(role);' +
-        'closeSigModal();' +
-      '}' +
-
-      'function updateCellInDom(role) {' +
-        'var cells = document.querySelectorAll(".sig-cell-" + role);' +
-        'if(!cells.length) return;' +
-        'var s = sigStore[role];' +
-        'var inner = "<span class=\"no-print\" style=\"color:#9ca3af;font-size:7.5pt;display:block;line-height:1.2;\">✍️ เซ็นชื่อ</span>";' +
-        'if(s) {' +
-          'if(s.type === "draw" || s.type === "image") {' +
-            'inner = "<img src=\"" + s.data + "\" style=\"max-height: 32px; max-width: 98%; object-fit: contain; display: inline-block; vertical-align: middle;\" />";' +
-          '} else if(s.type === "stamp") {' +
-            'var dFormatted = s.date ? s.date.split("-").reverse().join("/") : "";' +
-            'inner = "<div style=\"display:inline-block; border: 1.5px solid #dc2626; border-radius: 3px; color: #dc2626; font-size: 6.5pt; font-weight: bold; padding: 1px 3px; line-height: 1.1; text-align: center;\">" +' +
-              '"<div>APPROVED</div>" +' +
-              '"<div style=\"font-size:7pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58px;\">" + s.name + "</div>" +' +
-              '(dFormatted ? "<div style=\"font-size:5.5pt; font-weight:normal;\">" + dFormatted + "</div>" : "") +' +
-            '"</div>";' +
-          '}' +
-        '}' +
-        'cells.forEach(function(c){ c.innerHTML = inner; });' +
-      '}' +
-
-      'function openQRPanel() {' +
-        'var qrModal = document.getElementById("qr-modal-backdrop");' +
-        'if(qrModal) qrModal.style.display = "flex";' +
-        'if(qrPollTimer) clearInterval(qrPollTimer);' +
-        'qrPollTimer = setInterval(function(){ refreshSignatures(true); }, 3000);' +
-      '}' +
-
-      'function closeQRPanel() {' +
-        'var qrModal = document.getElementById("qr-modal-backdrop");' +
-        'if(qrModal) qrModal.style.display = "none";' +
-        'if(qrPollTimer){ clearInterval(qrPollTimer); qrPollTimer = null; }' +
-      '}' +
-
-      'async function refreshSignatures(silent) {' +
-        'try {' +
-          'var rootSigs = {};' +
-          'try { rootSigs = JSON.parse(localStorage.getItem("TPM_HEADER_SIGS") || "{}"); } catch(e){}' +
-          'if(window.opener && window.opener.api) {' +
-            'try {' +
-              'var rHead = await window.opener.api("getHeaderSignatures");' +
-              'if(rHead && rHead.success && rHead.data) {' +
-                'rootSigs = Object.assign({}, rootSigs, rHead.data);' +
-              '}' +
-            '} catch(ex){}' +
-          '}' +
-          'if(rootSigs.st_sv && !rootSigs.st) rootSigs.st = rootSigs.st_sv;' +
-          '["sm","sv","st"].forEach(function(r){ if(rootSigs[r]) sigStore[r] = rootSigs[r]; });' +
-          'if(moldVendorName && rootSigs["vendor_" + moldVendorName]) sigStore["vendor"] = rootSigs["vendor_" + moldVendorName];' +
-          'else if(rootSigs["vendor"]) sigStore["vendor"] = rootSigs["vendor"];' +
-          '["vendor","sm","sv","st"].forEach(updateCellInDom);' +
-          'if(!silent) alert("✅ รีเฟรชลายเซ็นล่าสุดเรียบร้อย");' +
-        '} catch(err) {' +
-          'if(!silent) alert("⚠️ ไม่สามารถดึงลายเซ็นได้: " + err.message);' +
-        '}' +
-      '}' +
-    '<' + '/script>' +
     '</body></html>';
 
   if (!printWin || printWin.closed) {
