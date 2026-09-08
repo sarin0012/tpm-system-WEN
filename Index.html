@@ -1424,6 +1424,14 @@ function _uid() {
   return 'idx_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 7);
 }
 
+function emptyState(icon, title, desc) {
+  return '<div class="empty-state">' +
+    (icon ? '<div class="empty-icon">' + icon + '</div>' : '') +
+    (title ? '<h3>' + title + '</h3>' : '') +
+    (desc ? '<p>' + desc + '</p>' : '') +
+  '</div>';
+}
+
 // High-Speed Supabase API Helper with timeout protection
 async function _apiInternal(actionStr, payload = null) {
   try {
