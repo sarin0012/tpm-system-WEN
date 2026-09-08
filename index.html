@@ -2082,9 +2082,9 @@ async function _apiInternal(actionStr, payload = null) {
         } catch(e) {}
         // Fallback: Cloud-synced user config in stock_parts
         try {
-          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_USERS_CONFIG__').single();
-          if (!cfgErr && cfg && cfg.Notes) {
-            const list = parseJson(cfg.Notes);
+          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Location').eq('ID', '__SYS_USERS_CONFIG__').maybeSingle();
+          if (!cfgErr && cfg && cfg.Location) {
+            const list = parseJson(cfg.Location);
             if (list && Array.isArray(list) && list.length > 0) {
               localStorage.setItem('TPM_SYSTEM_USERS', JSON.stringify(list));
               return { success: true, data: list };
@@ -2102,7 +2102,7 @@ async function _apiInternal(actionStr, payload = null) {
             ID: '__SYS_USERS_CONFIG__',
             PartName: '__SYSTEM_CONFIG_USERS__',
             Category: '__CONFIG__',
-            Notes: JSON.stringify(allUsers),
+            Location: JSON.stringify(allUsers),
             Qty: 0,
             MinQty: 0,
             Unit: 'config'
@@ -2120,7 +2120,7 @@ async function _apiInternal(actionStr, payload = null) {
             ID: '__SYS_USERS_CONFIG__',
             PartName: '__SYSTEM_CONFIG_USERS__',
             Category: '__CONFIG__',
-            Notes: JSON.stringify(allUsers),
+            Location: JSON.stringify(allUsers),
             Qty: 0,
             MinQty: 0,
             Unit: 'config'
@@ -2133,10 +2133,10 @@ async function _apiInternal(actionStr, payload = null) {
       // HEADER SIGNATURES (CLOUD SYNCED CENTRAL DATABASE SYSTEM)
       case 'getHeaderSignatures': {
         try {
-          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
-          if (!cfgErr && cfg && cfg.Notes) {
+          const { data: cfg, error: cfgErr } = await sb.from('stock_parts').select('Location').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
+          if (!cfgErr && cfg && cfg.Location) {
             let sigs = null;
-            try { sigs = JSON.parse(cfg.Notes); } catch(e){}
+            try { sigs = JSON.parse(cfg.Location); } catch(e){}
             if (sigs && typeof sigs === 'object') {
               try { localStorage.setItem('TPM_HEADER_SIGS', JSON.stringify(sigs)); } catch(e){}
               return { success: true, data: sigs };
@@ -2167,9 +2167,9 @@ async function _apiInternal(actionStr, payload = null) {
 
         // 1. Always fetch authoritative state directly from Cloud Database first!
         try {
-          const { data: existCfg } = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
-          if (existCfg && existCfg.Notes) {
-            try { currentSigs = JSON.parse(existCfg.Notes) || {}; } catch(e){}
+          const { data: existCfg } = await sb.from('stock_parts').select('Location').eq('ID', '__SYS_HEADER_SIGS_CONFIG__').maybeSingle();
+          if (existCfg && existCfg.Location) {
+            try { currentSigs = JSON.parse(existCfg.Location) || {}; } catch(e){}
           } else {
             try { currentSigs = JSON.parse(localStorage.getItem('TPM_HEADER_SIGS') || '{}'); } catch(e){}
           }
@@ -2184,13 +2184,13 @@ async function _apiInternal(actionStr, payload = null) {
           delete currentSigs[role];
         }
 
-        // 3. Persist to Cloud Database
+        // 3. Persist to Cloud Database (Location column)
         try {
           await sb.from('stock_parts').upsert({
             ID: '__SYS_HEADER_SIGS_CONFIG__',
             PartName: '__SYSTEM_CONFIG_HEADER_SIGS__',
             Category: '__CONFIG__',
-            Notes: JSON.stringify(currentSigs),
+            Location: JSON.stringify(currentSigs),
             Qty: 0,
             MinQty: 0,
             Unit: 'config'
