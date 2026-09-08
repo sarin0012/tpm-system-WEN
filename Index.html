@@ -132,14 +132,14 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
 .photo-remove{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;border-radius:50%;width:22px;height:22px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
 
 /* LIGHTBOX */
-#lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;display:none;align-items:center;justify-content:center;}
-#lightbox-overlay.open{display:flex;}
+#lightbox-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:200000 !important;display:none;align-items:center;justify-content:center;}
+#lightbox-overlay.open{display:flex !important;}
 #lightbox-overlay img{max-width:90vw;max-height:82vh;object-fit:contain;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.8);}
-#lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2001;transition:all .2s;}
+#lightbox-close{position:fixed;top:20px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:24px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:200001 !important;transition:all .2s;}
 #lightbox-close:hover{background:rgba(255,255,255,.3);transform:scale(1.05);}
-#lightbox-drive-link{position:fixed;top:20px;right:76px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;z-index:2001;transition:all .2s;}
+#lightbox-drive-link{position:fixed;top:20px;right:76px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:13px;padding:8px 14px;border-radius:20px;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:6px;z-index:200001 !important;transition:all .2s;}
 #lightbox-drive-link:hover{background:rgba(255,255,255,.3);}
-.lightbox-nav-btn{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:none;width:48px;height:48px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:2002;user-select:none;}
+.lightbox-nav-btn{position:fixed;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.18);color:#fff;border:none;width:48px;height:48px;border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:200002 !important;user-select:none;}
 .lightbox-nav-btn:hover{background:rgba(255,255,255,.4);transform:translateY(-50%) scale(1.1);}
 #lightbox-prev{left:20px;}
 #lightbox-next{right:20px;}
@@ -4840,24 +4840,21 @@ function filterIssues() {
   tb.innerHTML = filtered.slice().reverse().map(function(i) {
     var displayCode = getIssueDisplayCode(i);
     var beforeImgs = tryParse(i.BeforeImageIds);
-    var beforeJsonStr = JSON.stringify(beforeImgs).replace(/"/g, '&quot;');
     var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + beforeJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
-      (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + beforeJsonStr + ',2,\'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
+      beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
+      (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',2)" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
       '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
     
     var afterImgs = tryParse(i.AfterImageIds);
-    var afterJsonStr = JSON.stringify(afterImgs).replace(/"/g, '&quot;');
     var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + afterJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
-      (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + afterJsonStr + ',2,\'#' + displayCode + ' - รูปหลังซ่อม (After)\')" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
+      afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
+      (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',2)" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
       '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>') : '<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
 
     var trialImgs = tryParse(i.TrialImageIds);
-    var trialJsonStr = JSON.stringify(trialImgs).replace(/"/g, '&quot;');
     var trialThumbs = trialImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openLightbox(' + trialJsonStr + ',' + idx + ',\'#' + displayCode + ' - รูปผลทดสอบ Trial\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
-      (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + trialJsonStr + ',2,\'#' + displayCode + ' - รูปผลทดสอบ Trial\')" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
+      trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
+      (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
       '</div>' : '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
 
     return '<tr>' +
@@ -5132,31 +5129,28 @@ function openIssueDetailModal(id){
   var displayCode = getIssueDisplayCode(iss);
 
   var beforeImgs = tryParse(iss.BeforeImageIds);
-  var beforeJsonStr = JSON.stringify(beforeImgs).replace(/"/g, '&quot;');
   var beforeGallery = beforeImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
         beforeImgs.map(function(url, idx){
-          return '<img src="' + url + '" onclick="openLightbox(' + beforeJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปก่อนซ่อม (Before)\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + beforeImgs.length + ')" />';
+          return '<img src="' + url + '" onclick="openIssuePhotoLightbox(\'' + iss.ID + '\', \'before\', ' + idx + ')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + beforeImgs.length + ')" />';
         }).join('') +
       '</div>'
     : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพตอนแจ้ง</div>';
 
   var afterImgs = tryParse(iss.AfterImageIds);
-  var afterJsonStr = JSON.stringify(afterImgs).replace(/"/g, '&quot;');
   var afterGallery = afterImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
         afterImgs.map(function(url, idx){
-          return '<img src="' + url + '" onclick="openLightbox(' + afterJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปหลังซ่อม (After)\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + afterImgs.length + ')" />';
+          return '<img src="' + url + '" onclick="openIssuePhotoLightbox(\'' + iss.ID + '\', \'after\', ' + idx + ')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + afterImgs.length + ')" />';
         }).join('') +
       '</div>'
     : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพหลังแก้ไข</div>';
 
   var trialImgs = tryParse(iss.TrialImageIds);
-  var trialJsonStr = JSON.stringify(trialImgs).replace(/"/g, '&quot;');
   var trialGallery = trialImgs.length
     ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
         trialImgs.map(function(url, idx){
-          return '<img src="' + url + '" onclick="openLightbox(' + trialJsonStr + ', ' + idx + ', \'#' + displayCode + ' - รูปตอน Trial\')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + trialImgs.length + ')" />';
+          return '<img src="' + url + '" onclick="openIssuePhotoLightbox(\'' + iss.ID + '\', \'trial\', ' + idx + ')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + trialImgs.length + ')" />';
         }).join('') +
       '</div>'
     : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพชิ้นงานตอน Trial</div>';
@@ -6466,7 +6460,31 @@ function openLightbox(listOrUrl, index, title){
   updateLightboxView();
 
   var lover = document.getElementById('lightbox-overlay');
-  if (lover) lover.classList.add('open');
+  if (lover) {
+    if (lover.parentNode !== document.body) {
+      document.body.appendChild(lover);
+    }
+    lover.classList.add('open');
+  }
+}
+
+function openIssuePhotoLightbox(issueId, field, index) {
+  var iss = (STATE.issues || []).find(function(i){ return i.ID === issueId; });
+  if (!iss) return;
+  var displayCode = getIssueDisplayCode(iss);
+  var imgs = [];
+  var titleSuffix = '';
+  if (field === 'before') {
+    imgs = tryParse(iss.BeforeImageIds);
+    titleSuffix = 'รูปก่อนซ่อม (Before)';
+  } else if (field === 'after') {
+    imgs = tryParse(iss.AfterImageIds);
+    titleSuffix = 'รูปหลังซ่อม (After)';
+  } else if (field === 'trial') {
+    imgs = tryParse(iss.TrialImageIds);
+    titleSuffix = 'รูปผลทดสอบ Trial';
+  }
+  openLightbox(imgs, index, '#' + displayCode + ' - ' + titleSuffix);
 }
 
 function updateLightboxView(){
