@@ -456,8 +456,8 @@ body.role-engineer .role-admin-only { display: none !important; }
 <div class="page active" id="page-dashboard">
   <div class="stats-grid" id="dash-stats"><div style="color:var(--text-muted);padding:20px">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</div></div>
   <div class="chart-grid">
-    <div class="card"><div class="card-header"><div class="card-title">TPM Completion (6 &#3648;&#3604;&#3639;&#3629;&#3609;)</div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
-    <div class="card"><div class="card-header"><div class="card-title">&#3611;&#3633;&#3597;&#3627;&#3634; / Issues (6 &#3648;&#3604;&#3639;&#3629;&#3609;)</div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">TPM Completion (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,0.15);color:var(--primary);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
+    <div class="card"><div class="card-header"><div class="card-title">ปัญหา / Issues (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(239,68,68,0.15);color:var(--danger);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
   </div>
   <div class="grid-2">
     <div class="card"><div class="card-header"><div class="card-title">&#128680; Open Issues</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-issues"></div></div>
@@ -852,6 +852,80 @@ body.role-engineer .role-admin-only { display: none !important; }
   <div class="modal-footer" id="issue-detail-footer">
     <button class="btn btn-outline" onclick="closeModal('issue-detail-modal')">ปิด</button>
   </div>
+  </div>
+</div>
+
+<!-- DASHBOARD ISSUE DRILLDOWN MODAL -->
+<div class="modal-overlay" id="dash-issues-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="dash-issues-modal-title">🚨 รายการปัญหาประจำเดือน</div>
+      <button class="modal-close" onclick="closeModal('dash-issues-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:600;">กรองสถานะ:</span>
+        <button class="btn btn-sm btn-primary" id="dash-iss-btn-all" onclick="_setDashIssuesFilter('all')">ทั้งหมด (<span id="dash-iss-count-all">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-iss-btn-open" onclick="_setDashIssuesFilter('open')">🔴 Open (<span id="dash-iss-count-open">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-iss-btn-inprogress" onclick="_setDashIssuesFilter('inprogress')">🟡 In Progress (<span id="dash-iss-count-inprogress">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-iss-btn-closed" onclick="_setDashIssuesFilter('closed')">🟢 Closed (<span id="dash-iss-count-closed">0</span>)</button>
+      </div>
+      <div class="table-wrapper" style="max-height:420px;overflow-y:auto;">
+        <table id="dash-issues-table">
+          <thead>
+            <tr>
+              <th style="width:95px;">รหัส / วันที่</th>
+              <th>อุปกรณ์ / รายละเอียดปัญหา</th>
+              <th style="width:90px;">ความรุนแรง</th>
+              <th style="width:100px;">สถานะ</th>
+              <th style="width:105px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="dash-issues-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('dash-issues-modal')">ปิด</button>
+      <button class="btn btn-primary" onclick="closeModal('dash-issues-modal'); nav('issues');">📋 ไปหน้ารายการปัญหาทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD TPM DRILLDOWN MODAL -->
+<div class="modal-overlay" id="dash-tpm-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="dash-tpm-modal-title">🔧 รายการแผน TPM ประจำเดือน</div>
+      <button class="modal-close" onclick="closeModal('dash-tpm-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+        <span style="font-size:12px;color:var(--text-muted);font-weight:600;">กรองสถานะ:</span>
+        <button class="btn btn-sm btn-primary" id="dash-tpm-btn-all" onclick="_setDashTPMFilter('all')">ทั้งหมด (<span id="dash-tpm-count-all">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-tpm-btn-done" onclick="_setDashTPMFilter('done')">🟢 เสร็จสิ้น (<span id="dash-tpm-count-done">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-tpm-btn-overdue" onclick="_setDashTPMFilter('overdue')">🔴 เกินกำหนด (<span id="dash-tpm-count-overdue">0</span>)</button>
+        <button class="btn btn-sm btn-outline" id="dash-tpm-btn-planned" onclick="_setDashTPMFilter('planned')">🔵 ตามแผน (<span id="dash-tpm-count-planned">0</span>)</button>
+      </div>
+      <div class="table-wrapper" style="max-height:420px;overflow-y:auto;">
+        <table id="dash-tpm-table">
+          <thead>
+            <tr>
+              <th style="width:105px;">วันที่ตามแผน</th>
+              <th>อุปกรณ์ / โมล</th>
+              <th>ผู้รับผิดชอบ</th>
+              <th style="width:100px;">สถานะ</th>
+              <th style="width:140px;text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="dash-tpm-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('dash-tpm-modal')">ปิด</button>
+      <button class="btn btn-primary" onclick="closeModal('dash-tpm-modal'); nav('tpm');">🔧 ไปหน้าแผน TPM ทั้งหมด</button>
+    </div>
   </div>
 </div>
 
@@ -1516,6 +1590,8 @@ async function _apiInternal(actionStr, payload = null) {
           });
           tpmChart.push({
             label: lbl,
+            month: mIdx,
+            year: yVal,
             total: mPlans.length,
             done: mPlans.filter(p => p.Status === 'Done').length
           });
@@ -1525,7 +1601,7 @@ async function _apiInternal(actionStr, payload = null) {
             const idate = new Date(i.OccurredAt);
             return idate.getMonth() === mIdx && idate.getFullYear() === yVal;
           });
-          issueChart.push({ label: lbl, count: mIss.length });
+          issueChart.push({ label: lbl, month: mIdx, year: yVal, count: mIss.length });
         }
 
         const recentIssues = openIssues.slice(0, 5);
@@ -3292,7 +3368,28 @@ async function loadDashboard() {
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                afterLabel: function() {
+                  return '👉 คลิกเพื่อดูรายการแผน PM เดือนนี้';
+                }
+              }
+            }
+          },
+          onHover: function(evt, elements) {
+            var el = evt.native ? evt.native.target : (evt.chart ? evt.chart.canvas : null);
+            if (el) el.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          onClick: function(evt, elements) {
+            if (!elements || !elements.length) return;
+            var idx = elements[0].index;
+            var item = d.tpmChart[idx];
+            if (item) {
+              openDashTPMDrilldown(item);
+            }
+          },
           scales: {
             x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8' } },
             y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
@@ -3308,12 +3405,43 @@ async function loadDashboard() {
         type: 'line',
         data: {
           labels: d.issueChart.map(x=>x.label),
-          datasets: [{ label: 'Issues', data: d.issueChart.map(x=>x.count), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)', fill: true, tension: .4, pointBackgroundColor: '#ef4444' }]
+          datasets: [{
+            label: 'Issues',
+            data: d.issueChart.map(x=>x.count),
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239,68,68,.1)',
+            fill: true,
+            tension: .4,
+            pointBackgroundColor: '#ef4444',
+            pointRadius: 5,
+            pointHoverRadius: 8
+          }]
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+          plugins: {
+            legend: { labels: { color: '#94a3b8', font: { size: 11 } } },
+            tooltip: {
+              callbacks: {
+                afterLabel: function() {
+                  return '👉 คลิกเพื่อดูรายการปัญหาประจำเดือน';
+                }
+              }
+            }
+          },
+          onHover: function(evt, elements) {
+            var el = evt.native ? evt.native.target : (evt.chart ? evt.chart.canvas : null);
+            if (el) el.style.cursor = elements.length ? 'pointer' : 'default';
+          },
+          onClick: function(evt, elements) {
+            if (!elements || !elements.length) return;
+            var idx = elements[0].index;
+            var item = d.issueChart[idx];
+            if (item) {
+              openDashIssueDrilldown(item);
+            }
+          },
           scales: {
             x: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8' } },
             y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#94a3b8', stepSize: 1 } }
@@ -3326,7 +3454,7 @@ async function loadDashboard() {
     const recentIssues = scopedIssues.slice(0, 5);
     if (issuesEl) {
       issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มี Issue ค้าง', '') :
-        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="nav(\'issues\')" title="คลิกเพื่อไปหน้ารายการปัญหา"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">' + (i.TargetName||'-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-faint)">(' + (i.IssueType||'-') + ')</span></div><div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (i.Description||'') + '</div></div><span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span></div>').join('');
+        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเพื่อดูรายละเอียดปัญหา"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">' + (i.TargetName||'-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-faint)">(' + (i.IssueType||'-') + ')</span></div><div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (i.Description||'') + '</div></div><span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span></div>').join('');
     }
 
     const overdueEl = document.getElementById('dash-tpm-overdue');
@@ -3352,6 +3480,215 @@ async function loadDashboard() {
   } catch (err) {
     console.error('loadDashboard error:', err);
   }
+}
+
+// ============================================
+//  DASHBOARD DRILL-DOWN MODALS (Interactive Charts)
+// ============================================
+var _dashDrillCurrentIssues = [];
+var _dashDrillIssuesFilter = 'all';
+var _dashDrillCurrentTPM = [];
+var _dashDrillTPMFilter = 'all';
+
+function openDashIssueDrilldown(chartItem) {
+  var mIdx = chartItem.month;
+  var yVal = chartItem.year;
+  var lbl = chartItem.label;
+
+  var titleEl = document.getElementById('dash-issues-modal-title');
+  if (titleEl) {
+    titleEl.innerHTML = '🚨 รายการปัญหาประจำเดือน <strong>' + lbl + ' ' + (yVal + 543) + '</strong> (' + chartItem.count + ' รายการ)';
+  }
+
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+
+  _dashDrillCurrentIssues = (STATE.issues || []).filter(function(i) {
+    if (i.TargetType === 'Machine' && !canMachine) return false;
+    if (i.TargetType === 'Mold' && !canMold) return false;
+    if (!i.OccurredAt) return false;
+    var d = new Date(i.OccurredAt);
+    return d.getMonth() === mIdx && d.getFullYear() === yVal;
+  });
+
+  _dashDrillIssuesFilter = 'all';
+  renderDashIssuesDrilldown();
+  openModal('dash-issues-modal');
+}
+
+function _setDashIssuesFilter(f) {
+  _dashDrillIssuesFilter = f;
+  renderDashIssuesDrilldown();
+}
+
+function renderDashIssuesDrilldown() {
+  var countAll = _dashDrillCurrentIssues.length;
+  var countOpen = _dashDrillCurrentIssues.filter(function(i){ return (i.Status || 'Open') === 'Open'; }).length;
+  var countInprog = _dashDrillCurrentIssues.filter(function(i){ return i.Status === 'In Progress'; }).length;
+  var countClosed = _dashDrillCurrentIssues.filter(function(i){ return i.Status === 'Closed'; }).length;
+
+  var setBadge = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  setBadge('dash-iss-count-all', countAll);
+  setBadge('dash-iss-count-open', countOpen);
+  setBadge('dash-iss-count-inprogress', countInprog);
+  setBadge('dash-iss-count-closed', countClosed);
+
+  var setBtnClass = function(id, active) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (active) {
+      el.classList.add('btn-primary');
+      el.classList.remove('btn-outline');
+    } else {
+      el.classList.remove('btn-primary');
+      el.classList.add('btn-outline');
+    }
+  };
+  setBtnClass('dash-iss-btn-all', _dashDrillIssuesFilter === 'all');
+  setBtnClass('dash-iss-btn-open', _dashDrillIssuesFilter === 'open');
+  setBtnClass('dash-iss-btn-inprogress', _dashDrillIssuesFilter === 'inprogress');
+  setBtnClass('dash-iss-btn-closed', _dashDrillIssuesFilter === 'closed');
+
+  var filtered = _dashDrillCurrentIssues.filter(function(i) {
+    var st = (i.Status || 'Open').toLowerCase();
+    if (_dashDrillIssuesFilter === 'open') return st === 'open';
+    if (_dashDrillIssuesFilter === 'inprogress') return st === 'in progress';
+    if (_dashDrillIssuesFilter === 'closed') return st === 'closed';
+    return true;
+  });
+
+  var tbody = document.getElementById('dash-issues-tbody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">' +
+      (_dashDrillCurrentIssues.length === 0 ? '✅ ไม่มีปัญหาที่ถูกบันทึกในเดือนนี้' : 'ไม่พบรายการในสถานะที่เลือก') + '</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(iss) {
+    var displayCode = getIssueDisplayCode(iss);
+    var sevBadge = '<span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span>';
+    var stBadge = '<span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span>';
+    var dateStr = iss.OccurredAt ? iss.OccurredAt.split('T')[0] : '-';
+
+    return '<tr style="cursor:pointer;" onclick="closeModal(\'dash-issues-modal\'); openIssueDetailModal(\'' + iss.ID + '\');">' +
+      '<td><strong>#' + displayCode + '</strong><br><span style="font-size:11px;color:var(--text-muted)">' + dateStr + '</span></td>' +
+      '<td><strong>' + (iss.TargetName || '-') + '</strong> <span style="font-size:11px;color:var(--text-muted)">(' + (iss.IssueType || '-') + ')</span>' +
+        '<div style="font-size:12px;color:var(--text-muted);max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (iss.Description || '-') + '</div>' +
+      '</td>' +
+      '<td>' + sevBadge + '</td>' +
+      '<td>' + stBadge + '</td>' +
+      '<td style="text-align:center;">' +
+        '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); closeModal(\'dash-issues-modal\'); openIssueDetailModal(\'' + iss.ID + '\');">🔍 ดูรายละเอียด</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function openDashTPMDrilldown(chartItem) {
+  var mIdx = chartItem.month;
+  var yVal = chartItem.year;
+  var lbl = chartItem.label;
+
+  var titleEl = document.getElementById('dash-tpm-modal-title');
+  if (titleEl) {
+    titleEl.innerHTML = '🔧 แผน TPM ประจำเดือน <strong>' + lbl + ' ' + (yVal + 543) + '</strong> (ทั้งหมด ' + chartItem.total + ' แผน, ทำแล้ว ' + chartItem.done + ')';
+  }
+
+  var canMold = can('molds', 'view');
+  var canMachine = can('machines', 'view');
+
+  _dashDrillCurrentTPM = (STATE.tpmPlans || []).filter(function(p) {
+    if (p.TargetType === 'Machine' && !canMachine) return false;
+    if (p.TargetType === 'Mold' && !canMold) return false;
+    if (!p.PlannedDate) return false;
+    var d = new Date(p.PlannedDate);
+    return d.getMonth() === mIdx && d.getFullYear() === yVal;
+  });
+
+  _dashDrillTPMFilter = 'all';
+  renderDashTPMDrilldown();
+  openModal('dash-tpm-modal');
+}
+
+function _setDashTPMFilter(f) {
+  _dashDrillTPMFilter = f;
+  renderDashTPMDrilldown();
+}
+
+function renderDashTPMDrilldown() {
+  var countAll = _dashDrillCurrentTPM.length;
+  var countDone = _dashDrillCurrentTPM.filter(function(p){ return getTPMStatus(p) === 'Done'; }).length;
+  var countOverdue = _dashDrillCurrentTPM.filter(function(p){ return getTPMStatus(p) === 'Overdue'; }).length;
+  var countPlanned = _dashDrillCurrentTPM.filter(function(p){ return getTPMStatus(p) === 'Planned' || getTPMStatus(p) === 'Due Soon'; }).length;
+
+  var setBadge = function(id, val) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  setBadge('dash-tpm-count-all', countAll);
+  setBadge('dash-tpm-count-done', countDone);
+  setBadge('dash-tpm-count-overdue', countOverdue);
+  setBadge('dash-tpm-count-planned', countPlanned);
+
+  var setBtnClass = function(id, active) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (active) {
+      el.classList.add('btn-primary');
+      el.classList.remove('btn-outline');
+    } else {
+      el.classList.remove('btn-primary');
+      el.classList.add('btn-outline');
+    }
+  };
+  setBtnClass('dash-tpm-btn-all', _dashDrillTPMFilter === 'all');
+  setBtnClass('dash-tpm-btn-done', _dashDrillTPMFilter === 'done');
+  setBtnClass('dash-tpm-btn-overdue', _dashDrillTPMFilter === 'overdue');
+  setBtnClass('dash-tpm-btn-planned', _dashDrillTPMFilter === 'planned');
+
+  var filtered = _dashDrillCurrentTPM.filter(function(p) {
+    var st = getTPMStatus(p);
+    if (_dashDrillTPMFilter === 'done') return st === 'Done';
+    if (_dashDrillTPMFilter === 'overdue') return st === 'Overdue';
+    if (_dashDrillTPMFilter === 'planned') return st === 'Planned' || st === 'Due Soon';
+    return true;
+  });
+
+  var tbody = document.getElementById('dash-tpm-tbody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted);">' +
+      (_dashDrillCurrentTPM.length === 0 ? '✅ ไม่มีแผน TPM ในเดือนนี้' : 'ไม่พบรายการในสถานะที่เลือก') + '</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(function(p) {
+    var stBadge = getTPMStatusBadge(p);
+    var planDate = p.PlannedDate ? formatDMY(p.PlannedDate) : '-';
+    var isDone = getTPMStatus(p) === 'Done';
+
+    var actBtn = isDone
+      ? '<button class="btn btn-outline btn-sm" onclick="event.stopPropagation(); closeModal(\'dash-tpm-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">🔍 ดูผลตรวจ</button>'
+      : '<button class="btn btn-success btn-sm" onclick="event.stopPropagation(); closeModal(\'dash-tpm-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ ตรวจ PM</button>';
+
+    var moldLink = (p.TargetType === 'Mold' && p.TargetID)
+      ? ' <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); closeModal(\'dash-tpm-modal\'); openMoldTPMDetailModal(\'' + p.TargetID + '\');" title="ดูประวัติโมลนี้">📋 ทุกรอบ</button>'
+      : '';
+
+    return '<tr style="cursor:pointer;" onclick="closeModal(\'dash-tpm-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">' +
+      '<td><strong>' + planDate + '</strong></td>' +
+      '<td><strong>' + (p.TargetName || '-') + '</strong> <span style="font-size:11px;color:var(--text-muted)">(' + (p.TargetType || 'Mold') + ')</span></td>' +
+      '<td>' + (p.AssignedTo || '-') + (p.VendorResp ? '<br><span style="font-size:11px;color:var(--text-muted)">Vendor: ' + p.VendorResp + '</span>' : '') + '</td>' +
+      '<td>' + stBadge + '</td>' +
+      '<td style="text-align:center;white-space:nowrap;">' + actBtn + moldLink + '</td>' +
+    '</tr>';
+  }).join('');
 }
 
 // ============================================
