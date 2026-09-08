@@ -2731,32 +2731,11 @@ function checkLoginState() {
   var loggedInSession = sessionStorage.getItem('TPM_LOGGED_IN');
   var loggedInLocal = localStorage.getItem('TPM_LOGGED_IN');
   var savedUser = parseJson(localStorage.getItem('TPM_CURRENT_USER'));
-  var loginTime = Number(localStorage.getItem('TPM_LOGIN_TIME') || 0);
-  var now = Date.now();
 
   var isValid = false;
   if (savedUser && savedUser.Name) {
-    if (loggedInSession === '1') {
-      if (savedUser.Role === 'Admin') {
-        // Admin session valid for 8 hours
-        if (loginTime > 0 && (now - loginTime) < (8 * 3600 * 1000)) {
-          isValid = true;
-        }
-      } else {
-        isValid = true;
-      }
-    } else if (loggedInLocal === '1') {
-      if (savedUser.Role === 'Admin') {
-        // Admin: valid for 8 hours only
-        if (loginTime > 0 && (now - loginTime) < (8 * 3600 * 1000)) {
-          isValid = true;
-        }
-      } else {
-        // Regular users: remember for 30 days
-        if (loginTime > 0 && (now - loginTime) < (30 * 24 * 3600 * 1000)) {
-          isValid = true;
-        }
-      }
+    if (loggedInSession === '1' || loggedInLocal === '1') {
+      isValid = true;
     }
   }
 
@@ -2765,7 +2744,6 @@ function checkLoginState() {
     updateUserDisplay();
     applyRolePermissions();
     hideLoginScreen();
-    startInactivityTracker();
     return true;
   } else {
     showLoginScreen();
@@ -2949,28 +2927,8 @@ function performLogout() {
 }
 
 function startInactivityTracker() {
+  // Inactivity auto-lock disabled as requested
   stopInactivityTracker();
-  _lastActivityTime = Date.now();
-
-  var resetTimer = function() {
-    _lastActivityTime = Date.now();
-  };
-
-  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(function(evt) {
-    window.addEventListener(evt, resetTimer, { passive: true });
-  });
-
-  _inactivityTimer = setInterval(function() {
-    var u = STATE.currentUser;
-    if (u && u.Role === 'Admin') {
-      var diff = Date.now() - _lastActivityTime;
-      if (diff > (45 * 60 * 1000)) { // 45 mins inactivity for Admin
-        console.warn('Admin inactive for > 45 mins. Auto-locking session.');
-        performLogout();
-        showToast('🔒 เซสชันผู้ดูแลระบบหมดเวลาเนื่องจากไม่มีการใช้งาน (Auto-locked)', 'warning');
-      }
-    }
-  }, 60000);
 }
 
 function stopInactivityTracker() {
