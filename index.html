@@ -893,24 +893,34 @@ body.role-engineer .role-admin-only { display: none !important; }
 </div>
 <!-- TPM COMPLETE -->
 <div class="modal-overlay" id="tpm-complete-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">&#9989; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3612;&#3621; TPM</div><button class="modal-close" onclick="closeModal('tpm-complete-modal')">&#10005;</button></div>
-  <div class="modal-body">
-    <input type="hidden" id="tpm-complete-id"/>
-    <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
-    <div class="form-row col-3">
-      <div class="form-group"><label>วันที่ทำจริง <span style="color:var(--danger)">*</span> (DD/MM/YYYY)</label><input id="tpm-actual-date" type="text" placeholder="เช่น 20/08/2026"/></div>
-      <div class="form-group"><label>ผู้ตรวจสอบ (WEN/WP) *</label><input id="tpm-actual-by" placeholder="ระบุชื่อผู้ตรวจสอบ WEN/WP"/></div>
-      <div class="form-group"><label>ผู้ตรวจสอบร่วม (Vendor)</label><input id="tpm-co-inspector" placeholder="ระบุชื่อตัวแทน Vendor"/></div>
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="tpm-complete-modal-title">✅ บันทึกผล TPM</div>
+      <button class="modal-close" onclick="closeModal('tpm-complete-modal')">✕</button>
     </div>
-    <div class="form-group"><label>Checklist</label><div id="tpm-checklist-items"></div></div>
-    <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="tpm-complete-notes"></textarea></div>
-    <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;&#3627;&#3621;&#3633;&#3591; TPM</label>
-      <div class="photo-upload-area" onclick="triggerUpload('tpm-complete-photos-input')"><div style="font-size:24px;margin-bottom:4px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3629;&#3633;&#3614;&#3650;&#3627;&#3621;&#3604;&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</div></div>
-      <input type="file" id="tpm-complete-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'tpm-complete-photos-preview','tpm-complete')"/>
-      <div class="photo-preview-grid" id="tpm-complete-photos-preview"></div>
+    <div class="modal-body">
+      <input type="hidden" id="tpm-complete-id"/>
+      <!-- Lock / Read-Only Status Banner -->
+      <div id="tpm-complete-lock-banner" style="display:none;margin-bottom:14px;"></div>
+
+      <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
+      <div class="form-row col-3">
+        <div class="form-group"><label>วันที่ทำจริง <span style="color:var(--danger)">*</span> (DD/MM/YYYY)</label><input id="tpm-actual-date" type="text" placeholder="เช่น 20/08/2026"/></div>
+        <div class="form-group"><label>ผู้ตรวจสอบ (WEN/WP) *</label><input id="tpm-actual-by" placeholder="ระบุชื่อผู้ตรวจสอบ WEN/WP"/></div>
+        <div class="form-group"><label>ผู้ตรวจสอบร่วม (Vendor)</label><input id="tpm-co-inspector" placeholder="ระบุชื่อตัวแทน Vendor"/></div>
+      </div>
+      <div class="form-group"><label>Checklist</label><div id="tpm-checklist-items"></div></div>
+      <div class="form-group"><label>หมายเหตุ</label><textarea id="tpm-complete-notes"></textarea></div>
+      <div class="form-group"><label>รูปภาพหลัง TPM</label>
+        <div class="photo-upload-area" id="tpm-complete-upload-box" onclick="triggerUpload('tpm-complete-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปภาพ</div></div>
+        <input type="file" id="tpm-complete-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'tpm-complete-photos-preview','tpm-complete')"/>
+        <div class="photo-preview-grid" id="tpm-complete-photos-preview"></div>
+      </div>
     </div>
-  </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('tpm-complete-modal')">&#3618;&#3585;&#3648;&#3621;&#3636;&#3585;</button><button class="btn btn-success" onclick="completeTPM()">&#9989; &#3610;&#3633;&#3609;&#3607;&#3638;&#3585;&#3612;&#3621;</button></div>
+    <div class="modal-footer" id="tpm-complete-footer">
+      <button class="btn btn-outline" onclick="closeModal('tpm-complete-modal')">ยกเลิก</button>
+      <button class="btn btn-success" id="tpm-complete-submit-btn" onclick="completeTPM()">✅ บันทึกผล</button>
+    </div>
   </div>
 </div>
 
@@ -3277,6 +3287,14 @@ function submitAdminPassword() {
     closeModal('user-select-modal');
     showToast('เข้าสู่โหมดผู้ดูแลระบบ (Admin) สำเร็จ 🔓', 'success');
 
+    if (STATE._pendingTPMUnlockId) {
+      var unlockPlanId = STATE._pendingTPMUnlockId;
+      STATE._pendingTPMUnlockId = null;
+      showToast('ปลดล็อกสิทธิ์ Admin สำเร็จ 🔓', 'success');
+      openTPMCompleteModal(unlockPlanId, true);
+      return;
+    }
+
     if (STATE._pendingNavToSettings) {
       STATE._pendingNavToSettings = false;
       nav('settings');
@@ -5229,15 +5247,89 @@ function parseDMYtoYMD(dmyStr) {
   return s;
 }
 
-function openTPMCompleteModal(planId){
+function openTPMCompleteModal(planId, forceEdit){
   var plan=STATE.tpmPlans.find(function(p){return p.ID===planId;});if(!plan)return;
+
+  if (forceEdit) {
+    STATE._tpmEditUnlocked = true;
+  } else {
+    STATE._tpmEditUnlocked = false;
+  }
+
+  var isDone = (plan.Status === 'Done');
+  var isReadOnly = isDone && !STATE._tpmEditUnlocked;
+
   v_set('tpm-complete-id',planId);
   v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
   v_set('tpm-actual-by',plan.ActualBy || '');
   v_set('tpm-co-inspector',plan.CoInspector || '');
   v_set('tpm-complete-notes',plan.Notes || '');
-  document.getElementById('tpm-complete-photos-preview').innerHTML='';STATE.pendingPhotos['tpm-complete']={files:[]};
-  document.getElementById('tpm-plan-info').innerHTML='<strong>'+plan.TargetType+': '+plan.TargetName+'</strong> &nbsp;|&nbsp; กำหนด: '+(plan.PlannedDate||'-')+' &nbsp;|&nbsp; <span class="badge '+(plan.Status||'planned').toLowerCase()+'">'+plan.Status+'</span>';
+
+  // Handle Lock Banner & Modal Title
+  var titleEl = document.getElementById('tpm-complete-modal-title');
+  var bannerEl = document.getElementById('tpm-complete-lock-banner');
+
+  if (isReadOnly) {
+    if (titleEl) titleEl.innerHTML = '📋 รายละเอียดผลการตรวจ TPM (บันทึกเสร็จสมบูรณ์)';
+    if (bannerEl) {
+      bannerEl.style.display = 'block';
+      bannerEl.innerHTML = 
+        '<div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:26px;">🔒</span>' +
+            '<div>' +
+              '<strong style="color:#10b981;font-size:13.5px;">แผนนี้ตรวจและบันทึกผลเสร็จสมบูรณ์แล้ว (โหมดดูข้อมูลแบบล็อกไว้)</strong>' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' +
+                'ตรวจเมื่อ: <strong>' + (plan.ActualDate ? formatDMY(plan.ActualDate) : '-') + '</strong> | ' +
+                'ผู้ตรวจ: <strong>' + (plan.ActualBy || '-') + '</strong> | ' +
+                'ผู้ตรวจร่วม: <strong>' + (plan.CoInspector || '-') + '</strong>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="border-color:#f59e0b;color:#f59e0b;font-weight:600;display:flex;align-items:center;gap:6px;background:rgba(245,158,11,0.08);" title="เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ปลดล็อกได้">' +
+            '<span>✏️</span> <span>ปลดล็อกเพื่อแก้ไข (เฉพาะ Admin)</span>' +
+          '</button>' +
+        '</div>';
+    }
+  } else if (isDone && STATE._tpmEditUnlocked) {
+    if (titleEl) titleEl.innerHTML = '✏️ แก้ไขผลการตรวจ TPM (Admin Edit Mode)';
+    if (bannerEl) {
+      bannerEl.style.display = 'block';
+      bannerEl.innerHTML = 
+        '<div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:24px;">⚠️</span>' +
+            '<div>' +
+              '<strong style="color:#f59e0b;font-size:13.5px;">กำลังอยู่ในโหมดแก้ไขผลการตรวจ (Admin Edit Mode)</strong>' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">ฟอร์มได้รับการปลดล็อกแล้ว กรุณากด "บันทึกการแก้ไข" หลังจากแก้ไขเสร็จสิ้น</div>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="lockTPMViewMode(\'' + plan.ID + '\')" style="color:var(--text-muted);border:1px solid var(--border);">🔒 ยกเลิกการแก้ไข</button>' +
+        '</div>';
+    }
+  } else {
+    if (titleEl) titleEl.innerHTML = '✅ บันทึกผล TPM';
+    if (bannerEl) {
+      bannerEl.style.display = 'none';
+      bannerEl.innerHTML = '';
+    }
+  }
+
+  // Toggle Input disable states
+  ['tpm-actual-date', 'tpm-actual-by', 'tpm-co-inspector', 'tpm-complete-notes'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) {
+      el.disabled = isReadOnly;
+      el.style.cursor = isReadOnly ? 'not-allowed' : '';
+      el.style.opacity = isReadOnly ? '0.85' : '';
+      el.style.background = isReadOnly ? 'var(--surface)' : '';
+    }
+  });
+
+  var planInfoEl = document.getElementById('tpm-plan-info');
+  if (planInfoEl) {
+    planInfoEl.innerHTML = '<strong>' + plan.TargetType + ': ' + plan.TargetName + '</strong> &nbsp;|&nbsp; กำหนด: ' + (plan.PlannedDate || '-') + ' &nbsp;|&nbsp; <span class="badge ' + (plan.Status || 'planned').toLowerCase() + '">' + plan.Status + '</span>';
+  }
   
   var tmpl=STATE.checklistTemplates.find(function(t){return t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
   var prev={};try{if(plan.ChecklistResult)prev=JSON.parse(plan.ChecklistResult);}catch(e){}
@@ -5295,23 +5387,50 @@ function openTPMCompleteModal(planId){
       badgeTag = '<span class="badge" style="font-size:9.5px;background:rgba(245,158,11,0.15);color:#f59e0b;padding:1px 5px;margin-left:4px;">เฉพาะรอบนี้</span>';
     }
 
+    var resultCell = '';
+    if (isReadOnly) {
+      if (isOK) {
+        resultCell = '<span class="badge success" style="font-size:12px;padding:4px 12px;font-weight:700;">✔ OK</span>';
+      } else if (isNG) {
+        resultCell = '<span class="badge danger" style="font-size:12px;padding:4px 12px;font-weight:700;">✖ NG</span>';
+      } else {
+        resultCell = '<span style="color:var(--text-muted);font-size:12px;">-</span>';
+      }
+    } else {
+      resultCell = 
+        '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">' +
+          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">' +
+            '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>' +
+          '</label>' +
+          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">' +
+            '<input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>' +
+          '</label>' +
+        '</div>';
+    }
+
+    var remarkInput = isReadOnly
+      ? '<div style="font-size:12px;color:' + (isNG ? 'var(--danger)' : 'var(--text-muted)') + ';font-weight:' + (isNG ? '600' : '400') + '">' + (p.remark || '-') + '</div>'
+      : '<input id="remark-'+item.id+'" placeholder="ระบุสาเหตุ (ถ้า NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/>';
+
     return '<tr data-item-id="'+item.id+'" style="border-bottom:1px solid var(--border)">'+
       '<td style="padding:10px 8px;font-weight:600;color:var(--text-muted);text-align:center;width:36px">'+item.id+'</td>'+
       '<td style="padding:10px 8px"><div style="font-weight:500;margin-bottom:2px">'+item.th+badgeTag+'</div><div style="font-size:11px;color:var(--text-faint)">'+(item.en||'')+'</div></td>'+
       '<td style="padding:10px 8px;font-size:11px;color:var(--text-muted);max-width:200px">'+(item.std||'')+'</td>'+
-      '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+
-        '<div style="display:inline-flex;align-items:center;justify-content:center;gap:10px">'+
-          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(16,185,129,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(16,185,129,0.3)">'+
-            '<input type="radio" name="chk-'+item.id+'" value="OK" '+(isOK?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#10b981;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#10b981;font-weight:bold;font-size:12px">OK</span>'+
-          '</label>'+
-          '<label style="display:inline-flex;align-items:center;gap:4px;cursor:pointer;background:rgba(239,68,68,0.12);padding:5px 9px;border-radius:6px;border:1px solid rgba(239,68,68,0.3)">'+
-            '<input type="radio" name="chk-'+item.id+'" value="NG" '+(isNG?'checked':'')+' onchange="toggleRemark('+item.id+')" style="accent-color:#ef4444;cursor:pointer;margin:0;width:14px;height:14px"/> <span style="color:#ef4444;font-weight:bold;font-size:12px">NG</span>'+
-          '</label>'+
-        '</div>'+
-      '</td>'+
-      '<td style="padding:10px 8px"><input id="remark-'+item.id+'" placeholder="ระบุสาเหตุ (ถ้า NG)" value="'+(p.remark||'')+'" style="font-size:11px;padding:6px 8px;width:100%;min-width:120px;'+(isNG?'border-color:var(--danger)':'')+'"/></td>'+
+      '<td style="padding:8px 6px;text-align:center;width:140px;min-width:140px">'+resultCell+'</td>'+
+      '<td style="padding:10px 8px">'+remarkInput+'</td>'+
     '</tr>';
   }).join('');
+
+  var adhocBtnHtml = '';
+  if (!isReadOnly) {
+    adhocBtnHtml = 
+      '<div id="tpm-adhoc-btn-wrap" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+        '<button type="button" class="btn btn-outline btn-sm" onclick="addTPMAdhocItemRow()" style="font-size:11.5px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">' +
+          '<span>➕</span> <span>เพิ่มหัวข้อตรวจเฉพาะกิจในรอบนี้</span>' +
+        '</button>' +
+        '<span style="font-size:11px;color:var(--text-muted);">* หัวข้อเฉพาะโมลและเฉพาะรอบจะถูกลงใบรายงาน A4 ให้อัตโนมัติ</span>' +
+      '</div>';
+  }
 
   document.getElementById('tpm-checklist-items').innerHTML=
     '<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse"><thead><tr style="background:var(--surface2)">'+
@@ -5320,15 +5439,69 @@ function openTPMCompleteModal(planId){
     '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">มาตรฐาน</th>'+
     '<th style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted);width:140px;min-width:140px">ผล</th>'+
     '<th style="padding:8px;text-align:left;font-size:11px;color:var(--text-muted)">Remark</th>'+
-    '</tr></thead><tbody id="tpm-checklist-tbody">'+rows+'</tbody></table></div>' +
-    '<div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
-      '<button type="button" class="btn btn-outline btn-sm" onclick="addTPMAdhocItemRow()" style="font-size:11.5px;padding:4px 10px;display:inline-flex;align-items:center;gap:5px;">' +
-        '<span>➕</span> <span>เพิ่มหัวข้อตรวจเฉพาะกิจในรอบนี้</span>' +
-      '</button>' +
-      '<span style="font-size:11px;color:var(--text-muted);">* หัวข้อเฉพาะโมลและเฉพาะรอบจะถูกลงใบรายงาน A4 ให้อัตโนมัติ</span>' +
-    '</div>';
+    '</tr></thead><tbody id="tpm-checklist-tbody">'+rows+'</tbody></table></div>' + adhocBtnHtml;
+
+  // Handle Photos
+  var uploadBox = document.getElementById('tpm-complete-upload-box');
+  if (uploadBox) uploadBox.style.display = isReadOnly ? 'none' : 'block';
+
+  STATE.pendingPhotos['tpm-complete']={files:[]};
+  var previewGrid = document.getElementById('tpm-complete-photos-preview');
+  if (previewGrid) {
+    var existingPhotos = tryParse(plan.ImageIds);
+    if (existingPhotos && existingPhotos.length > 0) {
+      previewGrid.innerHTML = 
+        '<div style="width:100%;font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">📷 รูปภาพผลการตรวจที่บันทึกไว้ (' + existingPhotos.length + ' รูป):</div>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
+        existingPhotos.map(function(url) {
+          return '<img src="' + url + '" onclick="window.open(\'' + url + '\', \'_blank\')" style="width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" title="คลิกเพื่อดูรูปขยาย" />';
+        }).join('') + '</div>';
+    } else {
+      previewGrid.innerHTML = isReadOnly ? '<div style="color:var(--text-faint);font-size:12px;margin-top:4px;">ไม่มีรูปภาพแนบในรอบนี้</div>' : '';
+    }
+  }
+
+  // Handle Footer Buttons
+  var footer = document.getElementById('tpm-complete-footer');
+  if (footer) {
+    if (isReadOnly) {
+      var printBtn = (plan.TargetType === 'Mold' && plan.TargetID)
+        ? '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\'); openPMPrintForm(\'' + plan.TargetID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร A4</button> '
+        : '';
+      footer.innerHTML = 
+        '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
+        printBtn +
+        '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกเพื่อแก้ไข (เฉพาะ Admin)</button>';
+    } else if (isDone && STATE._tpmEditUnlocked) {
+      footer.innerHTML = 
+        '<button type="button" class="btn btn-outline" onclick="lockTPMViewMode(\'' + plan.ID + '\')">ยกเลิก</button> ' +
+        '<button type="button" class="btn btn-primary" onclick="completeTPM()">💾 บันทึกการแก้ไข</button>';
+    } else {
+      footer.innerHTML = 
+        '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ยกเลิก</button> ' +
+        '<button type="button" class="btn btn-success" id="tpm-complete-submit-btn" onclick="completeTPM()">✅ บันทึกผล</button>';
+    }
+  }
 
   openModal('tpm-complete-modal');
+}
+
+function requestUnlockTPM(planId) {
+  var role = getCurrentRole();
+  if (role !== 'Admin') {
+    STATE._pendingTPMUnlockId = planId;
+    openAdminPassModal();
+    showToast('🔒 สิทธิ์เฉพาะผู้ดูแลระบบ (Admin) เท่านั้น กรุณากรอกรหัสผ่านเพื่อปลดล็อก', 'warning');
+    return;
+  }
+
+  if (confirm('คุณต้องการปลดล็อกแผน TPM นี้เพื่อแก้ไขข้อมูลใช่หรือไม่?')) {
+    openTPMCompleteModal(planId, true);
+  }
+}
+
+function lockTPMViewMode(planId) {
+  openTPMCompleteModal(planId, false);
 }
 
 function addTPMAdhocItemRow() {
@@ -5470,11 +5643,31 @@ async function completeTPM(){
     return;
   }
 
-  showGlobalLoading(true);var imgIds=await uploadPendingPhotos('tpm-complete','TPM_Records');
-  var data={ID:planId,ActualDate:actualDate,ActualBy:actualBy,CoInspector:coInspector,Notes:v('tpm-complete-notes'),ChecklistResult:JSON.stringify(checks),ImageIds:JSON.stringify(imgIds)};
-  var r=await api('completeTPMPlan',{data:data});showGlobalLoading(false);
-  if(r.success){showToast('บันทึกผล TPM สำเร็จ ✅','success');closeModal('tpm-complete-modal');await loadTPMPlans();}
-  else showToast('ผิดพลาด: '+r.error,'error');
+  showGlobalLoading(true);
+  var newImgIds = await uploadPendingPhotos('tpm-complete','TPM_Records');
+  var existingPlan = STATE.tpmPlans.find(function(p){ return p.ID === planId; });
+  var existingImgIds = existingPlan ? tryParse(existingPlan.ImageIds) : [];
+  var finalImgIds = (newImgIds && newImgIds.length > 0) ? existingImgIds.concat(newImgIds) : existingImgIds;
+
+  var data = {
+    ID: planId,
+    ActualDate: actualDate,
+    ActualBy: actualBy,
+    CoInspector: coInspector,
+    Notes: v('tpm-complete-notes'),
+    ChecklistResult: JSON.stringify(checks),
+    ImageIds: JSON.stringify(finalImgIds)
+  };
+  var r = await api('completeTPMPlan', { data: data });
+  showGlobalLoading(false);
+  if (r.success) {
+    STATE._tpmEditUnlocked = false;
+    showToast('บันทึกผล TPM สำเร็จ ✅', 'success');
+    closeModal('tpm-complete-modal');
+    await loadTPMPlans();
+  } else {
+    showToast('ผิดพลาด: ' + r.error, 'error');
+  }
 }
 
 // ============================================
