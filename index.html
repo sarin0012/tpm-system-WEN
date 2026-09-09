@@ -83,7 +83,8 @@ tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:non
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
 .badge.active,.badge.done,.badge.closed{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
-.badge.planned,.badge.in-progress{background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);}
+.badge.planned{background:rgba(59,130,246,.2) !important;color:#38bdf8 !important;border:1px solid rgba(56,189,248,.4) !important;}
+.badge.in-progress{background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);}
 .badge.overdue,.badge.critical,.badge.open{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
 .badge.warning,.badge.pending,.badge.high{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
 .badge.medium{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
@@ -1308,6 +1309,7 @@ body.role-engineer .role-admin-only { display: none !important; }
   <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-modal-title">🚨 แจ้งปัญหา / แก้ไขข้อมูล</div><button class="modal-close" onclick="closeModal('issue-modal')">✕</button></div>
   <div class="modal-body">
     <input type="hidden" id="issue-id"/>
+    <div id="issue-lock-banner" style="display:none;margin-bottom:14px;"></div>
     
     <!-- SECTION 1: ข้อมูลแจ้งปัญหา (BEFORE) -->
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
@@ -1398,7 +1400,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
 
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">ยกเลิก</button><button class="btn btn-primary" onclick="saveIssue()">💾 บันทึกการเปลี่ยนแปลง</button></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-modal')">ยกเลิก</button><button class="btn btn-primary" id="btn-save-issue" onclick="saveIssue()">💾 บันทึกการเปลี่ยนแปลง</button></div>
   </div>
 </div>
 
@@ -6221,8 +6223,129 @@ function loadIssueTargets(selectedTargetId){
   populateIssueEditPartSelect(selectedTargetId || s.value);
 }
 
+function toggleIssueFormLock(locked) {
+  STATE._issueEditUnlocked = !locked;
+  
+  var modalEl = document.getElementById('issue-modal');
+  if (!modalEl) return;
+  
+  var fields = modalEl.querySelectorAll('input:not([type="hidden"]), select, textarea');
+  fields.forEach(function(el) {
+    el.disabled = locked;
+    el.style.cursor = locked ? 'not-allowed' : '';
+    if (locked) {
+      el.style.background = 'var(--surface)';
+      el.style.opacity = '0.85';
+    } else {
+      el.style.background = '';
+      el.style.opacity = '';
+    }
+  });
+
+  var uploadAreas = modalEl.querySelectorAll('.photo-upload-area');
+  uploadAreas.forEach(function(area) {
+    area.style.pointerEvents = locked ? 'none' : '';
+    area.style.opacity = locked ? '0.5' : '';
+    area.style.cursor = locked ? 'not-allowed' : 'pointer';
+  });
+
+  var photoRemovers = modalEl.querySelectorAll('.photo-remove');
+  photoRemovers.forEach(function(btn) {
+    btn.style.display = locked ? 'none' : 'flex';
+  });
+
+  var partAddBtn = modalEl.querySelector('button[onclick*="addIssueEditPart"]');
+  if (partAddBtn) {
+    partAddBtn.disabled = locked;
+    partAddBtn.style.opacity = locked ? '0.5' : '1';
+    partAddBtn.style.cursor = locked ? 'not-allowed' : 'pointer';
+  }
+
+  var partRemovers = modalEl.querySelectorAll('#issue-edit-parts-list button');
+  partRemovers.forEach(function(b) {
+    b.disabled = locked;
+    b.style.display = locked ? 'none' : '';
+  });
+
+  var saveBtn = document.getElementById('btn-save-issue');
+  if (saveBtn) {
+    saveBtn.disabled = locked;
+    saveBtn.style.opacity = locked ? '0.5' : '1';
+    saveBtn.style.cursor = locked ? 'not-allowed' : 'pointer';
+    saveBtn.title = locked ? 'กรุณากดยืนยันปลดล็อกเพื่อแก้ไขด้านบนก่อน' : 'บันทึกการเปลี่ยนแปลง';
+  }
+}
+
+function updateIssueLockBanner(isLocked) {
+  var banner = document.getElementById('issue-lock-banner');
+  if (!banner) return;
+  var issueId = v('issue-id');
+  var iss = (STATE.issues || []).find(function(x) { return x.ID === issueId; });
+  var code = iss ? getIssueDisplayCode(iss) : issueId;
+  var targetName = iss ? (iss.TargetName || '') : '';
+
+  if (isLocked) {
+    banner.style.display = 'block';
+    banner.innerHTML = 
+      '<div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:var(--r-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:20px;">🔒</span>' +
+          '<div>' +
+            '<strong style="color:#f59e0b;font-size:13px;">แบบฟอร์มถูกล็อกไว้ (โหมดป้องกันการแก้ไขข้อมูลโดยไม่ตั้งใจ)</strong>' +
+            '<div style="font-size:11px;color:var(--text-muted);margin-top:1px;">ปัญหา #' + code + (targetName ? (' (' + targetName + ')') : '') + ' บันทึกแล้ว หากต้องการแก้ไข ต้องกดยืนยันปลดล็อกก่อน</div>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-warning btn-sm" onclick="requestUnlockIssueEdit()" style="font-weight:700;display:flex;align-items:center;gap:5px;box-shadow:0 0 10px rgba(245,158,11,0.25);">' +
+          '<span>🔓</span> <span>ยืนยันปลดล็อกเพื่อแก้ไข</span>' +
+        '</button>' +
+      '</div>';
+  } else {
+    banner.style.display = 'block';
+    banner.innerHTML = 
+      '<div style="background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.35);border-radius:var(--r-sm);padding:8px 12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;">' +
+          '<span style="font-size:18px;">✏️</span>' +
+          '<div>' +
+            '<strong style="color:var(--primary);font-size:12.5px;">ปลดล็อกแล้ว (โหมดแก้ไขข้อมูล)</strong>' +
+            '<div style="font-size:11px;color:var(--text-muted);">สามารถแก้ไขรายละเอียด, อะไหล่, รูปภาพได้ แล้วกดบันทึกการเปลี่ยนแปลงด้านล่าง</div>' +
+          '</div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-ghost btn-sm" onclick="relockIssueEdit()" style="border:1px solid var(--border);color:var(--text-muted);font-size:11px;">🔒 ยกเลิกการแก้ไข (ล็อกฟอร์ม)</button>' +
+      '</div>';
+  }
+}
+
+function requestUnlockIssueEdit() {
+  var issueId = v('issue-id');
+  var iss = (STATE.issues || []).find(function(x) { return x.ID === issueId; });
+  var code = iss ? getIssueDisplayCode(iss) : issueId;
+  var targetName = iss ? (iss.TargetName || '') : '';
+  
+  var confirmMsg = '⚠️ ยืนยันการปลดล็อกเพื่อแก้ไขข้อมูลปัญหา #' + code + (targetName ? (' (' + targetName + ')') : '') + ' หรือไม่?\n\n' +
+                   '• เพื่อป้องกันการแก้ไขข้อมูลผิดพลาดหรือซ้ำซ้อน\n' +
+                   '• กรุณาตรวจสอบข้อมูลอย่างระมัดระวังก่อนบันทึก';
+  if (!confirm(confirmMsg)) return;
+
+  toggleIssueFormLock(false);
+  updateIssueLockBanner(false);
+  showToast('🔓 ปลดล็อกแบบฟอร์มแล้ว สามารถแก้ไขข้อมูลได้', 'info');
+}
+
+function relockIssueEdit() {
+  toggleIssueFormLock(true);
+  updateIssueLockBanner(true);
+  showToast('🔒 ล็อกแบบฟอร์มเพื่อป้องกันข้อมูลแล้ว', 'info');
+}
+
 function openIssueModal(issueOrId){
   if (!can('issues', 'edit')) {
+    if (issueOrId) {
+      var targetId = typeof issueOrId === 'string' ? issueOrId : (issueOrId && issueOrId.ID);
+      if (targetId) {
+        openIssueDetailModal(targetId);
+        return;
+      }
+    }
     showToast('คุณไม่มีสิทธิ์แจ้งหรือแก้ไขปัญหา (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
     return;
   }
@@ -6328,6 +6451,9 @@ function openIssueModal(issueOrId){
         gridTrial.appendChild(item);
       });
     }
+    // Lock form by default for existing issue to prevent accidental edits
+    toggleIssueFormLock(true);
+    updateIssueLockBanner(true);
   } else {
     if (titleEl) titleEl.textContent = '🚨 แจ้งปัญหา';
     v_set('issue-occurred', new Date().toISOString().slice(0,16));
@@ -6348,6 +6474,11 @@ function openIssueModal(issueOrId){
     loadIssueTargets();
     if (secAfter) secAfter.style.display = 'none';
     if (secTrial) secTrial.style.display = 'none';
+
+    // New issue is directly editable
+    toggleIssueFormLock(false);
+    var banner = document.getElementById('issue-lock-banner');
+    if (banner) banner.style.display = 'none';
   }
   openModal('issue-modal');
 }
@@ -6356,6 +6487,18 @@ async function saveIssue(){
   if (!can('issues', 'edit')) {
     showToast('คุณไม่มีสิทธิ์บันทึกหรือแก้ไขปัญหา', 'error');
     return;
+  }
+  var editId = v('issue-id');
+  if (editId && !STATE._issueEditUnlocked) {
+    showToast('แบบฟอร์มยังถูกล็อกอยู่ กรุณากดยืนยันปลดล็อกเพื่อแก้ไขด้านบนก่อน', 'warning');
+    return;
+  }
+  if (editId) {
+    var existingIssue = (STATE.issues || []).find(function(x){ return x.ID === editId; });
+    var code = existingIssue ? getIssueDisplayCode(existingIssue) : editId;
+    if (!confirm('⚠️ ยืนยันบันทึกการเปลี่ยนแปลงข้อมูลปัญหา #' + code + ' ใช่หรือไม่?')) {
+      return;
+    }
   }
   try {
     var targetId = v('issue-target-id'), desc = v('issue-description');
@@ -6434,6 +6577,8 @@ async function saveIssue(){
       renderIssues();
       renderStock();
       updateBadges();
+      STATE._issueEditUnlocked = false;
+      if (STATE._currentQRAsset) renderAsset360Profile(STATE._currentQRAsset.ID);
     } else {
       showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
     }
@@ -10031,6 +10176,21 @@ function renderAsset360Profile(target) {
     if (item.PurchaseDate) specsHtml += '<div class="qr-spec-chip"><strong>วันที่ซื้อ:</strong> ' + item.PurchaseDate + '</div>';
   }
 
+  // Current Month TPM Badge with distinct green for Done and bright blue for Planned
+  var curMonthBadge = '<span style="color:var(--text-faint)">ยังไม่มีแผนเดือนนี้</span>';
+  if (curMonthPlan) {
+    var cmpStatus = curMonthPlan.Status || 'Planned';
+    if (cmpStatus === 'Done') {
+      curMonthBadge = '<span class="badge done" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-weight:700;">✅ Done (เสร็จสิ้น)</span>';
+    } else if (cmpStatus === 'Planned') {
+      curMonthBadge = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-weight:700;">📅 Planned (ตามแผน)</span>';
+    } else if (cmpStatus === 'Overdue') {
+      curMonthBadge = '<span class="badge overdue" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);font-weight:700;">⚠️ Overdue</span>';
+    } else {
+      curMonthBadge = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-weight:700;">' + cmpStatus + '</span>';
+    }
+  }
+
   // HTML Structure
   var html = 
     '<!-- HERO 360 HEADER -->' +
@@ -10089,7 +10249,7 @@ function renderAsset360Profile(target) {
         '</div>' +
         '<div style="padding:10px 14px;background:var(--surface2);border-radius:8px;margin-bottom:12px;font-size:12px;display:flex;align-items:center;justify-content:space-between;">' +
           '<span>สถานะเดือนนี้ (เดือน ' + curMonth + '):</span>' +
-          '<span>' + (curMonthPlan ? ('<span class="badge ' + (curMonthPlan.Status||'').toLowerCase() + '">' + (curMonthPlan.Status||'Planned') + '</span>') : '<span style="color:var(--text-faint)">ยังไม่มีแผนเดือนนี้</span>') + '</span>' +
+          '<span>' + curMonthBadge + '</span>' +
         '</div>' +
         '<div style="flex:1;overflow-y:auto;max-height:280px;">' +
           (plans.length ? 
@@ -10097,20 +10257,27 @@ function renderAsset360Profile(target) {
               '<thead><tr style="border-bottom:1px solid var(--border);color:var(--text-muted);text-align:left;">' +
                 '<th style="padding:6px 8px;">รอบเดือน / วันที่</th>' +
                 '<th style="padding:6px 8px;">สถานะ</th>' +
-                '<th style="padding:6px 8px;">ช่างผู้ตรวจ</th>' +
                 '<th style="padding:6px 8px;text-align:right;">จัดการ</th>' +
               '</tr></thead>' +
               '<tbody>' +
                 plans.slice(0, 8).map(function(p) {
                   var pStatus = p.Status || 'Planned';
-                  var badgeCls = pStatus === 'Done' ? 'done' : (pStatus === 'Overdue' ? 'danger' : 'active');
+                  var badgeHtml = '';
+                  if (pStatus === 'Done') {
+                    badgeHtml = '<span class="badge done" style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);font-size:10px;padding:2px 8px;font-weight:600;">Done</span>';
+                  } else if (pStatus === 'Planned') {
+                    badgeHtml = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:10px;padding:2px 8px;font-weight:600;">Planned</span>';
+                  } else if (pStatus === 'Overdue') {
+                    badgeHtml = '<span class="badge overdue" style="background:rgba(239,68,68,0.2);color:#f87171;border:1px solid rgba(239,68,68,0.4);font-size:10px;padding:2px 8px;font-weight:600;">Overdue</span>';
+                  } else {
+                    badgeHtml = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:10px;padding:2px 8px;font-weight:600;">' + pStatus + '</span>';
+                  }
                   var dt = p.ActualDate || p.PlanDate || (p.PlanMonth ? ('เดือน ' + p.PlanMonth) : '-');
                   return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
                     '<td style="padding:6px 8px;font-weight:600;">' + dt + '</td>' +
-                    '<td style="padding:6px 8px;"><span class="badge ' + badgeCls + '" style="font-size:10px;padding:2px 6px;">' + pStatus + '</span></td>' +
-                    '<td style="padding:6px 8px;color:var(--text-muted);">' + (p.TechnicianName || '-') + '</td>' +
+                    '<td style="padding:6px 8px;">' + badgeHtml + '</td>' +
                     '<td style="padding:6px 8px;text-align:right;">' +
-                      '<button class="btn btn-ghost btn-sm" onclick="openTPMCompleteModal(\'' + p.ID + '\')" style="padding:2px 6px;font-size:11px;">' + (pStatus==='Done'?'ดูผล':'บันทึก') + '</button>' +
+                      '<button class="btn btn-ghost btn-sm" onclick="openTPMCompleteModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;color:' + (pStatus==='Done'?'#34d399':'#38bdf8') + ';">' + (pStatus==='Done'?'ดูผล':'บันทึก') + '</button>' +
                     '</td>' +
                   '</tr>';
                 }).join('') +
@@ -10138,15 +10305,29 @@ function renderAsset360Profile(target) {
               issues.slice(0, 8).map(function(iss) {
                 var isOpen = (iss.Status || 'Open') === 'Open' || (iss.Status || 'Open') === 'In Progress';
                 var code = getIssueDisplayCode(iss);
-                return '<div style="background:var(--surface2);border:1px solid ' + (isOpen ? 'rgba(239,68,68,0.3)' : 'var(--border)') + ';border-radius:8px;padding:8px 10px;cursor:pointer;" onclick="openIssueModal(\'' + iss.ID + '\')">' +
-                  '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                return '<div style="background:var(--surface2);border:1px solid ' + (isOpen ? 'rgba(239,68,68,0.35)' : 'var(--border)') + ';border-radius:8px;padding:10px 12px;cursor:pointer;transition:border-color 0.2s;" onclick="openIssueDetailModal(\'' + iss.ID + '\')">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">' +
                     '<div style="font-weight:700;font-size:12px;color:var(--text);">#' + code + ' <span style="font-weight:400;color:var(--text-muted);margin-left:4px;">(' + (iss.IssueType||'ปัญหา') + ')</span></div>' +
                     '<span class="badge ' + (isOpen ? 'danger' : 'done') + '" style="font-size:9px;padding:2px 6px;">' + (iss.Status||'Open') + '</span>' +
                   '</div>' +
-                  '<div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (iss.Description || '-') + '</div>' +
-                  '<div style="font-size:10px;color:var(--text-faint);margin-top:4px;display:flex;justify-content:space-between;">' +
-                    '<span>🕒 ' + (iss.OccurredAt ? iss.OccurredAt.slice(0,10) : '-') + '</span>' +
-                    '<span>👤 ' + (iss.ReportedBy || '-') + '</span>' +
+                  '<div style="font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;">' + (iss.Description || '-') + '</div>' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px dashed var(--border);">' +
+                    '<div style="font-size:10px;color:var(--text-faint);display:flex;gap:8px;">' +
+                      '<span>🕒 ' + (iss.OccurredAt ? iss.OccurredAt.slice(0,10) : '-') + '</span>' +
+                      '<span>👤 ' + (iss.ReportedBy || '-') + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:4px;align-items:center;">' +
+                      '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openIssueDetailModal(\'' + iss.ID + '\')" style="padding:2px 8px;font-size:11px;color:#38bdf8;border-color:rgba(56,189,248,0.4);" title="ดูรายละเอียดปัญหา">' +
+                        '🔍 View' +
+                      '</button>' +
+                      '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();printIssueReport(\'' + iss.ID + '\')" style="padding:2px 8px;font-size:11px;color:var(--text-muted);" title="พิมพ์ใบแจ้งปัญหา">' +
+                        '🖨️ Print' +
+                      '</button>' +
+                      (can('issues', 'edit') ? 
+                        '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openIssueModal(\'' + iss.ID + '\')" style="padding:2px 8px;font-size:11px;color:#f59e0b;" title="แก้ไขข้อมูลปัญหา">' +
+                          '✏️ แก้ไข' +
+                        '</button>' : '') +
+                    '</div>' +
                   '</div>' +
                 '</div>';
               }).join('') +
