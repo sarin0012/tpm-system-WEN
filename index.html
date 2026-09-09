@@ -522,6 +522,107 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     font-size: 12.5px !important;
   }
 
+  /* --- SAAS OPERATIONS HUB & DASHBOARD ON MOBILE --- */
+  .saas-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 16px !important;
+    padding-bottom: 14px !important;
+    width: 100% !important;
+  }
+  .saas-page-title-wrap {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .saas-page-icon {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    font-size: 16px !important;
+    flex-shrink: 0 !important;
+  }
+  .saas-page-title {
+    font-size: 16.5px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+  }
+  .saas-page-subtitle {
+    font-size: 11px !important;
+    color: var(--text-muted) !important;
+    line-height: 1.35 !important;
+    margin-top: 2px !important;
+  }
+  .saas-tabs-control {
+    width: 100% !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 4px !important;
+    padding: 3px !important;
+    border-radius: 10px !important;
+    background: #14151c !important;
+    box-sizing: border-box !important;
+  }
+  .saas-tab-btn {
+    width: 100% !important;
+    min-width: 0 !important;
+    padding: 7px 4px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    border-radius: 7px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  .saas-tab-btn span {
+    font-size: 12px !important;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  .chart-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+  .stat-card {
+    padding: 14px 14px !important;
+    border-radius: 14px !important;
+  }
+  .stat-card-micro-pill {
+    margin-bottom: 8px !important;
+  }
+  .stat-value {
+    font-size: 24px !important;
+  }
+  .stat-label {
+    font-size: 10.5px !important;
+  }
+  .stat-sub {
+    font-size: 10px !important;
+    margin-top: 6px !important;
+  }
+  .stat-icon {
+    right: 12px !important;
+    top: 12px !important;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 13px !important;
+  }
+  .dash-category-header {
+    margin: 18px 0 10px 0 !important;
+  }
+
   /* --- QR SCAN PAGE ON MOBILE --- */
   #page-qr-scan .toolbar {
     flex-direction: column !important;
@@ -810,6 +911,8 @@ body.role-engineer .role-admin-only { display: none !important; }
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
   margin-bottom: 22px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
