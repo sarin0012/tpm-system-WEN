@@ -2779,7 +2779,7 @@ async function _apiInternal(actionStr, payload = null) {
 
       // TPM PLANS
       case 'getTPMPlans': {
-        let query = sb.from('tpm_plans').select('ID, TargetType, TargetID, TargetName, PlannedDate, Frequency, VendorResp, Notes, Status, ActualDate, ActualBy, CoInspector, ChecklistResult, CreatedAt');
+        let query = sb.from('tpm_plans').select('ID, TargetType, TargetID, TargetName, Year, PlannedDate, AssignedTo, ChecklistTemplate, Status, ActualDate, ActualBy, ChecklistResult, Notes, AfterImageIds, CreatedAt');
         const yr = (payload && payload.year) || urlParams.year;
         const fyr = (payload && payload.fyear) || urlParams.fyear;
         if (fyr) {
