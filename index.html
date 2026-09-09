@@ -10111,12 +10111,40 @@ function renderAsset360Profile(target) {
   }
   if (btnPrint) btnPrint.style.display = 'inline-flex';
 
-  // Gather TPM plans for this asset
+  // Helper to score TPM plans chronologically (Oldest on top -> Latest at the bottom)
+  function getTPMPlanSortScore(p) {
+    var yr = parseInt(p.PlanYear || p.Year || 0, 10);
+    var mo = parseInt(p.PlanMonth || p.Month || 0, 10);
+    var dtStr = p.PlannedDate || p.PlanDate || p.ActualDate || '';
+    if (dtStr) {
+      if (dtStr.indexOf('-') !== -1) {
+        var parts = dtStr.split('-');
+        if (parts.length >= 3) {
+          var y = parseInt(parts[0], 10) || yr;
+          var m = parseInt(parts[1], 10) || mo;
+          var d = parseInt(parts[2].slice(0, 2), 10) || 1;
+          return y * 10000 + m * 100 + d;
+        }
+      } else if (dtStr.indexOf('/') !== -1) {
+        var parts2 = dtStr.split('/');
+        if (parts2.length >= 3) {
+          var d2 = parseInt(parts2[0], 10) || 1;
+          var m2 = parseInt(parts2[1], 10) || mo;
+          var y2 = parseInt(parts2[2], 10) || yr;
+          return y2 * 10000 + m2 * 100 + d2;
+        }
+      }
+    }
+    if (!yr) yr = 2026;
+    return yr * 10000 + (mo || 1) * 100 + 1;
+  }
+
+  // Gather TPM plans for this asset (Sorted: Oldest first -> Latest at the bottom)
   var plans = (STATE.tpmPlans || []).filter(function(p) {
     return (p.TargetID && p.TargetID === item.ID) || 
            (p.TargetName && item.Name && p.TargetName.toLowerCase() === item.Name.toLowerCase());
   }).sort(function(a, b) {
-    return (b.PlanDate || b.PlanMonth || '').localeCompare(a.PlanDate || a.PlanMonth || '');
+    return getTPMPlanSortScore(a) - getTPMPlanSortScore(b);
   });
 
   // Check current month TPM
@@ -10251,16 +10279,16 @@ function renderAsset360Profile(target) {
           '<span>สถานะเดือนนี้ (เดือน ' + curMonth + '):</span>' +
           '<span>' + curMonthBadge + '</span>' +
         '</div>' +
-        '<div style="flex:1;overflow-y:auto;max-height:280px;">' +
+        '<div style="flex:1;overflow-y:auto;max-height:280px;" id="qr-tpm-plans-container">' +
           (plans.length ? 
             '<table style="width:100%;font-size:12px;border-collapse:collapse;">' +
               '<thead><tr style="border-bottom:1px solid var(--border);color:var(--text-muted);text-align:left;">' +
-                '<th style="padding:6px 8px;">รอบเดือน / วันที่</th>' +
-                '<th style="padding:6px 8px;">สถานะ</th>' +
+                '<th style="padding:6px 8px;">งวดแผน / กำหนดตรวจ (วัน/เดือน/ปี)</th>' +
+                '<th style="padding:6px 8px;text-align:center;">สถานะ</th>' +
                 '<th style="padding:6px 8px;text-align:right;">จัดการ</th>' +
               '</tr></thead>' +
               '<tbody>' +
-                plans.slice(0, 8).map(function(p) {
+                plans.map(function(p) {
                   var pStatus = p.Status || 'Planned';
                   var badgeHtml = '';
                   if (pStatus === 'Done') {
@@ -10272,11 +10300,62 @@ function renderAsset360Profile(target) {
                   } else {
                     badgeHtml = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:10px;padding:2px 8px;font-weight:600;">' + pStatus + '</span>';
                   }
-                  var dt = p.ActualDate || p.PlanDate || (p.PlanMonth ? ('เดือน ' + p.PlanMonth) : '-');
-                  return '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-                    '<td style="padding:6px 8px;font-weight:600;">' + dt + '</td>' +
-                    '<td style="padding:6px 8px;">' + badgeHtml + '</td>' +
-                    '<td style="padding:6px 8px;text-align:right;">' +
+
+                  // Determine Month & Year
+                  var thaiMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+                  var mNum = parseInt(p.PlanMonth || p.Month || 0, 10);
+                  var yNum = parseInt(p.PlanYear || p.Year || 0, 10);
+                  var dtRaw = p.PlannedDate || p.PlanDate || p.ActualDate || '';
+                  if (!mNum && dtRaw) {
+                    if (dtRaw.indexOf('-') !== -1) {
+                      var pt = dtRaw.split('-');
+                      if (pt.length >= 2) { if (!yNum) yNum = parseInt(pt[0], 10); mNum = parseInt(pt[1], 10); }
+                    } else if (dtRaw.indexOf('/') !== -1) {
+                      var pt2 = dtRaw.split('/');
+                      if (pt2.length >= 2) { mNum = parseInt(pt2[1], 10); if (!yNum && pt2.length >= 3) yNum = parseInt(pt2[2], 10); }
+                    }
+                  }
+                  if (!yNum) yNum = new Date().getFullYear();
+                  var mName = (mNum >= 1 && mNum <= 12) ? thaiMonths[mNum] : (mNum ? ('เดือน ' + mNum) : 'รอบตรวจ');
+                  var periodText = 'รอบเดือน ' + mName + ' ' + yNum;
+
+                  // Subtitle Date in วัน/เดือน/ปี (DD/MM/YYYY)
+                  var subDateHtml = '';
+                  var planDateStr = (p.PlannedDate || p.PlanDate) ? formatDMY(p.PlannedDate || p.PlanDate) : '';
+                  var actDateStr = p.ActualDate ? formatDMY(p.ActualDate) : '';
+
+                  if (pStatus === 'Done') {
+                    if (actDateStr) {
+                      subDateHtml = '<div style="font-size:11px;color:#34d399;margin-top:2px;">✅ ตรวจแล้ว: <strong>' + actDateStr + '</strong>' + (planDateStr && planDateStr !== actDateStr ? ' <span style="font-size:10px;color:var(--text-muted);">(แผน: ' + planDateStr + ')</span>' : '') + '</div>';
+                    } else {
+                      subDateHtml = '<div style="font-size:11px;color:#34d399;margin-top:2px;">✅ ตรวจเสร็จสิ้น' + (planDateStr ? ' (แผน: ' + planDateStr + ')' : '') + '</div>';
+                    }
+                  } else if (pStatus === 'Planned') {
+                    if (planDateStr) {
+                      subDateHtml = '<div style="font-size:11px;color:#38bdf8;margin-top:2px;">📅 แผน: <strong>' + planDateStr + '</strong></div>';
+                    } else {
+                      subDateHtml = '<div style="font-size:11px;color:#38bdf8;margin-top:2px;">📅 กำหนดตามรอบเดือน</div>';
+                    }
+                  } else if (pStatus === 'Overdue') {
+                    subDateHtml = '<div style="font-size:11px;color:#f87171;margin-top:2px;">⚠️ เกินกำหนด: <strong>' + (planDateStr || 'ตามรอบ') + '</strong></div>';
+                  } else {
+                    var anyDate = formatDMY(p.PlannedDate || p.PlanDate || p.ActualDate);
+                    subDateHtml = anyDate ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">📅 วันที่: ' + anyDate + '</div>' : '';
+                  }
+
+                  var isCurrent = (mNum === curMonth);
+                  var rowBg = isCurrent ? 'background:rgba(56,189,248,0.06);' : '';
+
+                  return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);' + rowBg + '">' +
+                    '<td style="padding:8px 8px;">' +
+                      '<div style="font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;">' +
+                        '<span>' + periodText + '</span>' +
+                        (isCurrent ? '<span class="badge" style="background:rgba(56,189,248,0.25);color:#38bdf8;font-size:9px;padding:1px 5px;font-weight:700;">เดือนนี้</span>' : '') +
+                      '</div>' +
+                      subDateHtml +
+                    '</td>' +
+                    '<td style="padding:8px 8px;text-align:center;">' + badgeHtml + '</td>' +
+                    '<td style="padding:8px 8px;text-align:right;">' +
                       '<button class="btn btn-ghost btn-sm" onclick="openTPMCompleteModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;color:' + (pStatus==='Done'?'#34d399':'#38bdf8') + ';">' + (pStatus==='Done'?'ดูผล':'บันทึก') + '</button>' +
                     '</td>' +
                   '</tr>';
