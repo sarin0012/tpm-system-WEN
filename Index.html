@@ -12,38 +12,38 @@
 <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
 :root{
-  --bg:#080c18;--surface:#0f1629;--surface2:#162036;--surface3:#1e2d4a;
-  --border:rgba(99,130,255,.12);--border2:rgba(99,130,255,.2);
-  --primary:#6366f1;--primary-g:linear-gradient(135deg,#6366f1,#8b5cf6);--primary-glow:rgba(99,102,241,.25);
+  --bg:#0e0f13;--surface:#15161d;--surface2:#1c1d25;--surface3:#242531;--surface-hover:#2b2d3b;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.12);
+  --primary:#6366f1;--primary-g:linear-gradient(135deg,#6366f1,#8b5cf6);--primary-glow:rgba(99,102,241,.18);
   --success:#10b981;--success-g:linear-gradient(135deg,#10b981,#059669);
   --warning:#f59e0b;--warning-g:linear-gradient(135deg,#f59e0b,#d97706);
   --danger:#ef4444;--danger-g:linear-gradient(135deg,#ef4444,#dc2626);
-  --text:#e2e8f0;--text-muted:#94a3b8;--text-faint:#475569;
-  --sidebar:240px;--header:64px;--r:14px;--r-sm:8px;
-  --shadow:0 8px 32px rgba(0,0,0,.5);--glass:rgba(255,255,255,.03);--glass-border:rgba(255,255,255,.08);
-  --transition:.2s ease;
+  --text:#f4f4f6;--text-muted:#9496a1;--text-faint:#636573;
+  --sidebar:240px;--header:64px;--r:18px;--r-sm:10px;
+  --shadow:0 8px 32px rgba(0,0,0,.45);--glass:rgba(255,255,255,.03);--glass-border:rgba(255,255,255,.07);
+  --transition:.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:14px;}
-body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 ::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px;}
 
 /* SIDEBAR */
-#sidebar{width:var(--sidebar);flex-shrink:0;height:100vh;position:fixed;top:0;left:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
-.sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
-.logo-icon{width:38px;height:38px;border-radius:10px;background:var(--primary-g);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 20px var(--primary-glow);}
-.logo-text{font-weight:700;font-size:13px;line-height:1.2;}
-.logo-text span{display:block;color:var(--text-muted);font-size:10px;font-weight:400;margin-top:1px;}
-.sidebar-nav{flex:1;overflow-y:auto;padding:12px 10px;}
-.nav-section{font-size:10px;font-weight:600;color:var(--text-faint);letter-spacing:.1em;padding:16px 10px 6px;text-transform:uppercase;}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:all var(--transition);color:var(--text-muted);font-size:13px;font-weight:500;margin-bottom:2px;border:1px solid transparent;}
-.nav-item:hover{background:var(--surface2);color:var(--text);border-color:var(--border);}
-.nav-item.active{background:var(--primary-glow);color:#a5b4fc;border-color:var(--border2);}
-.nav-item .icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-.nav-item.active .icon{background:var(--primary-g);box-shadow:0 0 12px var(--primary-glow);}
-.nav-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px;min-width:18px;text-align:center;}
+#sidebar{width:var(--sidebar);flex-shrink:0;height:100vh;position:fixed;top:0;left:0;background:#121318;border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.logo-icon{width:36px;height:36px;border-radius:10px;background:var(--primary-g);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 4px 14px var(--primary-glow);}
+.logo-text{font-weight:700;font-size:13.5px;line-height:1.25;color:#f4f4f6;}
+.logo-text span{display:block;color:var(--text-muted);font-size:10.5px;font-weight:500;margin-top:2px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:14px 12px;}
+.nav-section{font-size:10.5px;font-weight:700;color:var(--text-faint);letter-spacing:.08em;padding:16px 12px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:all var(--transition);color:var(--text-muted);font-size:13px;font-weight:500;margin-bottom:3px;border:1px solid transparent;}
+.nav-item:hover{background:#1c1d25;color:var(--text);border-color:rgba(255,255,255,.05);}
+.nav-item.active{background:#232236;color:#e0e7ff;border-color:rgba(99,102,241,.3);}
+.nav-item .icon{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:rgba(255,255,255,.04);}
+.nav-item.active .icon{background:var(--primary-g);color:#fff;box-shadow:0 4px 12px var(--primary-glow);}
+.nav-badge{margin-left:auto;background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.35);font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;}
 .sidebar-footer{padding:16px;border-top:1px solid var(--border);}
-.user-card{display:flex;align-items:center;gap:10px;padding:10px;background:var(--glass);border:1px solid var(--glass-border);border-radius:var(--r-sm);}
+.user-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#181920;border:1px solid var(--border);border-radius:12px;}
 .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--primary-g);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
 .user-info{flex:1;min-width:0;}
 .user-name{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -51,7 +51,7 @@ body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--t
 
 /* MAIN */
 #main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
-#header{height:var(--header);border-bottom:1px solid var(--border);background:rgba(8,12,24,.8);backdrop-filter:blur(20px);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;flex-shrink:0;}
+#header{height:var(--header);border-bottom:1px solid var(--border);background:rgba(14,15,19,.85);backdrop-filter:blur(20px);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;flex-shrink:0;}
 #header h1{font-size:18px;font-weight:700;flex:1;}
 #header h1 span{color:var(--text-muted);font-size:13px;font-weight:400;margin-left:8px;}
 #content{flex:1;overflow-y:auto;padding:24px;}
@@ -802,241 +802,361 @@ body.role-engineer .role-admin-only { display: none !important; }
 }
 
 /* ============================================================
-   DASHBOARD CATEGORY THEMES (DARK CYBER INDUSTRIAL)
+   MODERN DARK SAAS DESIGN SYSTEM (INSPIRED BY SYNTHAI / LINEAR)
    ============================================================ */
-.dash-category-header {
+
+/* Page Header & Segmented Tabs */
+.saas-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.saas-page-title-wrap {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 24px 0 12px 0;
+}
+.saas-page-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #1c1d26;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+.saas-page-title {
+  font-size: 19px;
+  font-weight: 700;
+  color: #f4f4f6;
+  letter-spacing: -0.02em;
+}
+.saas-page-subtitle {
+  font-size: 12px;
+  color: #9496a1;
+  font-weight: 400;
+  margin-top: 2px;
+}
+.saas-tabs-control {
+  display: inline-flex;
+  background: #14151c;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 3px;
+}
+.saas-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #9496a1;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all .16s ease;
+}
+.saas-tab-btn:hover {
+  color: #f4f4f6;
+  background: rgba(255, 255, 255, 0.04);
+}
+.saas-tab-btn.active {
+  color: #f4f4f6;
+  background: #232431;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Category Sections Header */
+.dash-category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 26px 0 14px 0;
 }
 .dash-category-header:first-child {
-  margin-top: 4px;
+  margin-top: 0;
 }
 .dash-cat-badge {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 14px;
-  border-radius: 9999px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(8px);
-  user-select: none;
+  padding: 6px 13px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #f4f4f6;
+  background: #181922;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 .dash-cat-badge .dash-cat-icon {
-  font-size: 15px;
+  font-size: 14px;
 }
 .dash-cat-badge .dash-cat-sub {
   font-size: 10px;
-  opacity: 0.8;
-  font-weight: 600;
-  letter-spacing: 0.8px;
+  color: #71717a;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   padding-left: 6px;
-  border-left: 1px solid currentColor;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
   margin-left: 2px;
 }
 .dash-cat-line {
   flex: 1;
   height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-left: 14px;
 }
 
-.badge-indigo {
-  background: rgba(99, 102, 241, 0.16);
-  border: 1px solid rgba(129, 140, 248, 0.35);
-  color: #c7d2fe;
+/* Stat Cards (Matte Dark SaaS with Minimal Micro-Accent Pill) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
 }
-.badge-indigo + .dash-cat-line {
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.4) 0%, transparent 100%);
+.stat-card {
+  background: #16171e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  padding: 18px 20px;
+  position: relative;
+  overflow: hidden;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
 }
-
-.badge-sky {
-  background: rgba(14, 165, 233, 0.16);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #bae6fd;
-}
-.badge-sky + .dash-cat-line {
-  background: linear-gradient(90deg, rgba(14, 165, 233, 0.4) 0%, transparent 100%);
-}
-
-.badge-rose {
-  background: rgba(244, 63, 94, 0.16);
-  border: 1px solid rgba(251, 113, 133, 0.35);
-  color: #fecdd3;
-}
-.badge-rose + .dash-cat-line {
-  background: linear-gradient(90deg, rgba(244, 63, 94, 0.4) 0%, transparent 100%);
-}
-
-.badge-emerald {
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  color: #a7f3d0;
-}
-.badge-emerald + .dash-cat-line {
-  background: linear-gradient(90deg, rgba(16, 185, 129, 0.4) 0%, transparent 100%);
-}
-
-/* Stat Cards Individual Themes */
-.stat-card-mold::before,
-.stat-card-machine::before,
-.stat-card-issues::before,
-.stat-card-tpm::before,
-.stat-card-stock::before {
+.stat-card::before {
   display: none !important;
 }
+.stat-card:hover {
+  transform: translateY(-2px);
+  background: #1c1d27;
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+.stat-card-micro-pill {
+  width: 28px;
+  height: 3px;
+  border-radius: 99px;
+  margin-bottom: 12px;
+}
+.stat-card-mold .stat-card-micro-pill { background: #818cf8; }
+.stat-card-machine .stat-card-micro-pill { background: #38bdf8; }
+.stat-card-issues .stat-card-micro-pill { background: #f43f5e; }
+.stat-card-tpm .stat-card-micro-pill { background: #10b981; }
+.stat-card-stock .stat-card-micro-pill { background: #f59e0b; }
 
-.stat-card-mold {
-  background: linear-gradient(145deg, rgba(99, 102, 241, 0.14) 0%, rgba(30, 27, 75, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
-  border: 1px solid rgba(129, 140, 248, 0.3) !important;
-  border-top: 3px solid #818cf8 !important;
-  box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.2) !important;
+.stat-label {
+  font-size: 11.5px;
+  color: #9496a1;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  margin-bottom: 8px;
 }
-.stat-card-mold:hover {
-  transform: translateY(-3px);
-  border-color: rgba(165, 180, 252, 0.55) !important;
-  box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.35) !important;
-}
-.stat-card-mold .stat-value {
-  color: #e0e7ff !important;
-  text-shadow: 0 0 18px rgba(129, 140, 248, 0.4);
-}
-.stat-card-mold .stat-label {
-  color: #a5b4fc !important;
-}
-
-.stat-card-machine {
-  background: linear-gradient(145deg, rgba(14, 165, 233, 0.14) 0%, rgba(12, 74, 110, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
-  border: 1px solid rgba(56, 189, 248, 0.3) !important;
-  border-top: 3px solid #38bdf8 !important;
-  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.2) !important;
-}
-.stat-card-machine:hover {
-  transform: translateY(-3px);
-  border-color: rgba(125, 211, 252, 0.55) !important;
-  box-shadow: 0 12px 30px -4px rgba(14, 165, 233, 0.35) !important;
-}
-.stat-card-machine .stat-value {
-  color: #e0f2fe !important;
-  text-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
-}
-.stat-card-machine .stat-label {
-  color: #7dd3fc !important;
-}
-
-.stat-card-issues {
-  background: linear-gradient(145deg, rgba(244, 63, 94, 0.16) 0%, rgba(136, 19, 55, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
-  border: 1px solid rgba(251, 113, 133, 0.35) !important;
-  border-top: 3px solid #f43f5e !important;
-  box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.25) !important;
-}
-.stat-card-issues:hover {
-  transform: translateY(-3px);
-  border-color: rgba(253, 164, 175, 0.6) !important;
-  box-shadow: 0 12px 30px -4px rgba(244, 63, 94, 0.4) !important;
-}
-.stat-card-issues .stat-value {
-  color: #ffe4e6 !important;
-  text-shadow: 0 0 18px rgba(244, 63, 94, 0.45);
-}
-.stat-card-issues .stat-label {
-  color: #fda4af !important;
-}
-
-.stat-card-tpm {
-  background: linear-gradient(145deg, rgba(16, 185, 129, 0.14) 0%, rgba(6, 78, 59, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
-  border: 1px solid rgba(52, 211, 153, 0.3) !important;
-  border-top: 3px solid #10b981 !important;
-  box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.2) !important;
-}
-.stat-card-tpm:hover {
-  transform: translateY(-3px);
-  border-color: rgba(110, 231, 183, 0.55) !important;
-  box-shadow: 0 12px 30px -4px rgba(16, 185, 129, 0.35) !important;
-}
-.stat-card-tpm .stat-value {
-  color: #d1fae5 !important;
-  text-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
-}
-.stat-card-tpm .stat-label {
-  color: #6ee7b7 !important;
-}
-
-.stat-card-stock {
-  background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(120, 53, 15, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
-  border: 1px solid rgba(251, 191, 36, 0.3) !important;
-  border-top: 3px solid #f59e0b !important;
-  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.2) !important;
-}
-.stat-card-stock:hover {
-  transform: translateY(-3px);
-  border-color: rgba(253, 230, 138, 0.55) !important;
-  box-shadow: 0 12px 30px -4px rgba(245, 158, 11, 0.35) !important;
-}
-.stat-card-stock .stat-value {
-  color: #fef3c7 !important;
-  text-shadow: 0 0 18px rgba(245, 158, 11, 0.4);
-}
-.stat-card-stock .stat-label {
-  color: #fcd34d !important;
-}
-
-/* Dashboard Section Card Themes */
-.dash-card-tpm-chart {
-  background: linear-gradient(150deg, rgba(14, 165, 233, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
-  border: 1px solid rgba(56, 189, 248, 0.25) !important;
-  border-top: 3px solid #0ea5e9 !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(14, 165, 233, 0.22) !important;
-}
-.dash-card-tpm-chart .card-title {
-  color: #7dd3fc !important;
+.stat-value {
+  font-size: 30px;
   font-weight: 700;
+  line-height: 1.1;
+  color: #f4f4f6;
+  letter-spacing: -0.02em;
+}
+.stat-sub {
+  font-size: 11px;
+  color: #71717a;
+  margin-top: 10px;
+  font-weight: 500;
+}
+.stat-icon {
+  position: absolute;
+  right: 18px;
+  top: 18px;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #1f202a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  opacity: 0.9;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.dash-card-issue-chart {
-  background: linear-gradient(150deg, rgba(244, 63, 94, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
-  border: 1px solid rgba(251, 113, 133, 0.25) !important;
-  border-top: 3px solid #f43f5e !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(244, 63, 94, 0.22) !important;
+/* Charts Cards */
+.chart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
 }
-.dash-card-issue-chart .card-title {
-  color: #fda4af !important;
-  font-weight: 700;
+@media (max-width: 900px) {
+  .chart-grid { grid-template-columns: 1fr; }
 }
-
-.dash-card-open-issues {
-  background: linear-gradient(150deg, rgba(225, 29, 72, 0.12) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
-  border: 1px solid rgba(244, 63, 94, 0.3) !important;
-  border-top: 3px solid #e11d48 !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(225, 29, 72, 0.25) !important;
-}
-.dash-card-open-issues .card-title {
-  color: #fda4af !important;
-  font-weight: 700;
-}
-
-.dash-card-tpm-overdue {
-  background: linear-gradient(150deg, rgba(245, 158, 11, 0.1) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
-  border: 1px solid rgba(245, 158, 11, 0.3) !important;
-  border-top: 3px solid #f59e0b !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(245, 158, 11, 0.2) !important;
-}
-.dash-card-tpm-overdue .card-title {
-  color: #fcd34d !important;
-  font-weight: 700;
-}
-
+.dash-card-tpm-chart,
+.dash-card-issue-chart,
+.dash-card-open-issues,
+.dash-card-tpm-overdue,
 .dash-card-low-stock {
-  background: linear-gradient(150deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
-  border: 1px solid rgba(16, 185, 129, 0.3) !important;
-  border-top: 3px solid #10b981 !important;
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(16, 185, 129, 0.2) !important;
+  background: #16171e;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
 }
+.dash-card-tpm-chart .card-title,
+.dash-card-issue-chart .card-title,
+.dash-card-open-issues .card-title,
+.dash-card-tpm-overdue .card-title,
 .dash-card-low-stock .card-title {
-  color: #6ee7b7 !important;
+  color: #f4f4f6;
   font-weight: 700;
+  font-size: 14px;
+}
+
+/* SaaS Kanban-style Task Cards (matching SynthAI reference image) */
+.saas-kanban-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.saas-task-card {
+  background: #1f2029;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: all .18s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  position: relative;
+}
+.saas-task-card:hover {
+  background: #252633;
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
+}
+.saas-task-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.saas-task-pill-tag {
+  width: 24px;
+  height: 3px;
+  border-radius: 99px;
+}
+.saas-task-pill-tag.tag-critical, .saas-task-pill-tag.tag-rose { background: #f43f5e; }
+.saas-task-pill-tag.tag-warning, .saas-task-pill-tag.tag-amber { background: #f59e0b; }
+.saas-task-pill-tag.tag-info, .saas-task-pill-tag.tag-sky { background: #38bdf8; }
+.saas-task-pill-tag.tag-done, .saas-task-pill-tag.tag-emerald { background: #10b981; }
+
+.saas-task-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.saas-task-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f4f4f6;
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+.saas-task-desc {
+  font-size: 11.5px;
+  color: #9496a1;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 10px;
+}
+.saas-task-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 11px;
+  color: #71717a;
+}
+.saas-task-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.saas-task-action {
+  color: #818cf8;
+  font-weight: 600;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.saas-task-card:hover .saas-task-action {
+  color: #a5b4fc;
+}
+
+/* SaaS Table for Low Stock */
+.saas-stock-table-card {
+  background: #1f2029;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.saas-stock-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background .15s ease;
+}
+.saas-stock-row:last-child {
+  border-bottom: none;
+}
+.saas-stock-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.saas-stock-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f4f4f6;
+}
+.saas-stock-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.saas-stock-pill {
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.saas-stock-pill.low {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.saas-stock-pill.min {
+  background: rgba(255, 255, 255, 0.05);
+  color: #9496a1;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 </style>
 </head>
@@ -1196,12 +1316,29 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
+  <!-- SaaS Top Bar (SynthAI style) -->
+  <div class="saas-page-header">
+    <div class="saas-page-title-wrap">
+      <div class="saas-page-icon">⚡</div>
+      <div>
+        <div class="saas-page-title">TPM Operations Hub</div>
+        <div class="saas-page-subtitle">ระบบบริหารจัดการและติดตามความพร้อมของแม่พิมพ์และเครื่องจักร</div>
+      </div>
+    </div>
+    <div class="saas-tabs-control">
+      <button class="saas-tab-btn active" onclick="nav('dashboard')"><span>📊</span> Overview</button>
+      <button class="saas-tab-btn" onclick="nav('issues')"><span>🚨</span> Issues</button>
+      <button class="saas-tab-btn" onclick="nav('tpm')"><span>🔧</span> TPM Plans</button>
+      <button class="saas-tab-btn" onclick="nav('stock')"><span>📦</span> Stock</button>
+    </div>
+  </div>
+
   <!-- Category 1: KPI Overview -->
   <div class="dash-category-header">
-    <div class="dash-cat-badge badge-indigo">
+    <div class="dash-cat-badge">
       <span class="dash-cat-icon">📊</span>
-      <span class="dash-cat-title">ภาพรวมระบบ</span>
-      <span class="dash-cat-sub">KPI OVERVIEW</span>
+      <span>ภาพรวมระบบ</span>
+      <span class="dash-cat-sub">METRICS</span>
     </div>
     <div class="dash-cat-line"></div>
   </div>
@@ -1209,42 +1346,42 @@ body.role-engineer .role-admin-only { display: none !important; }
 
   <!-- Category 2: Analytics & Trends -->
   <div class="dash-category-header">
-    <div class="dash-cat-badge badge-sky">
+    <div class="dash-cat-badge">
       <span class="dash-cat-icon">📈</span>
-      <span class="dash-cat-title">สถิติและประสิทธิภาพ</span>
-      <span class="dash-cat-sub">ANALYTICS & TRENDS</span>
+      <span>สถิติและประสิทธิภาพ</span>
+      <span class="dash-cat-sub">ANALYTICS</span>
     </div>
     <div class="dash-cat-line"></div>
   </div>
   <div class="chart-grid">
-    <div class="card dash-card-tpm-chart"><div class="card-header"><div class="card-title">TPM Completion (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(14,165,233,0.18);color:#38bdf8;font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
-    <div class="card dash-card-issue-chart"><div class="card-header"><div class="card-title">ปัญหา / Issues (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(244,63,94,0.18);color:#fda4af;font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
+    <div class="card dash-card-tpm-chart"><div class="card-header"><div class="card-title">TPM Completion (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,0.15);color:var(--primary);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
+    <div class="card dash-card-issue-chart"><div class="card-header"><div class="card-title">ปัญหา / Issues (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(239,68,68,0.15);color:var(--danger);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
   </div>
 
   <!-- Category 3: Urgent Action Items -->
   <div class="dash-category-header">
-    <div class="dash-cat-badge badge-rose">
+    <div class="dash-cat-badge">
       <span class="dash-cat-icon">🚨</span>
-      <span class="dash-cat-title">ติดตามงานเร่งด่วน</span>
-      <span class="dash-cat-sub">URGENT ACTION ITEMS</span>
+      <span>ติดตามงานเร่งด่วน</span>
+      <span class="dash-cat-sub">URGENT TASKS</span>
     </div>
     <div class="dash-cat-line"></div>
   </div>
   <div class="grid-2">
-    <div class="card dash-card-open-issues"><div class="card-header"><div class="card-title">&#128680; Open Issues</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-issues"></div></div>
-    <div class="card dash-card-tpm-overdue"><div class="card-header"><div class="card-title">&#128308; TPM Overdue</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-tpm-overdue"></div></div>
+    <div class="card dash-card-open-issues"><div class="card-header"><div class="card-title">&#128680; Open Issues (ปัญหาค้างแก้ไข)</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">ดูทั้งหมด →</button></div><div id="dash-issues" class="saas-kanban-column"></div></div>
+    <div class="card dash-card-tpm-overdue"><div class="card-header"><div class="card-title">&#128308; TPM Overdue (แผนบำรุงรักษาล่าช้า)</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">ดูทั้งหมด →</button></div><div id="dash-tpm-overdue" class="saas-kanban-column"></div></div>
   </div>
 
   <!-- Category 4: Spare Parts & Inventory -->
   <div class="dash-category-header">
-    <div class="dash-cat-badge badge-emerald">
+    <div class="dash-cat-badge">
       <span class="dash-cat-icon">📦</span>
-      <span class="dash-cat-title">คลังอะไหล่สำรอง</span>
-      <span class="dash-cat-sub">INVENTORY & SPARE PARTS</span>
+      <span>คลังอะไหล่สำรอง</span>
+      <span class="dash-cat-sub">INVENTORY</span>
     </div>
     <div class="dash-cat-line"></div>
   </div>
-  <div class="card dash-card-low-stock"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-low-stock"></div></div>
+  <div class="card dash-card-low-stock"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts (อะไหล่ใกล้หมด)</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">ดูคลังอะไหล่ →</button></div><div id="dash-low-stock"></div></div>
 </div>
 
 <!-- MOLDS -->
@@ -4568,19 +4705,19 @@ async function loadDashboard() {
     if (dashStats) {
       var statCards = [];
       if (canMold) {
-        statCards.push('<div class="stat-card stat-card-mold" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+scopedMolds+'</div><div class="stat-sub" style="color:#a5b4fc;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-mold" onclick="nav(\'molds\')"><div class="stat-card-micro-pill"></div><div class="stat-label">Total Molds</div><div class="stat-value">'+scopedMolds+'</div><div class="stat-sub"><span>จัดการแม่พิมพ์ทั้งหมด</span> <span style="color:#818cf8;font-weight:600">→</span></div><div class="stat-icon">🧩</div></div>');
       }
       if (canMachine) {
-        statCards.push('<div class="stat-card stat-card-machine" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+scopedMachines+'</div><div class="stat-sub" style="color:#7dd3fc;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-machine" onclick="nav(\'machines\')"><div class="stat-card-micro-pill"></div><div class="stat-label">Total Machines</div><div class="stat-value">'+scopedMachines+'</div><div class="stat-sub"><span>เครื่องจักรในสายการผลิต</span> <span style="color:#38bdf8;font-weight:600">→</span></div><div class="stat-icon">🏭</div></div>');
       }
       if (canIssues) {
-        statCards.push('<div class="stat-card stat-card-issues" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+openIssues+'</div><div class="stat-sub" style="color:#fda4af;">Critical: '+criticalIssues+' <span style="font-size:10px;opacity:0.85">→ คลิก</span></div></div>');
+        statCards.push('<div class="stat-card stat-card-issues" onclick="nav(\'issues\')"><div class="stat-card-micro-pill"></div><div class="stat-label">Open Issues</div><div class="stat-value">'+openIssues+'</div><div class="stat-sub"><span style="color:#f43f5e;font-weight:600">Critical: '+criticalIssues+' รายการ</span> <span style="color:#f43f5e;font-weight:600">→</span></div><div class="stat-icon">🚨</div></div>');
       }
       if (canTPM) {
-        statCards.push('<div class="stat-card stat-card-tpm" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+tpmDone+'/'+tpmThisMonth+'</div><div class="stat-sub" style="color:#6ee7b7;">Overdue: '+tpmOverdue+' | Due Soon: '+tpmDueSoon+'</div></div>');
+        statCards.push('<div class="stat-card stat-card-tpm" onclick="nav(\'tpm\')"><div class="stat-card-micro-pill"></div><div class="stat-label">TPM Completion</div><div class="stat-value">'+tpmDone+'/'+tpmThisMonth+'</div><div class="stat-sub"><span style="color:#10b981;font-weight:600">ล่าช้า: '+tpmOverdue+' | เร็วๆ นี้: '+tpmDueSoon+'</span> <span style="color:#10b981;font-weight:600">→</span></div><div class="stat-icon">🔧</div></div>');
       }
       if (canStock) {
-        statCards.push('<div class="stat-card stat-card-stock" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+scopedStock+'</div><div class="stat-sub" style="color:#fcd34d;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-stock" onclick="nav(\'stock\')"><div class="stat-card-micro-pill"></div><div class="stat-label">Low Stock Alerts</div><div class="stat-value">'+scopedStock+'</div><div class="stat-sub"><span style="color:#f59e0b;font-weight:600">อะไหล่ต้องสั่งซื้อด่วน</span> <span style="color:#f59e0b;font-weight:600">→</span></div><div class="stat-icon">📦</div></div>');
       }
       dashStats.innerHTML = statCards.join('');
     }
@@ -4685,15 +4822,43 @@ async function loadDashboard() {
     const issuesEl = document.getElementById('dash-issues');
     const recentIssues = scopedIssues.slice(0, 5);
     if (issuesEl) {
-      issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มี Issue ค้าง', '') :
-        recentIssues.map(i => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเพื่อดูรายละเอียดปัญหา"><span class="badge ' + (i.Severity||'low').toLowerCase() + '">' + (i.Severity||'-') + '</span><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">' + (i.TargetName||'-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-faint)">(' + (i.IssueType||'-') + ')</span></div><div style="font-size:11px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (i.Description||'') + '</div></div><span class="badge ' + (i.Status||'open').toLowerCase().replace(' ','-') + '">' + (i.Status||'Open') + '</span></div>').join('');
+      issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มีปัญหาค้างแก้ไข', '') :
+        recentIssues.map(function(i) {
+          var sev = (i.Severity || 'Low').toLowerCase();
+          var tagClass = sev === 'critical' ? 'tag-critical' : (sev === 'high' ? 'tag-warning' : 'tag-info');
+          return '<div class="saas-task-card" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเพื่อดูรายละเอียดปัญหา">' +
+            '<div class="saas-task-top">' +
+              '<div class="saas-task-pill-tag ' + tagClass + '"></div>' +
+              '<span class="badge ' + sev + '">' + (i.Severity || 'Normal') + '</span>' +
+            '</div>' +
+            '<div class="saas-task-title">' + (i.TargetName || '-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(' + (i.IssueType || '-') + ')</span></div>' +
+            '<div class="saas-task-desc">' + (i.Description || 'ไม่มีรายละเอียดเพิ่มเติม') + '</div>' +
+            '<div class="saas-task-footer">' +
+              '<span class="saas-task-meta"><span>📅 ' + (i.ReportDate ? String(i.ReportDate).substring(0, 10) : '-') + '</span></span>' +
+              '<span class="saas-task-action">ดูรายละเอียด →</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
     }
 
     const overdueEl = document.getElementById('dash-tpm-overdue');
-    const overdueTPM = scopedTPM.filter(p => getTPMStatus(p) === 'Overdue');
+    const overdueTPM = scopedTPM.filter(p => getTPMStatus(p) === 'Overdue').slice(0, 5);
     if (overdueEl) {
-      overdueEl.innerHTML = overdueTPM.length === 0 ? emptyState('✅', 'ไม่มี TPM เกินกำหนด', '') :
-        overdueTPM.map(t => '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1"><div style="font-size:13px;font-weight:500">' + (t.TargetName||'-') + '</div><div style="font-size:11px;color:var(--text-muted)">' + (t.PlannedDate||'') + '</div></div><span class="badge overdue">Overdue</span></div>').join('');
+      overdueEl.innerHTML = overdueTPM.length === 0 ? emptyState('✅', 'ไม่มีแผน TPM ที่เกินกำหนด', '') :
+        overdueTPM.map(function(t) {
+          return '<div class="saas-task-card" onclick="nav(\'tpm\')" title="คลิกเพื่อไปที่แผน TPM">' +
+            '<div class="saas-task-top">' +
+              '<div class="saas-task-pill-tag tag-warning"></div>' +
+              '<span class="badge overdue">Overdue</span>' +
+            '</div>' +
+            '<div class="saas-task-title">' + (t.TargetName || '-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(' + (t.TargetType || 'Plan') + ')</span></div>' +
+            '<div class="saas-task-desc">กำหนดการตรวจเช็ค: ' + (t.PlannedDate || '-') + ' (เกินกำหนดแล้ว)</div>' +
+            '<div class="saas-task-footer">' +
+              '<span class="saas-task-meta"><span>🔧 งานบำรุงรักษา</span></span>' +
+              '<span class="saas-task-action">เปิดแผนงาน →</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
     }
 
     const stockEl = document.getElementById('dash-low-stock');
@@ -4704,10 +4869,26 @@ async function loadDashboard() {
       var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
       var min = Number(p.MinStock ?? p.MinQty ?? 0);
       return cur <= min && min > 0;
-    });
+    }).slice(0, 6);
     if (stockEl) {
-      stockEl.innerHTML = lowStockList.length === 0 ? emptyState('✅', 'Stock ปกติ', '') :
-        '<div class="table-wrapper"><table><thead><tr><th>Part Name</th><th>Current</th><th>Min</th></tr></thead><tbody>' + lowStockList.map(p => '<tr><td>' + (p.PartName||p.Name||'-') + '</td><td style="color:var(--danger)">' + (p.CurrentStock||p.Qty||0) + ' ' + (p.Unit||'') + '</td><td>' + (p.MinStock||p.MinQty||0) + ' ' + (p.Unit||'') + '</td></tr>').join('') + '</tbody></table></div>';
+      stockEl.innerHTML = lowStockList.length === 0 ? emptyState('✅', 'Stock ปกติ ทุกรายการเพียงพอ', '') :
+        '<div class="saas-stock-table-card">' +
+          lowStockList.map(function(p) {
+            var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+            var min = Number(p.MinStock ?? p.MinQty ?? 0);
+            var unit = p.Unit || 'ชิ้น';
+            return '<div class="saas-stock-row" onclick="nav(\'stock\')" style="cursor:pointer;" title="คลิกเพื่อดูในคลังอะไหล่">' +
+              '<div>' +
+                '<div class="saas-stock-name">📦 ' + (p.PartName || p.Name || '-') + '</div>' +
+                '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Part No: ' + (p.PartNumber || p.PartNo || '-') + '</div>' +
+              '</div>' +
+              '<div class="saas-stock-badges">' +
+                '<span class="saas-stock-pill low">คงเหลือ: ' + cur + ' ' + unit + '</span>' +
+                '<span class="saas-stock-pill min">จุดสั่งซื้อขั้นต่ำ: ' + min + ' ' + unit + '</span>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
     }
   } catch (err) {
     console.error('loadDashboard error:', err);
