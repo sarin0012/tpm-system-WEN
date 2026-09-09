@@ -2292,7 +2292,10 @@ async function _apiInternal(actionStr, payload = null) {
 
       // MOLDS
       case 'getMolds': {
-        const { data, error } = await sb.from('molds').select('*').order('CreatedAt', { ascending: false });
+        // High-performance light query: Exclude heavy Base64 ImageIds to save 95% Egress
+        const { data, error } = await sb.from('molds')
+          .select('ID, Name, AssetNo, Vendor, Material, Cavity, Location, PurchaseDate, Notes, Status, CreatedAt')
+          .order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         const molds = (data || []).map(m => {
           if (m.Notes && m.Notes.indexOf('[SPECS:') !== -1) {
@@ -2314,6 +2317,11 @@ async function _apiInternal(actionStr, payload = null) {
           return m;
         });
         return { success: true, data: molds };
+      }
+      case 'getMoldImages': {
+        const { data, error } = await sb.from('molds').select('ImageIds').eq('ID', payload.id).single();
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data ? (data.ImageIds || '[]') : '[]' };
       }
       case 'saveMold': {
         const item = Object.assign({}, payload.data);
@@ -2428,7 +2436,8 @@ async function _apiInternal(actionStr, payload = null) {
 
       // MACHINES
       case 'getMachines': {
-        const { data, error } = await sb.from('machines').select('*');
+        // High-performance light query: Exclude heavy ImageIds to save 99% Egress (from 816KB down to 1.7KB)
+        const { data, error } = await sb.from('machines').select('ID, Name, AssetNo, Vendor, Model, Location, PurchaseDate, Notes, Status');
         if (error) return { success: false, error: error.message };
         (data || []).forEach(m => {
           if (m.Notes && m.Notes.indexOf('[EXTRA:') !== -1) {
@@ -2444,6 +2453,11 @@ async function _apiInternal(actionStr, payload = null) {
           }
         });
         return { success: true, data: data || [] };
+      }
+      case 'getMachineImages': {
+        const { data, error } = await sb.from('machines').select('ImageIds').eq('ID', payload.id).single();
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data ? (data.ImageIds || '[]') : '[]' };
       }
       case 'saveMachine': {
         const d = payload.data || {};
@@ -2637,28 +2651,56 @@ async function _apiInternal(actionStr, payload = null) {
 
       // ISSUES
       case 'getIssues': {
-        const { data, error } = await sb.from('issues').select('*').order('CreatedAt', { ascending: false });
+        // High-performance light query: Exclude heavy ImageIds, AfterImageIds, and CorrectiveAction (saves 99.8% Egress: from 4.15MB down to 6.4KB!)
+        const { data, error } = await sb.from('issues')
+          .select('ID, TargetType, TargetID, TargetName, IssueType, Description, Severity, Status, OccurredAt, ReportedBy, RootCause, ClosedAt, ClosedBy, PartsUsed, CreatedAt')
+          .order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
         (data || []).forEach(iss => {
-          if (iss.CorrectiveAction && iss.CorrectiveAction.indexOf('[TRIAL:') !== -1) {
-            const m = iss.CorrectiveAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
-            if (m) {
-              try {
-                const t = JSON.parse(m[1]);
-                iss.TrialResult = t.result || '';
-                iss.TrialDate = t.trialDate || t.date || '';
-                iss.TrialShots = t.shots || 0;
-                iss.TrialNotes = t.notes || '';
-                iss.TrialImageIds = Array.isArray(t.images) ? JSON.stringify(t.images) : (t.images || '[]');
-              } catch(e) {}
-            }
-            iss.CleanCorrectiveAction = iss.CorrectiveAction.replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
-            iss.CorrectiveAction = iss.CleanCorrectiveAction;
-          } else {
-            iss.CleanCorrectiveAction = iss.CorrectiveAction || '';
+          if (iss.RootCause && iss.RootCause.indexOf('[TR:') !== -1) {
+            const m = iss.RootCause.match(/\[TR:([^\]]+)\]/);
+            if (m) iss.TrialResult = m[1];
+            iss.RootCause = iss.RootCause.replace(/\[TR:[^\]]+\]\s*/g, '').trim();
           }
         });
         return { success: true, data: data || [] };
+      }
+      case 'getIssueImages': {
+        const { data, error } = await sb.from('issues').select('ID, ImageIds, AfterImageIds, BeforeImageIds, CorrectiveAction, RootCause').eq('ID', payload.id).single();
+        if (error) return { success: false, error: error.message };
+        let trialImgs = '[]', trialResult = '', trialDate = '', trialShots = 0, trialNotes = '';
+        if (data && data.CorrectiveAction && data.CorrectiveAction.indexOf('[TRIAL:') !== -1) {
+          const m = data.CorrectiveAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
+          if (m) {
+            try {
+              const t = JSON.parse(m[1]);
+              trialResult = t.result || '';
+              trialDate = t.trialDate || t.date || '';
+              trialShots = t.shots || 0;
+              trialNotes = t.notes || '';
+              trialImgs = Array.isArray(t.images) ? JSON.stringify(t.images) : (t.images || '[]');
+            } catch(e) {}
+          }
+        }
+        if (!trialResult && data && data.RootCause && data.RootCause.indexOf('[TR:') !== -1) {
+          const rm = data.RootCause.match(/\[TR:([^\]]+)\]/);
+          if (rm) trialResult = rm[1];
+        }
+        const beforeImgs = data ? (data.BeforeImageIds || data.ImageIds || '[]') : '[]';
+        return {
+          success: true,
+          data: {
+            BeforeImageIds: beforeImgs,
+            AfterImageIds: data ? (data.AfterImageIds || '[]') : '[]',
+            TrialImageIds: trialImgs,
+            CorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
+            CleanCorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
+            TrialResult: trialResult,
+            TrialDate: trialDate,
+            TrialShots: trialShots,
+            TrialNotes: trialNotes
+          }
+        };
       }
       case 'saveIssue': {
         const item = Object.assign({}, payload.data);
@@ -2737,7 +2779,7 @@ async function _apiInternal(actionStr, payload = null) {
 
       // TPM PLANS
       case 'getTPMPlans': {
-        let query = sb.from('tpm_plans').select('*');
+        let query = sb.from('tpm_plans').select('ID, TargetType, TargetID, TargetName, PlannedDate, Frequency, VendorResp, Notes, Status, ActualDate, ActualBy, CoInspector, ChecklistResult, CreatedAt');
         const yr = (payload && payload.year) || urlParams.year;
         const fyr = (payload && payload.fyear) || urlParams.fyear;
         if (fyr) {
@@ -2761,6 +2803,11 @@ async function _apiInternal(actionStr, payload = null) {
           }
         });
         return { success: true, data: data || [] };
+      }
+      case 'getTPMPlanImages': {
+        const { data, error } = await sb.from('tpm_plans').select('AfterImageIds').eq('ID', payload.id).single();
+        if (error) return { success: false, error: error.message };
+        return { success: true, data: data ? (data.AfterImageIds || '[]') : '[]' };
       }
       case 'saveTPMPlan': {
         const item = Object.assign({}, payload.data);
@@ -4760,6 +4807,85 @@ function openMoldTPMDetailModal(moldId) {
   openModal('mold-tpm-detail-modal');
 }
 
+// ============================================
+//  LAZY IMAGE LOADERS (99% Supabase Egress Reduction)
+// ============================================
+async function ensureMoldImages(moldId) {
+  var m = (STATE.molds || []).find(function(x) { return x.ID === moldId; });
+  if (!m) return null;
+  if (m._imagesLoaded) return m;
+  try {
+    var res = await api('getMoldImages', { id: moldId });
+    if (res && res.success) {
+      m.ImageIds = res.data || '[]';
+      m._imagesLoaded = true;
+    }
+  } catch(e) { console.warn('Load mold images error:', e); }
+  return m;
+}
+
+async function ensureMachineImages(machineId) {
+  var m = (STATE.machines || []).find(function(x) { return x.ID === machineId; });
+  if (!m) return null;
+  if (m._imagesLoaded) return m;
+  try {
+    var res = await api('getMachineImages', { id: machineId });
+    if (res && res.success) {
+      m.ImageIds = res.data || '[]';
+      m._imagesLoaded = true;
+    }
+  } catch(e) { console.warn('Load machine images error:', e); }
+  return m;
+}
+
+async function ensureIssueImages(issueId) {
+  var iss = (STATE.issues || []).find(function(x) { return x.ID === issueId; });
+  if (!iss) return null;
+  if (iss._imagesLoaded) return iss;
+  try {
+    var res = await api('getIssueImages', { id: issueId });
+    if (res && res.success && res.data) {
+      iss.BeforeImageIds = res.data.BeforeImageIds || '[]';
+      iss.AfterImageIds = res.data.AfterImageIds || '[]';
+      iss.TrialImageIds = res.data.TrialImageIds || '[]';
+      if (res.data.CorrectiveAction !== undefined) iss.CorrectiveAction = res.data.CorrectiveAction;
+      if (res.data.CleanCorrectiveAction !== undefined) iss.CleanCorrectiveAction = res.data.CleanCorrectiveAction;
+      if (res.data.TrialResult !== undefined) iss.TrialResult = res.data.TrialResult;
+      if (res.data.TrialDate !== undefined) iss.TrialDate = res.data.TrialDate;
+      if (res.data.TrialShots !== undefined) iss.TrialShots = res.data.TrialShots;
+      if (res.data.TrialNotes !== undefined) iss.TrialNotes = res.data.TrialNotes;
+      iss._imagesLoaded = true;
+    }
+  } catch(e) { console.warn('Load issue images error:', e); }
+  return iss;
+}
+
+async function viewMoldPhoto(moldId) {
+  var m = await ensureMoldImages(moldId);
+  if (!m) return;
+  try { renderMolds(); } catch(e){}
+  var rawImgs = tryParse(m.ImageIds);
+  var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+  if (imgs.length) {
+    openLightbox(imgs, 0, m.Name);
+  } else {
+    showToast('แม่พิมพ์นี้ยังไม่มีรูปภาพที่แนบไว้', 'info');
+  }
+}
+
+async function viewMachinePhoto(machineId) {
+  var m = await ensureMachineImages(machineId);
+  if (!m) return;
+  try { filterMachines(); } catch(e){}
+  var rawImgs = tryParse(m.ImageIds);
+  var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+  if (imgs.length) {
+    openLightbox(imgs, 0, m.Name);
+  } else {
+    showToast('เครื่องจักรนี้ยังไม่มีรูปภาพที่แนบไว้', 'info');
+  }
+}
+
 function renderMolds() {
   var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
@@ -4776,17 +4902,16 @@ function renderMolds() {
     });
     return;
   }
-  
-  filterMolds();
-}
-function filterMolds(){
-  var q=(document.querySelector('#page-molds .search-input')||{}).value||''; q=q.toLowerCase();
-  var vendor=(document.getElementById('molds-vendor-filter')||{}).value||'';
-  var status=(document.getElementById('molds-status-filter')||{}).value||'';
+
+  var q=((document.getElementById('molds-search')||{}).value||'').toLowerCase();
+  var vFilter=((document.getElementById('molds-vendor-filter')||{}).value||'').toLowerCase();
+  var sFilter=(document.getElementById('molds-status-filter')||{}).value||'Active';
   var data=STATE.molds.filter(function(m){
-    if(vendor&&m.Vendor!==vendor)return false;
-    if(status&&(m.Status||'Active')!==status)return false;
-    if(q&&(m.Name+(m.Model||'')+(m.AssetNo||'')+(m.DrawingNo||'')+(m.Vendor||'')+(m.Location||'')).toLowerCase().indexOf(q)===-1)return false;
+    var st = m.Status || 'Active';
+    if(sFilter === 'Active' && st !== 'Active') return false;
+    if(sFilter && sFilter !== 'Active' && sFilter !== 'All' && st !== sFilter) return false;
+    if(vFilter&&(m.Vendor||'').toLowerCase().indexOf(vFilter)===-1)return false;
+    if(q&&(m.Name+m.AssetNo+(m.Vendor||'')+(m.Location||'')+(m.Model||'')+(m.DrawingNo||'')+(m.MachineTon||'')).toLowerCase().indexOf(q)===-1)return false;
     return true;
   });
 
@@ -4810,9 +4935,14 @@ function filterMolds(){
     var rawImgs = tryParse(m.ImageIds);
     var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
     var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
-    var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
-      return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
-    }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var thumbs = '';
+    if (m._imagesLoaded) {
+      thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
+        return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
+      }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    } else {
+      thumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); viewMoldPhoto(\'' + m.ID + '\')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ">📷 ดูรูป</button>';
+    }
     var specs=[];
     if(m.MoldSize) specs.push('📐 '+m.MoldSize);
     if(m.MoldWeight) specs.push('⚖️ '+m.MoldWeight);
@@ -4941,7 +5071,10 @@ function collectMoldCustomCheckpoints() {
   return items;
 }
 
-function openMoldModal(data) {
+async function openMoldModal(data) {
+  if (data && data.ID) {
+    await ensureMoldImages(data.ID);
+  }
   ['mold-id','mold-name','mold-model','mold-asset','mold-machine-ton','mold-drawing','mold-size','mold-weight','mold-part-weight','mold-runner-weight','mold-vendor','mold-material','mold-cavity','mold-location','mold-purchase-date','mold-notes','mold-cycle-time'].forEach(function(id){v_set(id,'');});
   var _prev0=document.getElementById('mold-production-preview'); if(_prev0) _prev0.innerHTML='กรอก Cycle Time เพื่อดูยอดผลิต';
   v_set('mold-status', 'Active');
@@ -5097,13 +5230,21 @@ function filterMachines(){
     var rawImgs = tryParse(m.ImageIds);
     var imgs = rawImgs.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
     var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
-    var thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
-      return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
-    }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var thumbs = '';
+    if (m._imagesLoaded) {
+      thumbs = imgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + imgs.slice(0,3).map(function(url, idx){
+        return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูป (' + (idx+1) + '/' + imgs.length + ')"/>';
+      }).join('') + (imgs.length > 3 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openLightbox(' + imgsJsonStr + ', 3, \'' + (m.Name||'').replace(/'/g,"\\'") + '\')" title="คลิกดูรูปทั้งหมด (+' + (imgs.length - 3) + ')">+' + (imgs.length - 3) + '</span>' : '') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    } else {
+      thumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); viewMachinePhoto(\'' + m.ID + '\')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ">📷 ดูรูป</button>';
+    }
     return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="พิมพ์สติ๊กเกอร์ QR 5x5cm" style="margin-right:2px">🏷️ QR</button>' + (can('machines', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (can('machines', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
   }).join('');
 }
-function openMachineModal(data){
+async function openMachineModal(data){
+  if (data && data.ID) {
+    await ensureMachineImages(data.ID);
+  }
   ['machine-id','machine-name','machine-asset','machine-vendor','machine-model','machine-serial','machine-dept','machine-location','machine-purchase-date','machine-notes'].forEach(function(id){v_set(id,'');});
   var grid = document.getElementById('machine-photos-preview');
   if (grid) grid.innerHTML = '';
@@ -6262,22 +6403,43 @@ function filterIssues() {
   tb.innerHTML = filtered.slice().reverse().map(function(i) {
     var displayCode = getIssueDisplayCode(i);
     var beforeImgs = tryParse(i.BeforeImageIds);
-    var beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
-      (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',2)" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    var beforeThumbs = '';
+    if (i._imagesLoaded) {
+      beforeThumbs = beforeImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+        beforeImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปก่อนซ่อม (' + (idx+1) + '/' + beforeImgs.length + ')"/>'; }).join('') + 
+        (beforeImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',2)" title="คลิกดูรูปทั้งหมด (+' + (beforeImgs.length - 2) + ')">+' + (beforeImgs.length - 2) + '</span>' : '') + 
+        '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+    } else {
+      beforeThumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'before\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพก่อนซ่อม">📷 ดูรูป</button>';
+    }
     
     var afterImgs = tryParse(i.AfterImageIds);
-    var afterThumbs = i.Status === 'Closed' ? (afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
-      (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',2)" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>') : '<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
+    var afterThumbs = '';
+    if (i.Status === 'Closed') {
+      if (i._imagesLoaded) {
+        afterThumbs = afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+          afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
+          (afterImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',2)" title="คลิกดูรูปทั้งหมด (+' + (afterImgs.length - 2) + ')">+' + (afterImgs.length - 2) + '</span>' : '') + 
+          '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีรูป</span>';
+      } else {
+        afterThumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพหลังซ่อม">📷 ดูรูป</button>';
+      }
+    } else {
+      afterThumbs = '<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
+    }
 
     var trialImgs = tryParse(i.TrialImageIds);
-    var trialThumbs = trialImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-      trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
-      (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
-      '</div>' : '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
+    var trialThumbs = '';
+    if (i._imagesLoaded) {
+      trialThumbs = trialImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
+        trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
+        (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
+        '</div>' : '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
+    } else {
+      trialThumbs = (i.Status === 'Closed')
+        ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ Trial">📷 ดูรูป</button>'
+        : '<span style="color:var(--text-faint);font-size:11px">-</span>';
+    }
 
     return '<tr>' +
       '<td>' +
@@ -6440,18 +6602,25 @@ function relockIssueEdit() {
   showToast('🔒 ล็อกแบบฟอร์มเพื่อป้องกันข้อมูลแล้ว', 'info');
 }
 
-function openIssueModal(issueOrId){
+async function openIssueModal(issueOrId){
+  var targetId = null;
+  if (issueOrId) {
+    targetId = typeof issueOrId === 'string' ? issueOrId : (issueOrId && issueOrId.ID);
+  }
+
   if (!can('issues', 'edit')) {
-    if (issueOrId) {
-      var targetId = typeof issueOrId === 'string' ? issueOrId : (issueOrId && issueOrId.ID);
-      if (targetId) {
-        openIssueDetailModal(targetId);
-        return;
-      }
+    if (targetId) {
+      openIssueDetailModal(targetId);
+      return;
     }
     showToast('คุณไม่มีสิทธิ์แจ้งหรือแก้ไขปัญหา (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
     return;
   }
+
+  if (targetId) {
+    await ensureIssueImages(targetId);
+  }
+
   ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
   v_set('issue-reporter', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('issue-edit-closed-date','');
@@ -6692,7 +6861,8 @@ async function saveIssue(){
   }
 }
 
-function openIssueDetailModal(id){
+async function openIssueDetailModal(id){
+  await ensureIssueImages(id);
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   var body = document.getElementById('issue-detail-body');
@@ -6799,7 +6969,8 @@ function openIssueDetailModal(id){
   openModal('issue-detail-modal');
 }
 
-function printIssueReport(id) {
+async function printIssueReport(id) {
+  await ensureIssueImages(id);
   var iss = (STATE.issues || []).find(function(i) { return i.ID === id; });
   if (!iss) {
     showToast('ไม่พบข้อมูลปัญหา', 'error');
@@ -7260,11 +7431,12 @@ function removeCloseIssuePart(idx) {
   }
 }
 
-function openCloseIssueModal(id){
+async function openCloseIssueModal(id){
   if (!can('issues', 'edit')) {
     showToast('คุณไม่มีสิทธิ์ปิดงานหรือเบิกอะไหล่ (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
     return;
   }
+  await ensureIssueImages(id);
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
   v_set('close-issue-id', id);
@@ -8070,9 +8242,11 @@ function openLightbox(listOrUrl, index, title){
   }
 }
 
-function openIssuePhotoLightbox(issueId, field, index) {
+async function openIssuePhotoLightbox(issueId, field, index) {
+  await ensureIssueImages(issueId);
   var iss = (STATE.issues || []).find(function(i){ return i.ID === issueId; });
   if (!iss) return;
+  try { filterIssues(); } catch(e){}
   var displayCode = getIssueDisplayCode(iss);
   var imgs = [];
   var titleSuffix = '';
@@ -8085,6 +8259,10 @@ function openIssuePhotoLightbox(issueId, field, index) {
   } else if (field === 'trial') {
     imgs = tryParse(iss.TrialImageIds);
     titleSuffix = 'รูปผลทดสอบ Trial';
+  }
+  if (!imgs.length) {
+    showToast('ไม่มีรูปภาพในส่วนนี้ (' + titleSuffix + ')', 'info');
+    return;
   }
   openLightbox(imgs, index, '#' + displayCode + ' - ' + titleSuffix);
 }
@@ -10313,7 +10491,28 @@ function renderAsset360Profile(target) {
   var imgsJsonStr = JSON.stringify(imgs).replace(/"/g, '&quot;');
   var thumbsHtml = imgs.length ? imgs.map(function(url, idx){
     return '<img src="' + url + '" onclick="openLightbox(' + imgsJsonStr + ', ' + idx + ', \'' + (item.Name||'').replace(/'/g,"\\'") + '\')" style="width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูปขยาย (' + (idx+1) + '/' + imgs.length + ')"/>';
-  }).join('') : '<span style="color:var(--text-faint);font-size:11px;align-self:center;">ไม่มีรูปภาพ</span>';
+  }).join('') : (item._imagesLoaded ? '<span style="color:var(--text-faint);font-size:11px;align-self:center;">ไม่มีรูปภาพ</span>' : '<span style="color:var(--text-muted);font-size:11px;align-self:center;">⏳ กำลังโหลดรูป...</span>');
+
+  if (!item._imagesLoaded) {
+    var loadFn = isMold ? ensureMoldImages(item.ID) : ensureMachineImages(item.ID);
+    loadFn.then(function(loadedItem) {
+      if (loadedItem && STATE._currentQRAsset && STATE._currentQRAsset.ID === item.ID) {
+        var el = document.getElementById('qr-hero-thumbs');
+        if (el) {
+          var updatedRaw = tryParse(loadedItem.ImageIds);
+          var updatedImgs = updatedRaw.map(function(id){ return (id.indexOf('http') === 0 || id.indexOf('data:') === 0 || id.indexOf('blob:') === 0) ? id : ('https://drive.google.com/thumbnail?id=' + id + '&sz=w1200'); });
+          if (updatedImgs.length) {
+            var jStr = JSON.stringify(updatedImgs).replace(/"/g, '&quot;');
+            el.innerHTML = updatedImgs.map(function(url, idx){
+              return '<img src="' + url + '" onclick="openLightbox(' + jStr + ', ' + idx + ', \'' + (loadedItem.Name||'').replace(/'/g,"\\'") + '\')" style="width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูรูปขยาย (' + (idx+1) + '/' + updatedImgs.length + ')"/>';
+            }).join('');
+          } else {
+            el.innerHTML = '<span style="color:var(--text-faint);font-size:11px;align-self:center;">ไม่มีรูปภาพ</span>';
+          }
+        }
+      }
+    }).catch(function(e){ console.warn('QR asset photo load err:', e); });
+  }
 
   // Spec Chips
   var specsHtml = '';
@@ -10374,7 +10573,7 @@ function renderAsset360Profile(target) {
           '</div>' +
         '</div>' +
         '<div class="qr-hero-right">' +
-          '<div style="display:flex;gap:6px;align-items:center;background:rgba(0,0,0,0.3);padding:6px;border-radius:8px;border:1px solid rgba(99,102,241,0.25);flex-wrap:wrap;">' +
+          '<div id="qr-hero-thumbs" style="display:flex;gap:6px;align-items:center;background:rgba(0,0,0,0.3);padding:6px;border-radius:8px;border:1px solid rgba(99,102,241,0.25);flex-wrap:wrap;">' +
             thumbsHtml +
           '</div>' +
           '<div class="qr-hero-actions">' +
