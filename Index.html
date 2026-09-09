@@ -10113,30 +10113,43 @@ function renderAsset360Profile(target) {
 
   // Helper to score TPM plans chronologically (Oldest on top -> Latest at the bottom)
   function getTPMPlanSortScore(p) {
-    var yr = parseInt(p.PlanYear || p.Year || 0, 10);
-    var mo = parseInt(p.PlanMonth || p.Month || 0, 10);
     var dtStr = p.PlannedDate || p.PlanDate || p.ActualDate || '';
+    var yr = 0;
+    var mo = 0;
+    var dy = 1;
     if (dtStr) {
       if (dtStr.indexOf('-') !== -1) {
         var parts = dtStr.split('-');
         if (parts.length >= 3) {
-          var y = parseInt(parts[0], 10) || yr;
-          var m = parseInt(parts[1], 10) || mo;
-          var d = parseInt(parts[2].slice(0, 2), 10) || 1;
-          return y * 10000 + m * 100 + d;
+          yr = parseInt(parts[0], 10) || 0;
+          mo = parseInt(parts[1], 10) || 0;
+          dy = parseInt(parts[2].slice(0, 2), 10) || 1;
+        } else if (parts.length >= 2) {
+          yr = parseInt(parts[0], 10) || 0;
+          mo = parseInt(parts[1], 10) || 0;
         }
       } else if (dtStr.indexOf('/') !== -1) {
         var parts2 = dtStr.split('/');
         if (parts2.length >= 3) {
-          var d2 = parseInt(parts2[0], 10) || 1;
-          var m2 = parseInt(parts2[1], 10) || mo;
-          var y2 = parseInt(parts2[2], 10) || yr;
-          return y2 * 10000 + m2 * 100 + d2;
+          dy = parseInt(parts2[0], 10) || 1;
+          mo = parseInt(parts2[1], 10) || 0;
+          yr = parseInt(parts2[2], 10) || 0;
+        } else if (parts2.length >= 2) {
+          dy = parseInt(parts2[0], 10) || 1;
+          mo = parseInt(parts2[1], 10) || 0;
         }
       }
     }
-    if (!yr) yr = 2026;
-    return yr * 10000 + (mo || 1) * 100 + 1;
+    if (!mo) mo = parseInt(p.PlanMonth || p.Month || 0, 10);
+    if (!yr) {
+      var fy = parseInt(p.PlanYear || p.Year || 0, 10);
+      if (fy) {
+        yr = (mo >= 4) ? fy : (fy + 1);
+      } else {
+        yr = new Date().getFullYear();
+      }
+    }
+    return yr * 10000 + (mo || 1) * 100 + dy;
   }
 
   // Gather TPM plans for this asset (Sorted: Oldest first -> Latest at the bottom)
@@ -10148,9 +10161,29 @@ function renderAsset360Profile(target) {
   });
 
   // Check current month TPM
-  var curMonth = new Date().getMonth() + 1;
+  var curNow = new Date();
+  var curYear = curNow.getFullYear();
+  var curMonth = curNow.getMonth() + 1;
   var curMonthPlan = plans.find(function(p) {
-    return Number(p.PlanMonth) === curMonth;
+    var dt = p.PlannedDate || p.PlanDate || p.ActualDate || '';
+    var m = 0;
+    var y = 0;
+    if (dt) {
+      if (dt.indexOf('-') !== -1) {
+        var pt = dt.split('-');
+        if (pt.length >= 2) { y = parseInt(pt[0], 10); m = parseInt(pt[1], 10); }
+      } else if (dt.indexOf('/') !== -1) {
+        var pt2 = dt.split('/');
+        if (pt2.length >= 2) { m = parseInt(pt2[1], 10); if (pt2.length >= 3) y = parseInt(pt2[2], 10); }
+      }
+    }
+    if (!m) m = parseInt(p.PlanMonth || p.Month || 0, 10);
+    if (!y) {
+      var fy = parseInt(p.PlanYear || p.Year || 0, 10);
+      if (fy) y = (m >= 4) ? fy : fy + 1;
+      else y = curYear;
+    }
+    return m === curMonth && y === curYear;
   });
 
   // Gather Issues for this asset
@@ -10301,21 +10334,38 @@ function renderAsset360Profile(target) {
                     badgeHtml = '<span class="badge planned" style="background:rgba(59,130,246,0.2);color:#38bdf8;border:1px solid rgba(56,189,248,0.4);font-size:10px;padding:2px 8px;font-weight:600;">' + pStatus + '</span>';
                   }
 
-                  // Determine Month & Year
+                  // Determine Month & Year accurately
                   var thaiMonths = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-                  var mNum = parseInt(p.PlanMonth || p.Month || 0, 10);
-                  var yNum = parseInt(p.PlanYear || p.Year || 0, 10);
                   var dtRaw = p.PlannedDate || p.PlanDate || p.ActualDate || '';
-                  if (!mNum && dtRaw) {
+                  var yNum = 0;
+                  var mNum = 0;
+                  if (dtRaw) {
                     if (dtRaw.indexOf('-') !== -1) {
                       var pt = dtRaw.split('-');
-                      if (pt.length >= 2) { if (!yNum) yNum = parseInt(pt[0], 10); mNum = parseInt(pt[1], 10); }
+                      if (pt.length >= 2) {
+                        yNum = parseInt(pt[0], 10) || 0;
+                        mNum = parseInt(pt[1], 10) || 0;
+                      }
                     } else if (dtRaw.indexOf('/') !== -1) {
                       var pt2 = dtRaw.split('/');
-                      if (pt2.length >= 2) { mNum = parseInt(pt2[1], 10); if (!yNum && pt2.length >= 3) yNum = parseInt(pt2[2], 10); }
+                      if (pt2.length >= 3) {
+                        mNum = parseInt(pt2[1], 10) || 0;
+                        yNum = parseInt(pt2[2], 10) || 0;
+                      } else if (pt2.length >= 2) {
+                        mNum = parseInt(pt2[1], 10) || 0;
+                      }
                     }
                   }
-                  if (!yNum) yNum = new Date().getFullYear();
+                  if (!mNum) mNum = parseInt(p.PlanMonth || p.Month || 0, 10);
+                  if (!yNum) {
+                    var fy = parseInt(p.PlanYear || p.Year || 0, 10);
+                    if (fy) {
+                      // FY (Fiscal Year): Apr(4)-Dec(12) = fy, Jan(1)-Mar(3) = fy + 1
+                      yNum = (mNum >= 4) ? fy : (fy + 1);
+                    } else {
+                      yNum = new Date().getFullYear();
+                    }
+                  }
                   var mName = (mNum >= 1 && mNum <= 12) ? thaiMonths[mNum] : (mNum ? ('เดือน ' + mNum) : 'รอบตรวจ');
                   var periodText = 'รอบเดือน ' + mName + ' ' + yNum;
 
@@ -10343,7 +10393,7 @@ function renderAsset360Profile(target) {
                     subDateHtml = anyDate ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">📅 วันที่: ' + anyDate + '</div>' : '';
                   }
 
-                  var isCurrent = (mNum === curMonth);
+                  var isCurrent = (mNum === curMonth && yNum === curYear);
                   var rowBg = isCurrent ? 'background:rgba(56,189,248,0.06);' : '';
 
                   return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);' + rowBg + '">' +
