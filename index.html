@@ -396,12 +396,178 @@ select option{background:var(--surface2);}textarea{resize:vertical;min-height:80
     margin-left: 0 !important;
     padding-bottom: 70px;
   }
+  .hide-mobile {
+    display: none !important;
+  }
+  .show-mobile {
+    display: block !important;
+  }
+
+  /* --- HEADER RESPONSIVE --- */
+  #header {
+    height: 52px !important;
+    padding: 0 8px !important;
+    gap: 6px !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    flex-wrap: nowrap !important;
+  }
+  .header-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+    overflow: hidden !important;
+  }
   .header-mobile-nav {
     display: inline-flex !important;
-    align-items: center;
-    gap: 6px;
-    margin-right: 8px;
+    align-items: center !important;
+    gap: 4px !important;
+    margin-right: 0 !important;
+    flex-shrink: 0 !important;
   }
+  #mobile-back-btn, #mobile-menu-btn, .header-icon-btn {
+    padding: 4px 6px !important;
+    font-size: 13px !important;
+    min-width: 30px !important;
+    width: 30px !important;
+    height: 30px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    border-radius: 6px !important;
+  }
+  .header-title-wrap {
+    min-width: 0 !important;
+    overflow: hidden !important;
+    flex: 1 1 auto !important;
+  }
+  #page-title {
+    font-size: 13.5px !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+    line-height: 1.2 !important;
+    max-width: 140px !important;
+  }
+  #page-title span, #page-subtitle {
+    display: none !important;
+  }
+
+  /* --- HEADER ACTIONS --- */
+  .header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    flex-shrink: 0 !important;
+    flex-wrap: nowrap !important;
+  }
+  #header-qr-btn {
+    padding: 4px 6px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    width: 30px !important;
+    font-size: 13px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+  #user-profile-btn {
+    padding: 4px 6px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    font-size: 12px !important;
+    gap: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+  #top-user-icon {
+    font-size: 15px !important;
+    margin: 0 !important;
+  }
+  .header-refresh-btn {
+    padding: 4px 6px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    width: 30px !important;
+    font-size: 13px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+  }
+  .header-logout-btn {
+    display: none !important;
+  }
+
+  /* --- CONTENT PADDING & TOOLBAR --- */
+  #content {
+    padding: 10px 8px 75px 8px !important;
+  }
+  .toolbar {
+    gap: 6px !important;
+    margin-bottom: 12px !important;
+  }
+  .search-input {
+    min-width: 0 !important;
+    font-size: 12.5px !important;
+  }
+
+  /* --- QR SCAN PAGE ON MOBILE --- */
+  #page-qr-scan .toolbar {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+  }
+  #page-qr-scan .toolbar > div {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  #qr-asset-select {
+    width: 100% !important;
+    min-width: 0 !important;
+    font-size: 12.5px !important;
+  }
+  #page-qr-scan .toolbar button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 7px 10px !important;
+  }
+  .qr-portal-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .qr-hero-flex {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .qr-hero-left {
+    width: 100% !important;
+    flex: none !important;
+  }
+  .qr-hero-right {
+    width: 100% !important;
+    align-items: stretch !important;
+  }
+  .qr-hero-actions {
+    justify-content: stretch !important;
+  }
+  .qr-hero-actions button {
+    flex: 1 1 calc(50% - 4px) !important;
+    justify-content: center !important;
+    font-size: 11.5px !important;
+    padding: 7px 8px !important;
+  }
+
   #mobile-bottom-nav {
     display: flex !important;
   }
@@ -505,6 +671,30 @@ body.role-engineer .role-admin-only { display: none !important; }
 }
 #qr-reader__scan_region {
   background: rgba(0,0,0,0.5);
+}
+.qr-hero-flex {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.qr-hero-left {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+.qr-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.qr-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
 }
 </style>
 </head>
@@ -634,26 +824,30 @@ body.role-engineer .role-admin-only { display: none !important; }
 <!-- MAIN -->
 <main id="main">
   <header id="header">
-    <div style="display:flex;align-items:center;gap:6px;min-width:0;">
+    <div class="header-left">
       <div class="header-mobile-nav">
-        <button type="button" id="mobile-back-btn" class="btn btn-outline btn-sm" onclick="nav('dashboard')" style="display:none;padding:5px 8px;font-size:12px;white-space:nowrap;" title="กลับหน้าหลัก">&#11013;&#65039; &#3627;&#3609;&#3657;&#3634;&#3627;&#3621;&#3633;&#3585;</button>
-        <button type="button" id="mobile-menu-btn" class="btn btn-outline btn-sm" onclick="toggleMobileSidebar()" style="padding:5px 9px;font-size:15px;" title="เปิดเมนู">&#9776;</button>
+        <button type="button" id="mobile-back-btn" class="btn btn-outline btn-sm header-icon-btn" onclick="nav('dashboard')" style="display:none;" title="กลับหน้าหลัก">⬅️</button>
+        <button type="button" id="mobile-menu-btn" class="btn btn-outline btn-sm header-icon-btn" onclick="toggleMobileSidebar()" title="เปิดเมนู">☰</button>
       </div>
-      <h1 id="page-title" style="margin:0;">Dashboard <span id="page-subtitle">&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;&#3619;&#3632;&#3610;&#3610;</span></h1>
+      <div class="header-title-wrap">
+        <h1 id="page-title">Dashboard <span id="page-subtitle">ภาพรวมระบบ</span></h1>
+      </div>
     </div>
-    <div class="header-actions" style="display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-primary btn-sm" onclick="nav('qr-scan')" style="display:flex;align-items:center;gap:5px;font-weight:600;" title="สแกน QR ตรวจสอบเครื่อง/โมล">
-        <span>🏷️</span> <span class="hide-mobile">สแกน QR</span>
+    <div class="header-actions">
+      <button id="header-qr-btn" class="btn btn-primary btn-sm" onclick="nav('qr-scan')" title="สแกน QR ตรวจสอบเครื่อง/โมล">
+        <span>🏷️</span> <span class="hide-mobile" style="margin-left:4px;">สแกน QR</span>
       </button>
-      <button id="user-profile-btn" class="btn btn-outline btn-sm" onclick="openUserSelectModal()" style="display:flex;align-items:center;gap:6px;background:var(--surface2);border-color:var(--border);padding:5px 12px;font-weight:600;font-size:12px;border-radius:8px;" title="คลิกเพื่อสลับผู้ใช้งาน / เปลี่ยนบทบาท">
+      <button id="user-profile-btn" class="btn btn-outline btn-sm" onclick="openUserSelectModal()" title="คลิกเพื่อสลับผู้ใช้งาน / เปลี่ยนบทบาท">
         <span id="top-user-icon">👷‍♂️</span>
-        <span id="top-user-name" style="max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">สาริน T.</span>
-        <span id="top-user-role-badge" class="badge" style="font-size:10px;padding:2px 6px;background:rgba(99,102,241,0.2);color:var(--primary);border:1px solid rgba(99,102,241,0.4)">Technician</span>
-        <span style="font-size:9px;color:var(--text-muted);margin-left:2px;">▼</span>
+        <span id="top-user-name" class="hide-mobile" style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 4px;">สาริน T.</span>
+        <span id="top-user-role-badge" class="badge hide-mobile" style="font-size:10px;padding:2px 6px;background:rgba(99,102,241,0.2);color:var(--primary);border:1px solid rgba(99,102,241,0.4)">Technician</span>
+        <span class="hide-mobile" style="font-size:9px;color:var(--text-muted);margin-left:2px;">▼</span>
       </button>
-      <button class="btn btn-outline btn-sm" onclick="refreshData()">&#128260; Refresh</button>
-      <button class="btn btn-outline btn-sm" onclick="performLogout()" style="display:flex;align-items:center;gap:4px;color:var(--text-muted);" title="ออกจากระบบ">
-        <span>🚪</span> <span class="hide-mobile">ออก</span>
+      <button class="btn btn-outline btn-sm header-refresh-btn" onclick="refreshData()" title="รีเฟรชข้อมูล">
+        <span>🔄</span> <span class="hide-mobile" style="margin-left:4px;">Refresh</span>
+      </button>
+      <button class="btn btn-outline btn-sm header-logout-btn hide-mobile" onclick="performLogout()" title="ออกจากระบบ">
+        <span>🚪</span> <span style="margin-left:4px;">ออก</span>
       </button>
     </div>
   </header>
@@ -3230,6 +3424,7 @@ function applyRolePermissions() {
   var mobileItems = {
     'dashboard': true,
     'molds': can('molds', 'view'),
+    'qr-scan': true,
     'tpm': can('tpm', 'view'),
     'issues': can('issues', 'view')
   };
@@ -9840,8 +10035,8 @@ function renderAsset360Profile(target) {
   var html = 
     '<!-- HERO 360 HEADER -->' +
     '<div class="card" style="background:linear-gradient(135deg, rgba(99,102,241,0.08) 0%, rgba(15,22,41,0.95) 100%);border:1px solid var(--border2);position:relative;overflow:hidden;">' +
-      '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:16px;">' +
-        '<div style="flex:1;min-width:280px;">' +
+      '<div class="qr-hero-flex">' +
+        '<div class="qr-hero-left">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">' +
             '<span class="badge" style="background:' + (isMold ? 'rgba(139,92,246,0.2)' : 'rgba(14,165,233,0.2)') + ';color:' + (isMold ? '#a78bfa' : '#38bdf8') + ';border:1px solid ' + (isMold ? 'rgba(139,92,246,0.3)' : 'rgba(14,165,233,0.3)') + ';font-size:11px;font-weight:600;">' +
               (isMold ? '🧩 แม่พิมพ์ / Mold' : '🏭 เครื่องจักร / Machine') +
@@ -9849,16 +10044,16 @@ function renderAsset360Profile(target) {
             '<span class="badge ' + (item.Status||'active').toLowerCase() + '">' + (item.Status||'Active') + '</span>' +
             (item.AssetNo ? '<span style="font-family:monospace;font-size:12px;background:rgba(0,0,0,0.3);padding:2px 8px;border-radius:4px;border:1px solid var(--border);color:#38bdf8;">🏷️ ASSET: ' + item.AssetNo + '</span>' : '') +
           '</div>' +
-          '<h2 style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px;line-height:1.2;">' + item.Name + '</h2>' +
+          '<h2 style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;line-height:1.2;word-break:break-word;">' + item.Name + '</h2>' +
           '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">' +
             specsHtml +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;">' +
-          '<div style="display:flex;gap:6px;align-items:center;background:rgba(0,0,0,0.25);padding:6px;border-radius:8px;border:1px solid var(--border);">' +
+        '<div class="qr-hero-right">' +
+          '<div style="display:flex;gap:6px;align-items:center;background:rgba(0,0,0,0.25);padding:6px;border-radius:8px;border:1px solid var(--border);flex-wrap:wrap;">' +
             thumbsHtml +
           '</div>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;">' +
+          '<div class="qr-hero-actions">' +
             (can('tpm', 'edit') ? 
               '<button class="btn btn-success btn-sm" onclick="quickCompleteTPMForAsset(\'' + item.ID + '\',\'' + found.type + '\')" style="display:flex;align-items:center;gap:5px;font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.3);">' +
                 '<span>✅</span> <span>บันทึกผล PM ด่วน</span>' +
@@ -10335,25 +10530,29 @@ function executeBatchQRPrint() {
 <nav id="mobile-bottom-nav">
   <button type="button" class="mobile-nav-item active" onclick="nav('dashboard')" data-mobile-page="dashboard">
     <div class="icon">&#128202;</div>
-    <span>&#3616;&#3634;&#3614;&#3619;&#3623;&#3617;</span>
+    <span>ภาพรวม</span>
   </button>
   <button type="button" class="mobile-nav-item" onclick="nav('molds')" data-mobile-page="molds">
     <div class="icon">&#129513;</div>
-    <span>&#3650;&#3617;&#3621;</span>
+    <span>โมล</span>
+  </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('qr-scan')" data-mobile-page="qr-scan" style="color:#38bdf8;">
+    <div class="icon" style="font-size:18px;">🏷️</div>
+    <span style="font-weight:600;">สแกน QR</span>
   </button>
   <button type="button" class="mobile-nav-item" onclick="nav('tpm')" data-mobile-page="tpm">
     <div class="icon">&#128295;</div>
-    <span>&#3649;&#3612;&#3609; PM</span>
+    <span>แผน PM</span>
     <span class="mobile-nav-badge" id="mobile-badge-tpm" style="display:none">0</span>
   </button>
   <button type="button" class="mobile-nav-item" onclick="nav('issues')" data-mobile-page="issues">
     <div class="icon">&#128680;</div>
-    <span>&#3649;&#3592;&#3657;&#3591;&#3591;&#3634;&#3609;</span>
+    <span>แจ้งงาน</span>
     <span class="mobile-nav-badge" id="mobile-badge-issues" style="display:none">0</span>
   </button>
   <button type="button" class="mobile-nav-item" onclick="toggleMobileSidebar()">
     <div class="icon">&#9776;</div>
-    <span>&#3648;&#3621;&#3639;&#3629;&#3585;&#3648;&#3621;&#3618;&#3641;</span>
+    <span>เมนู</span>
   </button>
 </nav>
 
