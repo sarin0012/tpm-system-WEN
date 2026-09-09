@@ -800,6 +800,244 @@ body.role-engineer .role-admin-only { display: none !important; }
   border-top: 3px solid #6366f1 !important;
   box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5) !important;
 }
+
+/* ============================================================
+   DASHBOARD CATEGORY THEMES (DARK CYBER INDUSTRIAL)
+   ============================================================ */
+.dash-category-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 24px 0 12px 0;
+}
+.dash-category-header:first-child {
+  margin-top: 4px;
+}
+.dash-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  user-select: none;
+}
+.dash-cat-badge .dash-cat-icon {
+  font-size: 15px;
+}
+.dash-cat-badge .dash-cat-sub {
+  font-size: 10px;
+  opacity: 0.8;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  padding-left: 6px;
+  border-left: 1px solid currentColor;
+  margin-left: 2px;
+}
+.dash-cat-line {
+  flex: 1;
+  height: 1px;
+}
+
+.badge-indigo {
+  background: rgba(99, 102, 241, 0.16);
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  color: #c7d2fe;
+}
+.badge-indigo + .dash-cat-line {
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.4) 0%, transparent 100%);
+}
+
+.badge-sky {
+  background: rgba(14, 165, 233, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+}
+.badge-sky + .dash-cat-line {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.4) 0%, transparent 100%);
+}
+
+.badge-rose {
+  background: rgba(244, 63, 94, 0.16);
+  border: 1px solid rgba(251, 113, 133, 0.35);
+  color: #fecdd3;
+}
+.badge-rose + .dash-cat-line {
+  background: linear-gradient(90deg, rgba(244, 63, 94, 0.4) 0%, transparent 100%);
+}
+
+.badge-emerald {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #a7f3d0;
+}
+.badge-emerald + .dash-cat-line {
+  background: linear-gradient(90deg, rgba(16, 185, 129, 0.4) 0%, transparent 100%);
+}
+
+/* Stat Cards Individual Themes */
+.stat-card-mold::before,
+.stat-card-machine::before,
+.stat-card-issues::before,
+.stat-card-tpm::before,
+.stat-card-stock::before {
+  display: none !important;
+}
+
+.stat-card-mold {
+  background: linear-gradient(145deg, rgba(99, 102, 241, 0.14) 0%, rgba(30, 27, 75, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(129, 140, 248, 0.3) !important;
+  border-top: 3px solid #818cf8 !important;
+  box-shadow: 0 8px 24px -4px rgba(99, 102, 241, 0.2) !important;
+}
+.stat-card-mold:hover {
+  transform: translateY(-3px);
+  border-color: rgba(165, 180, 252, 0.55) !important;
+  box-shadow: 0 12px 30px -4px rgba(99, 102, 241, 0.35) !important;
+}
+.stat-card-mold .stat-value {
+  color: #e0e7ff !important;
+  text-shadow: 0 0 18px rgba(129, 140, 248, 0.4);
+}
+.stat-card-mold .stat-label {
+  color: #a5b4fc !important;
+}
+
+.stat-card-machine {
+  background: linear-gradient(145deg, rgba(14, 165, 233, 0.14) 0%, rgba(12, 74, 110, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  border-top: 3px solid #38bdf8 !important;
+  box-shadow: 0 8px 24px -4px rgba(14, 165, 233, 0.2) !important;
+}
+.stat-card-machine:hover {
+  transform: translateY(-3px);
+  border-color: rgba(125, 211, 252, 0.55) !important;
+  box-shadow: 0 12px 30px -4px rgba(14, 165, 233, 0.35) !important;
+}
+.stat-card-machine .stat-value {
+  color: #e0f2fe !important;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
+}
+.stat-card-machine .stat-label {
+  color: #7dd3fc !important;
+}
+
+.stat-card-issues {
+  background: linear-gradient(145deg, rgba(244, 63, 94, 0.16) 0%, rgba(136, 19, 55, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(251, 113, 133, 0.35) !important;
+  border-top: 3px solid #f43f5e !important;
+  box-shadow: 0 8px 24px -4px rgba(244, 63, 94, 0.25) !important;
+}
+.stat-card-issues:hover {
+  transform: translateY(-3px);
+  border-color: rgba(253, 164, 175, 0.6) !important;
+  box-shadow: 0 12px 30px -4px rgba(244, 63, 94, 0.4) !important;
+}
+.stat-card-issues .stat-value {
+  color: #ffe4e6 !important;
+  text-shadow: 0 0 18px rgba(244, 63, 94, 0.45);
+}
+.stat-card-issues .stat-label {
+  color: #fda4af !important;
+}
+
+.stat-card-tpm {
+  background: linear-gradient(145deg, rgba(16, 185, 129, 0.14) 0%, rgba(6, 78, 59, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(52, 211, 153, 0.3) !important;
+  border-top: 3px solid #10b981 !important;
+  box-shadow: 0 8px 24px -4px rgba(16, 185, 129, 0.2) !important;
+}
+.stat-card-tpm:hover {
+  transform: translateY(-3px);
+  border-color: rgba(110, 231, 183, 0.55) !important;
+  box-shadow: 0 12px 30px -4px rgba(16, 185, 129, 0.35) !important;
+}
+.stat-card-tpm .stat-value {
+  color: #d1fae5 !important;
+  text-shadow: 0 0 18px rgba(16, 185, 129, 0.4);
+}
+.stat-card-tpm .stat-label {
+  color: #6ee7b7 !important;
+}
+
+.stat-card-stock {
+  background: linear-gradient(145deg, rgba(245, 158, 11, 0.14) 0%, rgba(120, 53, 15, 0.35) 45%, rgba(15, 23, 42, 0.95) 100%) !important;
+  border: 1px solid rgba(251, 191, 36, 0.3) !important;
+  border-top: 3px solid #f59e0b !important;
+  box-shadow: 0 8px 24px -4px rgba(245, 158, 11, 0.2) !important;
+}
+.stat-card-stock:hover {
+  transform: translateY(-3px);
+  border-color: rgba(253, 230, 138, 0.55) !important;
+  box-shadow: 0 12px 30px -4px rgba(245, 158, 11, 0.35) !important;
+}
+.stat-card-stock .stat-value {
+  color: #fef3c7 !important;
+  text-shadow: 0 0 18px rgba(245, 158, 11, 0.4);
+}
+.stat-card-stock .stat-label {
+  color: #fcd34d !important;
+}
+
+/* Dashboard Section Card Themes */
+.dash-card-tpm-chart {
+  background: linear-gradient(150deg, rgba(14, 165, 233, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-top: 3px solid #0ea5e9 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(14, 165, 233, 0.22) !important;
+}
+.dash-card-tpm-chart .card-title {
+  color: #7dd3fc !important;
+  font-weight: 700;
+}
+
+.dash-card-issue-chart {
+  background: linear-gradient(150deg, rgba(244, 63, 94, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
+  border: 1px solid rgba(251, 113, 133, 0.25) !important;
+  border-top: 3px solid #f43f5e !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(244, 63, 94, 0.22) !important;
+}
+.dash-card-issue-chart .card-title {
+  color: #fda4af !important;
+  font-weight: 700;
+}
+
+.dash-card-open-issues {
+  background: linear-gradient(150deg, rgba(225, 29, 72, 0.12) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  border-top: 3px solid #e11d48 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(225, 29, 72, 0.25) !important;
+}
+.dash-card-open-issues .card-title {
+  color: #fda4af !important;
+  font-weight: 700;
+}
+
+.dash-card-tpm-overdue {
+  background: linear-gradient(150deg, rgba(245, 158, 11, 0.1) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  border-top: 3px solid #f59e0b !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(245, 158, 11, 0.2) !important;
+}
+.dash-card-tpm-overdue .card-title {
+  color: #fcd34d !important;
+  font-weight: 700;
+}
+
+.dash-card-low-stock {
+  background: linear-gradient(150deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.9) 50%, rgba(10, 15, 29, 0.98) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-top: 3px solid #10b981 !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px -10px rgba(16, 185, 129, 0.2) !important;
+}
+.dash-card-low-stock .card-title {
+  color: #6ee7b7 !important;
+  font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -958,16 +1196,55 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
+  <!-- Category 1: KPI Overview -->
+  <div class="dash-category-header">
+    <div class="dash-cat-badge badge-indigo">
+      <span class="dash-cat-icon">📊</span>
+      <span class="dash-cat-title">ภาพรวมระบบ</span>
+      <span class="dash-cat-sub">KPI OVERVIEW</span>
+    </div>
+    <div class="dash-cat-line"></div>
+  </div>
   <div class="stats-grid" id="dash-stats"><div style="color:var(--text-muted);padding:20px">&#3585;&#3635;&#3621;&#3633;&#3591;&#3650;&#3627;&#3621;&#3604;...</div></div>
+
+  <!-- Category 2: Analytics & Trends -->
+  <div class="dash-category-header">
+    <div class="dash-cat-badge badge-sky">
+      <span class="dash-cat-icon">📈</span>
+      <span class="dash-cat-title">สถิติและประสิทธิภาพ</span>
+      <span class="dash-cat-sub">ANALYTICS & TRENDS</span>
+    </div>
+    <div class="dash-cat-line"></div>
+  </div>
   <div class="chart-grid">
-    <div class="card"><div class="card-header"><div class="card-title">TPM Completion (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(99,102,241,0.15);color:var(--primary);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
-    <div class="card"><div class="card-header"><div class="card-title">ปัญหา / Issues (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(239,68,68,0.15);color:var(--danger);font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
+    <div class="card dash-card-tpm-chart"><div class="card-header"><div class="card-title">TPM Completion (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(14,165,233,0.18);color:#38bdf8;font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="tpm-chart"></canvas></div></div>
+    <div class="card dash-card-issue-chart"><div class="card-header"><div class="card-title">ปัญหา / Issues (6 เดือน) <span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(244,63,94,0.18);color:#fda4af;font-weight:500;margin-left:6px;cursor:pointer;">👆 คลิกดูกราฟ</span></div></div><div class="chart-wrap"><canvas id="issue-chart"></canvas></div></div>
+  </div>
+
+  <!-- Category 3: Urgent Action Items -->
+  <div class="dash-category-header">
+    <div class="dash-cat-badge badge-rose">
+      <span class="dash-cat-icon">🚨</span>
+      <span class="dash-cat-title">ติดตามงานเร่งด่วน</span>
+      <span class="dash-cat-sub">URGENT ACTION ITEMS</span>
+    </div>
+    <div class="dash-cat-line"></div>
   </div>
   <div class="grid-2">
-    <div class="card"><div class="card-header"><div class="card-title">&#128680; Open Issues</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-issues"></div></div>
-    <div class="card"><div class="card-header"><div class="card-title">&#128308; TPM Overdue</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-tpm-overdue"></div></div>
+    <div class="card dash-card-open-issues"><div class="card-header"><div class="card-title">&#128680; Open Issues</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-issues"></div></div>
+    <div class="card dash-card-tpm-overdue"><div class="card-header"><div class="card-title">&#128308; TPM Overdue</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-tpm-overdue"></div></div>
   </div>
-  <div class="card mt-16"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-low-stock"></div></div>
+
+  <!-- Category 4: Spare Parts & Inventory -->
+  <div class="dash-category-header">
+    <div class="dash-cat-badge badge-emerald">
+      <span class="dash-cat-icon">📦</span>
+      <span class="dash-cat-title">คลังอะไหล่สำรอง</span>
+      <span class="dash-cat-sub">INVENTORY & SPARE PARTS</span>
+    </div>
+    <div class="dash-cat-line"></div>
+  </div>
+  <div class="card dash-card-low-stock"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">&#3604;&#3641;&#3607;&#3633;&#3657;&#3591;&#3627;&#3617;&#3604;</button></div><div id="dash-low-stock"></div></div>
 </div>
 
 <!-- MOLDS -->
@@ -4291,19 +4568,19 @@ async function loadDashboard() {
     if (dashStats) {
       var statCards = [];
       if (canMold) {
-        statCards.push('<div class="stat-card" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+scopedMolds+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-mold" onclick="nav(\'molds\')"><div class="stat-icon">🧩</div><div class="stat-label">🧩 Total Molds</div><div class="stat-value">'+scopedMolds+'</div><div class="stat-sub" style="color:#a5b4fc;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
       }
       if (canMachine) {
-        statCards.push('<div class="stat-card" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+scopedMachines+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-machine" onclick="nav(\'machines\')"><div class="stat-icon">🏭</div><div class="stat-label">🏭 Total Machines</div><div class="stat-value">'+scopedMachines+'</div><div class="stat-sub" style="color:#7dd3fc;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
       }
       if (canIssues) {
-        statCards.push('<div class="stat-card warning" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+openIssues+'</div><div class="stat-sub">Critical: '+criticalIssues+' <span style="color:var(--primary);font-size:10px">→ คลิก</span></div></div>');
+        statCards.push('<div class="stat-card stat-card-issues" onclick="nav(\'issues\')"><div class="stat-icon">🚨</div><div class="stat-label">🚨 Open Issues</div><div class="stat-value">'+openIssues+'</div><div class="stat-sub" style="color:#fda4af;">Critical: '+criticalIssues+' <span style="font-size:10px;opacity:0.85">→ คลิก</span></div></div>');
       }
       if (canTPM) {
-        statCards.push('<div class="stat-card success" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+tpmDone+'/'+tpmThisMonth+'</div><div class="stat-sub">Overdue: '+tpmOverdue+' | Due Soon: '+tpmDueSoon+'</div></div>');
+        statCards.push('<div class="stat-card stat-card-tpm" onclick="nav(\'tpm\')"><div class="stat-icon">🔧</div><div class="stat-label">🔧 TPM เดือนนี้</div><div class="stat-value">'+tpmDone+'/'+tpmThisMonth+'</div><div class="stat-sub" style="color:#6ee7b7;">Overdue: '+tpmOverdue+' | Due Soon: '+tpmDueSoon+'</div></div>');
       }
       if (canStock) {
-        statCards.push('<div class="stat-card '+(scopedStock>0?'danger':'')+'" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+scopedStock+'</div><div class="stat-sub" style="color:var(--primary);font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
+        statCards.push('<div class="stat-card stat-card-stock" onclick="nav(\'stock\')"><div class="stat-icon">📦</div><div class="stat-label">📦 Low Stock</div><div class="stat-value">'+scopedStock+'</div><div class="stat-sub" style="color:#fcd34d;font-size:10px;margin-top:4px">→ คลิกเพื่อดู</div></div>');
       }
       dashStats.innerHTML = statCards.join('');
     }
