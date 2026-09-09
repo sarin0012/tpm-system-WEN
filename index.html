@@ -2666,7 +2666,7 @@ async function _apiInternal(actionStr, payload = null) {
         return { success: true, data: data || [] };
       }
       case 'getIssueImages': {
-        const { data, error } = await sb.from('issues').select('ID, ImageIds, AfterImageIds, BeforeImageIds, CorrectiveAction, RootCause').eq('ID', payload.id).single();
+        const { data, error } = await sb.from('issues').select('ID, AfterImageIds, BeforeImageIds, CorrectiveAction, RootCause').eq('ID', payload.id).single();
         if (error) return { success: false, error: error.message };
         let trialImgs = '[]', trialResult = '', trialDate = '', trialShots = 0, trialNotes = '';
         if (data && data.CorrectiveAction && data.CorrectiveAction.indexOf('[TRIAL:') !== -1) {
@@ -2686,7 +2686,7 @@ async function _apiInternal(actionStr, payload = null) {
           const rm = data.RootCause.match(/\[TR:([^\]]+)\]/);
           if (rm) trialResult = rm[1];
         }
-        const beforeImgs = data ? (data.BeforeImageIds || data.ImageIds || '[]') : '[]';
+        const beforeImgs = data ? (data.BeforeImageIds || '[]') : '[]';
         return {
           success: true,
           data: {
@@ -6363,6 +6363,30 @@ function renderIssues(){
   }
 
   filterIssues();
+  preloadVisibleIssueImages();
+}
+
+var _isPreloadingIssues = false;
+function preloadVisibleIssueImages() {
+  if (_isPreloadingIssues || !STATE.issues || !STATE.issues.length) return;
+  var unloaded = STATE.issues.filter(function(x) { return !x._imagesLoaded; });
+  if (!unloaded.length) return;
+  _isPreloadingIssues = true;
+  var idx = 0;
+  function next() {
+    if (idx >= unloaded.length) {
+      _isPreloadingIssues = false;
+      return;
+    }
+    var target = unloaded[idx++];
+    ensureIssueImages(target.ID).then(function() {
+      try { filterIssues(); } catch(e){}
+      setTimeout(next, 80);
+    }).catch(function() {
+      setTimeout(next, 80);
+    });
+  }
+  next();
 }
 
 function filterIssues() {
