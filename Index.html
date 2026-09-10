@@ -3023,7 +3023,8 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getStockParts': {
         const { data, error } = await sb.from('stock_parts').select('*').order('CreatedAt', { ascending: false });
         if (error) return { success: false, error: error.message };
-        const mapped = (data || []).map(p => {
+        const partsOnly = (data || []).filter(p => !p.ID.startsWith('__SYS_') && p.Category !== '__CONFIG__' && p.PartName !== '__SYSTEM_CONFIG_HEADER_SIGS__' && p.PartName !== '__SYSTEM_CONFIG_USERS__');
+        const mapped = partsOnly.map(p => {
           let loc = p.Location || '';
           let note = '';
           let onOrder = null;
@@ -4785,7 +4786,7 @@ async function loadDashboard() {
     var criticalIssues = scopedIssues.filter(i=>i.Status!=='Closed'&&i.Severity==='Critical').length;
 
     var scopedStock = (STATE.stockParts||[]).filter(function(p){
-      if (p.ID === '__SYS_USERS_CONFIG__') return false;
+      if (p.ID && (p.ID.startsWith('__SYS_') || p.Category === '__CONFIG__' || p.PartName === '__SYSTEM_CONFIG_HEADER_SIGS__' || p.PartName === '__SYSTEM_CONFIG_USERS__')) return false;
       if (!canMold && p.LinkedType === 'Mold') return false;
       if (!canMachine && p.LinkedType === 'Machine') return false;
       var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
@@ -4966,7 +4967,7 @@ async function loadDashboard() {
 
     const stockEl = document.getElementById('dash-low-stock');
     const lowStockList = (STATE.stockParts || []).filter(function(p) {
-      if (p.ID === '__SYS_USERS_CONFIG__') return false;
+      if (p.ID && (p.ID.startsWith('__SYS_') || p.Category === '__CONFIG__' || p.PartName === '__SYSTEM_CONFIG_HEADER_SIGS__' || p.PartName === '__SYSTEM_CONFIG_USERS__')) return false;
       if (!canMold && p.LinkedType === 'Mold') return false;
       if (!canMachine && p.LinkedType === 'Machine') return false;
       var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
@@ -8054,7 +8055,9 @@ async function openCloseIssueModal(id){
   // Populate close-part-select with Stock Parts
   var sel = document.getElementById('close-part-select');
   if (sel) {
-    var stockList = (STATE.stockParts || []).filter(function(p){ return p.ID !== '__SYS_USERS_CONFIG__'; });
+    var stockList = (STATE.stockParts || []).filter(function(p){
+      return p.ID && !p.ID.startsWith('__SYS_') && p.Category !== '__CONFIG__' && p.PartName !== '__SYSTEM_CONFIG_HEADER_SIGS__' && p.PartName !== '__SYSTEM_CONFIG_USERS__';
+    });
     var linkedParts = stockList.filter(function(p) { return p.LinkedID === iss.TargetID && iss.TargetID; });
     var otherStock = stockList.filter(function(p) { return p.LinkedID !== iss.TargetID || !iss.TargetID; });
 
@@ -8237,7 +8240,7 @@ function renderStock(){
   var stockTypeFilter = (document.getElementById('stock-target-type-filter')||{}).value || '';
 
   var stockList = (STATE.stockParts||[]).filter(function(p){
-    if (p.ID === '__SYS_USERS_CONFIG__') return false;
+    if (p.ID && (p.ID.startsWith('__SYS_') || p.Category === '__CONFIG__' || p.PartName === '__SYSTEM_CONFIG_HEADER_SIGS__' || p.PartName === '__SYSTEM_CONFIG_USERS__')) return false;
     var lt = p.LinkedType || '';
     if (!canMold && lt === 'Mold') return false;
     if (!canMachine && lt === 'Machine') return false;
@@ -8273,7 +8276,7 @@ function filterStock(){
   var canMachine = can('machines', 'view');
 
   var data=(STATE.stockParts||[]).filter(function(p){
-    if (p.ID === '__SYS_USERS_CONFIG__') return false;
+    if (p.ID && (p.ID.startsWith('__SYS_') || p.Category === '__CONFIG__' || p.PartName === '__SYSTEM_CONFIG_HEADER_SIGS__' || p.PartName === '__SYSTEM_CONFIG_USERS__')) return false;
     var lt = p.LinkedType || '';
     if (!canMold && lt === 'Mold') return false;
     if (!canMachine && lt === 'Machine') return false;
