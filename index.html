@@ -3882,13 +3882,14 @@ async function _apiInternal(actionStr, payload = null) {
       case 'completeTPM':
       case 'completeTPMPlan': {
         const item = Object.assign({}, payload.data);
+        const imagesJson = item.AfterImageIds || item.ImageIds || '[]';
         const updateData = {
           Status: 'Done',
           ActualDate: item.ActualDate,
           ActualBy: item.ActualBy,
           ChecklistResult: item.ChecklistResult,
           Notes: item.Notes,
-          AfterImageIds: item.AfterImageIds
+          AfterImageIds: imagesJson
         };
         if (item.CoInspector) {
           updateData.CoInspector = item.CoInspector;
@@ -6129,6 +6130,10 @@ function openMoldTPMDetailModal(moldId) {
         var actDate = p.ActualDate ? formatDMY(p.ActualDate) : '-';
         var planDate = p.PlannedDate ? formatDMY(p.PlannedDate) : '-';
         var insp = isDone ? (p.ActualBy || '-') + (p.CoInspector ? ' / ' + p.CoInspector : '') : '-';
+        var pImgs = tryParse(p.AfterImageIds || p.ImageIds) || [];
+        var photoBadge = (pImgs.length > 0)
+          ? '<br><span style="cursor:pointer;color:var(--primary);font-size:11px;font-weight:600;" onclick="event.stopPropagation();closeModal(\'mold-tpm-detail-modal\');openTPMCompleteModal(\'' + p.ID + '\');" title="มีรูปภาพแนบ ' + pImgs.length + ' รูป (คลิกดู)">📷 ' + pImgs.length + ' รูป</span>'
+          : '';
         
         var actionBtn = !isDone
           ? '<button class="btn btn-success btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ บันทึกผล</button>'
@@ -6140,7 +6145,7 @@ function openMoldTPMDetailModal(moldId) {
           '<td>' + (p.AssignedTo || '-') + (p.VendorResp ? '<br><span style="font-size:11px;color:var(--text-muted)">Vendor: ' + p.VendorResp + '</span>' : '') + '</td>' +
           '<td>' + stBadge + '</td>' +
           '<td>' + actDate + '</td>' +
-          '<td style="font-size:11px;">' + insp + '</td>' +
+          '<td style="font-size:11px;">' + insp + photoBadge + '</td>' +
           '<td style="text-align:center;white-space:nowrap;">' + actionBtn + '</td>' +
         '</tr>';
       }).join('');
@@ -6742,10 +6747,16 @@ function renderTPMList(container){
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
     var isDone = p.Status === 'Done' || getTPMStatus(p) === 'Done';
+    var pImgs = tryParse(p.AfterImageIds || p.ImageIds) || [];
+    var photoTag = (pImgs.length > 0)
+      ? ' <span style="cursor:pointer;color:var(--primary);font-size:11px;font-weight:600;" onclick="openTPMCompleteModal(\'' + p.ID + '\')" title="มีรูปภาพแนบ ' + pImgs.length + ' รูป (คลิกดู)">📷 ' + pImgs.length + '</span>'
+      : '';
     var actionBtns = !isDone
       ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
-      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
-    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
+         ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
+         (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
+    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -7453,19 +7464,27 @@ function openTPMCompleteModal(planId, forceEdit){
   var uploadBox = document.getElementById('tpm-complete-upload-box');
   if (uploadBox) uploadBox.style.display = isReadOnly ? 'none' : 'block';
 
-  STATE.pendingPhotos['tpm-complete']={files:[]};
+  var existingPhotos = tryParse(plan.AfterImageIds || plan.ImageIds) || [];
+  STATE.pendingPhotos['tpm-complete'] = {
+    files: [],
+    existing: existingPhotos.slice()
+  };
   var previewGrid = document.getElementById('tpm-complete-photos-preview');
   if (previewGrid) {
-    var existingPhotos = tryParse(plan.ImageIds);
-    if (existingPhotos && existingPhotos.length > 0) {
-      previewGrid.innerHTML = 
-        '<div style="width:100%;font-size:11.5px;color:var(--text-muted);margin-bottom:6px;font-weight:600;">📷 รูปภาพผลการตรวจที่บันทึกไว้ (' + existingPhotos.length + ' รูป):</div>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;">' +
-        existingPhotos.map(function(url) {
-          return '<img src="' + url + '" onclick="window.open(\'' + url + '\', \'_blank\')" style="width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;" title="คลิกเพื่อดูรูปขยาย" />';
-        }).join('') + '</div>';
-    } else {
-      previewGrid.innerHTML = isReadOnly ? '<div style="color:var(--text-faint);font-size:12px;margin-top:4px;">ไม่มีรูปภาพแนบในรอบนี้</div>' : '';
+    previewGrid.innerHTML = '';
+    if (existingPhotos.length > 0) {
+      existingPhotos.forEach(function(url, idx) {
+        var item = document.createElement('div');
+        item.className = 'photo-preview-item';
+        item.id = 'pi-tpm-complete-ex-' + idx;
+        var removeBtn = !isReadOnly
+          ? '<button type="button" class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'tpm-complete\',' + idx + ',\'tpm-complete-photos-preview\',true)" title="ลบรูป">✕</button>'
+          : '';
+        item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" title="คลิกเพื่อดูรูปขยาย" />' + removeBtn;
+        previewGrid.appendChild(item);
+      });
+    } else if (isReadOnly) {
+      previewGrid.innerHTML = '<div style="color:var(--text-faint);font-size:12px;margin-top:4px;">ไม่มีรูปภาพแนบในรอบนี้</div>';
     }
   }
 
@@ -7652,10 +7671,7 @@ async function completeTPM(){
   }
 
   showGlobalLoading(true);
-  var newImgIds = await uploadPendingPhotos('tpm-complete','TPM_Records');
-  var existingPlan = STATE.tpmPlans.find(function(p){ return p.ID === planId; });
-  var existingImgIds = existingPlan ? tryParse(existingPlan.ImageIds) : [];
-  var finalImgIds = (newImgIds && newImgIds.length > 0) ? existingImgIds.concat(newImgIds) : existingImgIds;
+  var finalImgIds = await uploadPendingPhotos('tpm-complete','TPM_Records');
 
   var data = {
     ID: planId,
@@ -7664,11 +7680,23 @@ async function completeTPM(){
     CoInspector: coInspector,
     Notes: v('tpm-complete-notes'),
     ChecklistResult: JSON.stringify(checks),
+    AfterImageIds: JSON.stringify(finalImgIds),
     ImageIds: JSON.stringify(finalImgIds)
   };
   var r = await api('completeTPMPlan', { data: data });
   showGlobalLoading(false);
   if (r.success) {
+    var localPlan = (STATE.tpmPlans || []).find(function(p){ return p.ID === planId; });
+    if (localPlan) {
+      localPlan.Status = 'Done';
+      localPlan.ActualDate = actualDate;
+      localPlan.ActualBy = actualBy;
+      localPlan.CoInspector = coInspector;
+      localPlan.Notes = data.Notes;
+      localPlan.ChecklistResult = data.ChecklistResult;
+      localPlan.AfterImageIds = data.AfterImageIds;
+      localPlan.ImageIds = data.ImageIds;
+    }
     STATE._tpmEditUnlocked = false;
     showToast('บันทึกผล TPM สำเร็จ ✅', 'success');
     closeModal('tpm-complete-modal');
