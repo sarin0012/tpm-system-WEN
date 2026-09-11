@@ -1388,6 +1388,447 @@ body.role-engineer .role-admin-only { display: none !important; }
   border-color: #6366f1;
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
 }
+/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -1647,6 +2088,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="molds:edit" onclick="openMoldModal()">+ เพิ่มโมล</button>
   </div>
+  <div class="mobile-view-switcher"><button class="mobile-view-btn active" data-view="cards" onclick="setMobileTableView('cards')">๐“ฑ เธเธฒเธฃเนเธ” (Card)</button><button class="mobile-view-btn" data-view="table" onclick="setMobileTableView('table')">๐“ เธ•เธฒเธฃเธฒเธ (Table)</button></div>
   <div class="card"><div class="table-wrapper"><table id="molds-table">
     <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>ขนาดเครื่อง (Ton)</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>⏱ Cycle Time</th><th>⚡ ยอดผลิต/8ชม.</th><th>Status</th><th>🔧 สถานะ PM</th><th>รูป</th><th>Actions</th></tr></thead>
     <tbody id="molds-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
@@ -1662,6 +2104,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="machines:edit" onclick="openMachineModal()">+ เพิ่มเครื่องจักร</button>
   </div>
+  <div class="mobile-view-switcher"><button class="mobile-view-btn active" data-view="cards" onclick="setMobileTableView('cards')">๐“ฑ เธเธฒเธฃเนเธ” (Card)</button><button class="mobile-view-btn" data-view="table" onclick="setMobileTableView('table')">๐“ เธ•เธฒเธฃเธฒเธ (Table)</button></div>
   <div class="card"><div class="table-wrapper"><table id="machines-table">
     <thead><tr><th>ชื่อ</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
     <tbody id="machines-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
@@ -1692,6 +2135,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="issues:edit" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
+  <div class="mobile-view-switcher"><button class="mobile-view-btn active" data-view="cards" onclick="setMobileTableView('cards')">๐“ฑ เธเธฒเธฃเนเธ” (Card)</button><button class="mobile-view-btn" data-view="table" onclick="setMobileTableView('table')">๐“ เธ•เธฒเธฃเธฒเธ (Table)</button></div>
   <div class="card"><div class="table-wrapper"><table id="issues-table">
     <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
     <tbody id="issues-tbody"></tbody>
@@ -1710,6 +2154,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <button class="btn btn-outline" data-perm="stock:edit" onclick="openStockTxModal()">📦 รับ/เบิก</button>
     <button class="btn btn-primary" data-perm="stock:edit" onclick="openStockPartModal()">+ เพิ่มอะไหล่</button>
   </div>
+  <div class="mobile-view-switcher"><button class="mobile-view-btn active" data-view="cards" onclick="setMobileTableView('cards')">๐“ฑ เธเธฒเธฃเนเธ” (Card)</button><button class="mobile-view-btn" data-view="table" onclick="setMobileTableView('table')">๐“ เธ•เธฒเธฃเธฒเธ (Table)</button></div>
   <div class="card"><div class="table-wrapper"><table id="stock-table">
     <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
     <tbody id="stock-tbody"></tbody>
@@ -4678,6 +5123,29 @@ async function initApp() {
 }
 
 if (document.readyState === 'loading') {
+  function getMobileTableView() {
+  try { return localStorage.getItem('tpm_mobile_view') || 'cards'; } catch(e){ return 'cards'; }
+}
+function setMobileTableView(view) {
+  try { localStorage.setItem('tpm_mobile_view', view); } catch(e){}
+  applyMobileTableView();
+}
+function applyMobileTableView() {
+  var view = getMobileTableView();
+  if (view === 'table') {
+    document.body.classList.add('mobile-force-table');
+  } else {
+    document.body.classList.remove('mobile-force-table');
+  }
+  document.querySelectorAll('.mobile-view-btn').forEach(function(btn) {
+    if (btn.getAttribute('data-view') === view) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+  applyMobileTableView();
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
   initApp();
@@ -5920,22 +6388,22 @@ function renderMolds() {
     var _prodCell = _prod !== null
       ? '<div style="text-align:center"><span style="font-family:monospace;font-weight:700;font-size:15px;color:#34d399">' + _prod.toLocaleString() + '</span><br><span style="font-size:10px;color:var(--text-muted)">ชิ้น/8ชม.</span><br><span style="font-size:9px;color:var(--text-faint)">(x' + _cav4 + ' Cav)</span></div>'
       : '<span style="color:var(--text-faint);font-size:11px">-</span>';
-    return '<tr>'+
-      '<td style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
-      '<td><strong>'+m.Name+'</strong></td>'+
-      '<td><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
-      '<td>'+(m.MachineTon ? ('<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;">🏗️ ' + m.MachineTon + '</span>') : '<span style="color:var(--text-faint);font-size:11px">-</span>')+'</td>'+
-      '<td>'+(m.AssetNo||'-')+'</td>'+
-      '<td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
-      '<td>'+(m.Vendor||'-')+'</td>'+
-      '<td>'+(m.Material||'-')+'</td>'+
-      '<td>'+specStr+'</td>'+
-      '<td>'+_cycleCell+'</td>'+
-      '<td>'+_prodCell+'</td>'+
-      '<td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
-      '<td>'+tpmSummary.badgeHtml+'</td>'+
-      '<td>'+thumbs+'</td>'+
-      '<td style="white-space:nowrap;">'+
+    return '<tr class="m-card-row mld-card">'+
+      '<td class="mld-idx" style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
+      '<td class="mld-name"><strong>'+m.Name+'</strong></td>'+
+      '<td class="mld-model" data-label="Model"><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
+      '<td class="mld-ton" data-label="ขนาดเครื่อง">'+(m.MachineTon ? ('<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;">🏗️ ' + m.MachineTon + '</span>') : '<span style="color:var(--text-faint);font-size:11px">-</span>')+'</td>'+
+      '<td class="mld-asset" data-label="Asset No.">'+(m.AssetNo||'-')+'</td>'+
+      '<td class="mld-drawing" data-label="Drawing"><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
+      '<td class="mld-vendor" data-label="Vendor">'+(m.Vendor||'-')+'</td>'+
+      '<td class="mld-material" data-label="Material">'+(m.Material||'-')+'</td>'+
+      '<td class="mld-specs" data-label="ขนาด/น้ำหนัก">'+specStr+'</td>'+
+      '<td class="mld-cycle" data-label="Cycle Time">'+_cycleCell+'</td>'+
+      '<td class="mld-prod" data-label="ยอดผลิต/8ชม.">'+_prodCell+'</td>'+
+      '<td class="mld-status" data-label="สถานะ"><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
+      '<td class="mld-pm" data-label="สถานะ PM">'+tpmSummary.badgeHtml+'</td>'+
+      '<td class="mld-thumb" data-label="รูปภาพ">'+thumbs+'</td>'+
+      '<td class="mld-actions" style="white-space:nowrap;">'+
         '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="ดูรายละเอียด & แผน PM" style="margin-right:2px">📋 แผน PM</button>'+
         '<button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="พิมพ์สติ๊กเกอร์ QR 5x5cm" style="margin-right:2px">🏷️ QR</button>'+
         '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button>'+
@@ -6199,7 +6667,7 @@ function filterMachines(){
     } else {
       thumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); viewMachinePhoto(\'' + m.ID + '\')" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ">📷 ดูรูป</button>';
     }
-    return '<tr><td><strong>'+m.Name+'</strong></td><td>'+m.AssetNo+'</td><td>'+(m.Vendor||'-')+'</td><td>'+(m.Model||'-')+'</td><td>'+(m.Department||'-')+'</td><td>'+(m.Location||'-')+'</td><td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td>'+thumbs+'</td><td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="พิมพ์สติ๊กเกอร์ QR 5x5cm" style="margin-right:2px">🏷️ QR</button>' + (can('machines', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (can('machines', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
+    return '<tr class="m-card-row mac-card"><td class="mac-name"><strong>'+m.Name+'</strong></td><td class="mac-asset" data-label="Asset No.">'+m.AssetNo+'</td><td class="mac-vendor" data-label="Vendor">'+(m.Vendor||'-')+'</td><td class="mac-model" data-label="Model">'+(m.Model||'-')+'</td><td class="mac-dept" data-label="แผนก">'+(m.Department||'-')+'</td><td class="mac-loc" data-label="ที่ตั้ง">'+(m.Location||'-')+'</td><td class="mac-status" data-label="สถานะ"><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td><td class="mac-thumb" data-label="รูปภาพ">'+thumbs+'</td><td class="mac-actions" style="white-space:nowrap;"><button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="พิมพ์สติ๊กเกอร์ QR 5x5cm" style="margin-right:2px">🏷️ QR</button>' + (can('machines', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMachineModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '') + (can('machines', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMachine(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '') + '</td></tr>';
   }).join('');
 }
 async function openMachineModal(data){
@@ -6342,7 +6810,7 @@ function renderTPMList(container){
     var actionBtns = !isDone
       ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
       : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
-    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+    return '<tr class="m-card-row tpm-card"><td class="tpm-date" data-label="วันที่">'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td class="tpm-type" data-label="ประเภท"><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td class="tpm-target"><strong>'+(p.TargetName||'-')+'</strong></td><td class="tpm-year" data-label="ปี">'+(p.Year||'-')+'</td><td class="tpm-assigned" data-label="ผู้รับผิดชอบ">'+(p.AssignedTo||'-')+'</td><td class="tpm-status" data-label="สถานะ">'+getTPMStatusBadge(p)+'</td><td class="tpm-actions">'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -7426,23 +7894,23 @@ function filterIssues() {
         : '<span style="color:var(--text-faint);font-size:11px">-</span>';
     }
 
-    return '<tr>' +
-      '<td>' +
+    return '<tr class="m-card-row iss-card">' +
+      '<td class="iss-code">' +
         '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกดูรายละเอียด">' +
           '#' + displayCode +
         '</span>' +
       '</td>' +
-      '<td><strong>' + (i.TargetName || '-') + '</strong></td>' +
-      '<td>' + (i.IssueType || '-') + '</td>' +
-      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
-      '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
-      '<td><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
-      '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
-      '<td>' + beforeThumbs + '</td>' +
-      '<td>' + afterThumbs + '</td>' +
-      '<td>' + trialThumbs + '</td>' +
-      '<td style="white-space:nowrap">' +
-        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
+      '<td class="iss-target"><strong>' + (i.TargetName || '-') + '</strong></td>' +
+      '<td class="iss-type" data-label="ประเภท">' + (i.IssueType || '-') + '</td>' +
+      '<td class="iss-desc" data-label="รายละเอียด" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
+      '<td class="iss-sev" data-label="ความรุนแรง"><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
+      '<td class="iss-stat" data-label="สถานะ"><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
+      '<td class="iss-date" data-label="วันที่เกิด">' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
+      '<td class="iss-before" data-label="ก่อนซ่อม">' + beforeThumbs + '</td>' +
+      '<td class="iss-after" data-label="หลังซ่อม">' + afterThumbs + '</td>' +
+      '<td class="iss-trial" data-label="Trial">' + trialThumbs + '</td>' +
+      '<td class="iss-actions" style="white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍 ดูงาน</button> ' +
         (can('issues', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
         (can('issues', 'edit') && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
@@ -8013,7 +8481,448 @@ async function printIssueReport(id) {
     '.open { background: #fee2e2; color: #b91c1c; } .in-progress { background: #eff6ff; color: #1d4ed8; } .closed { background: #ecfdf5; color: #047857; }' +
     '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-top: 16px; text-align: center; page-break-inside: avoid; }' +
     '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 6px; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }' +
-    '</style></head><body>' +
+    '/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
+</style></head><body>' +
     '<div class="no-print">' +
       '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์ / Print Report</button>' +
       '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">✕ ปิด</button>' +
@@ -8728,22 +9637,22 @@ function filterStock(){
       }
     }
 
-    return '<tr>'+
-      '<td>'+imgThumb+'</td>'+
-      '<td><strong>'+p.PartName+'</strong></td>'+
-      '<td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
-      '<td>'+(p.PartNo||'-')+'</td>'+
-      '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
-      '<td>'+(p.Unit||'-')+'</td>'+
-      '<td>'+min+'</td>'+
-      '<td>'+
-        '<div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div>'+
+    return '<tr class="m-card-row stk-card">'+
+      '<td class="stk-thumb">'+imgThumb+'</td>'+
+      '<td class="stk-name"><strong>'+p.PartName+'</strong></td>'+
+      '<td class="stk-linked" data-label="ผูกกับ">'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
+      '<td class="stk-partno" data-label="Part No">'+(p.PartNo||'-')+'</td>'+
+      '<td class="stk-vendor" data-label="Vendor">'+(p.Vendor||p.Category||'-')+'</td>'+
+      '<td class="stk-unit" data-label="หน่วย">'+(p.Unit||'-')+'</td>'+
+      '<td class="stk-min" data-label="Min">'+min+'</td>'+
+      '<td class="stk-cur" data-label="คงเหลือ">'+
+        '<div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+' '+(p.Unit||'')+'</div>'+
         '<div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+
         statusBadge +
         onOrderBadge +
       '</td>'+
-      '<td>'+(p.Location||'-')+'</td>'+
-      '<td style="white-space:nowrap">'+
+      '<td class="stk-loc" data-label="ที่เก็บ">'+(p.Location||'-')+'</td>'+
+      '<td class="stk-actions" style="white-space:nowrap">'+
         (can('stock', 'edit') ? (
           '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
           (p.OnOrderQty > 0 ?
@@ -9814,7 +10723,448 @@ function printMonthlyExecutiveReport() {
       '.sig-box { border: 1px solid #94a3b8; border-radius: 4px; padding: 8px; text-align: center; font-size: 9pt; min-height: 100px; display: flex; flex-direction: column; justify-content: space-between; }' +
       '.sig-line { border-bottom: 1px dotted #94a3b8; margin: 36px 12px 4px; }' +
       '@media print { .no-print { display: none !important; } }' +
-    '</style></head><body>' +
+    '/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
+</style></head><body>' +
     '<div class="no-print" style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;">' +
       '<span>🖨️ ตัวอย่างก่อนพิมพ์ (Print Preview) - ขนาด A4</span>' +
       '<div><button onclick="window.print()" style="background:#6366f1;color:#fff;border:none;border-radius:4px;padding:6px 16px;font-weight:600;cursor:pointer;">พิมพ์เอกสาร (Print)</button> <button onclick="window.close()" style="background:#e2e8f0;border:none;border-radius:4px;padding:6px 12px;margin-left:6px;cursor:pointer;">ปิด</button></div>' +
@@ -9995,12 +11345,12 @@ async function loadUsers(){
       }
       var permStr = pTags.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">' + pTags.join('') + '</div>' : '<span style="color:var(--text-faint);font-size:11px">ไม่มีสิทธิ์</span>';
 
-      return '<tr>' +
-        '<td><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">' + meta.icon + '</span><strong>' + esc(u.Name || '-') + '</strong></div></td>' +
-        '<td>' + esc(u.Email || '-') + '</td>' +
-        '<td><span class="badge" style="background:' + meta.bg + ';color:' + meta.color + ';font-weight:600;">' + esc(u.Role || 'Technician') + '</span>' + permStr + '</td>' +
-        '<td>' + esc(u.Department || '-') + '</td>' +
-        '<td>' +
+      return '<tr class="m-card-row usr-card">' +
+        '<td class="usr-name"><div style="display:flex;align-items:center;gap:8px;"><span style="font-size:18px;">' + meta.icon + '</span><strong>' + esc(u.Name || '-') + '</strong></div></td>' +
+        '<td class="usr-email" data-label="Email">' + esc(u.Email || '-') + '</td>' +
+        '<td class="usr-role" data-label="สิทธิ์"><span class="badge" style="background:' + meta.bg + ';color:' + meta.color + ';font-weight:600;">' + esc(u.Role || 'Technician') + '</span>' + permStr + '</td>' +
+        '<td class="usr-dept" data-label="แผนก">' + esc(u.Department || '-') + '</td>' +
+        '<td class="usr-actions">' +
           '<button class="btn btn-ghost btn-sm" onclick=\'openUserModal(' + uJson + ')\' title="แก้ไข">✏️</button>' +
           (u.Role === 'Admin' ? '' : '<button class="btn btn-ghost btn-sm" onclick="delUser(\'' + u.ID + '\')" title="ลบ" style="color:#ef4444;">🗑️</button>') +
         '</td>' +
@@ -11163,7 +12513,448 @@ async function openPMPrintForm(moldId) {
       '.section-bar { text-align: center; font-weight: bold; font-size: 9pt; background: #d9d9d9; border: 1px solid #333; padding: 2px; margin-top: 3px; }' +
       '.pm-page { width: 100%; box-sizing: border-box; }' +
       '@media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .pm-page { page-break-after: always; break-after: page; } .pm-page:last-child { page-break-after: avoid; break-after: avoid; } }' +
-    '</style></head><body>' +
+    '/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
+</style></head><body>' +
 
     '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:10px; padding:8px 12px; background:#f8fafc; margin-bottom:8px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap; position:sticky; top:0; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.05);">' +
       '<button onclick="window.print()" style="padding:7px 20px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.12);">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน ' + (totalPages > 1 ? totalPages + ' หน้า' : '1 หน้า') + ')</button>' +
@@ -11984,7 +13775,448 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
       '.asset-name { font-size: 7.5pt; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42mm; margin-top: 0.5mm; }' +
       '.asset-sub { font-size: 6.5pt; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 42mm; }' +
       '@media print { .no-print { display: none !important; } }' +
-    '</style>' +
+    '/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
+</style>' +
     '</head><body>' +
     '<div class="no-print" style="position:fixed;top:0;left:0;right:0;background:#1e293b;color:#fff;padding:6px;display:flex;gap:10px;justify-content:center;z-index:9999;font-size:12px;">' +
       '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์สติ๊กเกอร์ (5x5 cm)</button>' +
@@ -12101,7 +14333,448 @@ function executeBatchQRPrint() {
       '.name { font-size: 7pt; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1mm; }' +
       '.sub { font-size: 6pt; color: #333; margin-top: 0.5mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }' +
       '@media print { .no-print { display: none !important; } body { padding: 0; } }' +
-    '</style>' +
+    '/* ========================================================= */
+/*  SAMSUNG GALAXY S23 ULTRA & MOBILE RESPONSIVE SUITE       */
+/*  Drastically reduces horizontal scrolling on screens <=768px*/
+/* ========================================================= */
+@media (max-width: 768px) {
+  /* Prevent root-level viewport overflow */
+  html, body {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+  #content {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+    padding: 10px 8px 75px 8px !important;
+    box-sizing: border-box !important;
+  }
+  .page {
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  .card {
+    border-radius: 14px !important;
+    padding: 12px 10px !important;
+  }
+
+  /* Form rows inside modals */
+  .form-row.col-2,
+  .form-row.col-3 {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Toolbars: auto-reflow into clean touch rows without horizontal overflow */
+  .toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    align-items: stretch !important;
+    margin-bottom: 12px !important;
+  }
+  .toolbar > .search-input,
+  .toolbar > input[type="text"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 13px !important;
+  }
+  .toolbar > select {
+    flex: 1 1 calc(50% - 4px) !important;
+    width: auto !important;
+    min-width: 120px !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    height: 38px !important;
+    font-size: 12px !important;
+    padding: 6px 8px !important;
+  }
+  .toolbar > div[style*="flex:1"],
+  .toolbar > div[style*="flex: 1"] {
+    display: none !important;
+  }
+  .toolbar > .btn {
+    flex: 1 1 auto !important;
+    min-width: 110px !important;
+    height: 38px !important;
+    justify-content: center !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Reports Toolbar */
+  #page-reports .toolbar > div {
+    width: 100% !important;
+    justify-content: space-between !important;
+    flex-wrap: wrap !important;
+  }
+  #page-reports .toolbar select,
+  #page-reports .toolbar button {
+    flex: 1 1 auto !important;
+  }
+
+  /* View Switcher */
+  .mobile-view-switcher {
+    display: flex !important;
+    background: #14151e !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9px !important;
+    padding: 3px !important;
+    gap: 4px !important;
+    margin-bottom: 10px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mobile-view-btn {
+    flex: 1 !important;
+    padding: 6px 8px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    border-radius: 7px !important;
+    border: none !important;
+    background: transparent !important;
+    color: var(--text-muted) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+  }
+  .mobile-view-btn.active {
+    background: var(--primary-g) !important;
+    color: #fff !important;
+    box-shadow: 0 2px 8px var(--primary-glow) !important;
+  }
+
+  /* ======================================================= */
+  /* MOBILE CARD VIEW FOR TABLES (Default on screen <= 768px)*/
+  /* ======================================================= */
+  body:not(.mobile-force-table) .table-wrapper {
+    overflow-x: visible !important;
+  }
+  body:not(.mobile-force-table) #stock-table thead,
+  body:not(.mobile-force-table) #issues-table thead,
+  body:not(.mobile-force-table) #molds-table thead,
+  body:not(.mobile-force-table) #machines-table thead,
+  body:not(.mobile-force-table) #users-table thead,
+  body:not(.mobile-force-table) #tpm-container table thead {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) #stock-table,
+  body:not(.mobile-force-table) #issues-table,
+  body:not(.mobile-force-table) #molds-table,
+  body:not(.mobile-force-table) #machines-table,
+  body:not(.mobile-force-table) #users-table,
+  body:not(.mobile-force-table) #tpm-container table {
+    display: block !important;
+    width: 100% !important;
+  }
+  body:not(.mobile-force-table) #stock-table tbody,
+  body:not(.mobile-force-table) #issues-table tbody,
+  body:not(.mobile-force-table) #molds-table tbody,
+  body:not(.mobile-force-table) #machines-table tbody,
+  body:not(.mobile-force-table) #users-table tbody,
+  body:not(.mobile-force-table) #tpm-container table tbody {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* General Card Row */
+  body:not(.mobile-force-table) .m-card-row {
+    display: flex !important;
+    flex-direction: column !important;
+    background: #171822 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 14px !important;
+    padding: 13px 14px !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    position: relative !important;
+  }
+  body:not(.mobile-force-table) .m-card-row td {
+    display: block !important;
+    padding: 0 !important;
+    border: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Meta labels for card data cells */
+  body:not(.mobile-force-table) .m-card-row td[data-label]::before {
+    content: attr(data-label) ": ";
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    display: inline-block !important;
+    min-width: 65px !important;
+  }
+
+  /* ---------------- STOCK CARD ---------------- */
+  body:not(.mobile-force-table) .stk-thumb {
+    order: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  body:not(.mobile-force-table) .stk-name {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .stk-linked {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .stk-cur {
+    order: 4 !important;
+    background: #12131a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    margin: 3px 0 !important;
+  }
+  body:not(.mobile-force-table) .stk-partno,
+  body:not(.mobile-force-table) .stk-vendor,
+  body:not(.mobile-force-table) .stk-unit,
+  body:not(.mobile-force-table) .stk-min,
+  body:not(.mobile-force-table) .stk-loc {
+    order: 5 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .stk-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .stk-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- ISSUES CARD ---------------- */
+  body:not(.mobile-force-table) .iss-code {
+    order: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+  body:not(.mobile-force-table) .iss-target {
+    order: 2 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .iss-type,
+  body:not(.mobile-force-table) .iss-date {
+    order: 3 !important;
+    font-size: 11.5px !important;
+    color: #9496a1 !important;
+  }
+  body:not(.mobile-force-table) .iss-desc {
+    order: 4 !important;
+    font-size: 12.5px !important;
+    color: #e2e8f0 !important;
+    line-height: 1.4 !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+    background: #13141c !important;
+    border-radius: 6px !important;
+    padding: 6px 8px !important;
+    margin: 2px 0 !important;
+  }
+  body:not(.mobile-force-table) .iss-sev,
+  body:not(.mobile-force-table) .iss-stat {
+    order: 5 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .iss-before,
+  body:not(.mobile-force-table) .iss-after,
+  body:not(.mobile-force-table) .iss-trial {
+    order: 6 !important;
+    font-size: 11px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .iss-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MOLDS CARD ---------------- */
+  body:not(.mobile-force-table) .mld-idx {
+    display: none !important;
+  }
+  body:not(.mobile-force-table) .mld-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mld-status,
+  body:not(.mobile-force-table) .mld-pm {
+    order: 2 !important;
+    display: inline-block !important;
+    margin-right: 6px !important;
+  }
+  body:not(.mobile-force-table) .mld-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mld-model,
+  body:not(.mobile-force-table) .mld-ton,
+  body:not(.mobile-force-table) .mld-asset,
+  body:not(.mobile-force-table) .mld-drawing,
+  body:not(.mobile-force-table) .mld-vendor,
+  body:not(.mobile-force-table) .mld-material,
+  body:not(.mobile-force-table) .mld-specs,
+  body:not(.mobile-force-table) .mld-cycle,
+  body:not(.mobile-force-table) .mld-prod {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mld-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mld-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- MACHINES CARD ---------------- */
+  body:not(.mobile-force-table) .mac-name {
+    order: 1 !important;
+    font-size: 14.5px !important;
+    font-weight: 700 !important;
+    color: #f4f4f6 !important;
+  }
+  body:not(.mobile-force-table) .mac-status {
+    order: 2 !important;
+  }
+  body:not(.mobile-force-table) .mac-thumb {
+    order: 3 !important;
+  }
+  body:not(.mobile-force-table) .mac-asset,
+  body:not(.mobile-force-table) .mac-vendor,
+  body:not(.mobile-force-table) .mac-model,
+  body:not(.mobile-force-table) .mac-dept,
+  body:not(.mobile-force-table) .mac-loc {
+    order: 4 !important;
+    font-size: 11.5px !important;
+    color: #cbd5e1 !important;
+  }
+  body:not(.mobile-force-table) .mac-actions {
+    order: 10 !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn {
+    flex: 1 1 auto !important;
+    min-height: 38px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 6px 10px !important;
+  }
+  body:not(.mobile-force-table) .mac-actions .btn-ghost {
+    flex: 0 0 38px !important;
+  }
+
+  /* ---------------- USERS & TPM CARDS ---------------- */
+  body:not(.mobile-force-table) .usr-name,
+  body:not(.mobile-force-table) .tpm-target {
+    order: 1 !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  body:not(.mobile-force-table) .usr-email,
+  body:not(.mobile-force-table) .usr-role,
+  body:not(.mobile-force-table) .usr-dept,
+  body:not(.mobile-force-table) .tpm-date,
+  body:not(.mobile-force-table) .tpm-type,
+  body:not(.mobile-force-table) .tpm-year,
+  body:not(.mobile-force-table) .tpm-assigned,
+  body:not(.mobile-force-table) .tpm-status {
+    order: 3 !important;
+    font-size: 11.5px !important;
+  }
+  body:not(.mobile-force-table) .usr-actions,
+  body:not(.mobile-force-table) .tpm-actions {
+    order: 10 !important;
+    display: flex !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  }
+
+  /* ---------------- FORCED TABLE MODE (When user picks [๐“ เธ•เธฒเธฃเธฒเธ]) ---------------- */
+  body.mobile-force-table .table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+  body.mobile-force-table table {
+    min-width: 650px !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view-switcher {
+    display: none !important;
+  }
+}
+</style>' +
     '</head><body>' +
     '<div class="no-print" style="position:sticky;top:0;background:#1e293b;color:#fff;padding:8px 12px;display:flex;gap:12px;align-items:center;justify-content:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2);margin-bottom:8mm;">' +
       '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:6px 16px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:13px;">🖨️ สั่งพิมพ์สติ๊กเกอร์ทั้งหมด (' + list.length + ' ดวง)</button>' +
