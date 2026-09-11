@@ -5005,7 +5005,7 @@ function saveEditedProfiles() {
 
 //  SETUP / CONNECT
 // ============================================
-async function getMobileTableView() {
+function getMobileTableView() {
   return localStorage.getItem('tpm_mobile_view') || 'card';
 }
 function setMobileTableView(btn, view) {
@@ -5039,7 +5039,7 @@ function applyMobileTableView() {
     }
   });
 }
-function initApp() {
+async function initApp() {
   try {
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mobile_sign') === '1') {
@@ -6745,7 +6745,7 @@ function renderTPMList(container){
     var actionBtns = !isDone
       ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
       : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
-    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
