@@ -1261,6 +1261,133 @@ body.role-engineer .role-admin-only { display: none !important; }
   color: #9496a1;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+
+/* Dashboard Issues Summary Header & KPI Bar */
+.dash-issue-kpi-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 12px 14px;
+  background: rgba(15, 17, 26, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+@media (max-width: 640px) {
+  .dash-issue-kpi-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+.dash-issue-kpi-item {
+  background: #171821;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: all 0.2s ease;
+}
+.dash-issue-kpi-item:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: #1d1f2b;
+}
+.dash-issue-kpi-label {
+  font-size: 10.5px;
+  color: #9496a1;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dash-issue-kpi-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #f4f4f6;
+  font-family: monospace, sans-serif;
+  line-height: 1.2;
+}
+.dash-issue-kpi-sub {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* Filter Tabs */
+.dash-issue-filter-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #14151f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.dash-issue-tab-btn {
+  flex: 1;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: #1a1b26;
+  color: #9496a1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.18s ease;
+}
+.dash-issue-tab-btn:hover {
+  background: #232433;
+  color: #f4f4f6;
+}
+.dash-issue-tab-btn.active.tab-inprog {
+  background: rgba(244, 63, 94, 0.15);
+  color: #f43f5e;
+  border-color: rgba(244, 63, 94, 0.4);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.15);
+}
+.dash-issue-tab-btn.active.tab-done {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.15);
+}
+.dash-issue-tab-btn.active.tab-all {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.15);
+}
+.dash-issue-tab-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.dash-issue-tab-btn.active .dash-issue-tab-badge {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Action button inside Task Card */
+.dash-issue-open-ticket-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(99, 102, 241, 0.16);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dash-issue-open-ticket-btn:hover {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.4);
+}
 </style>
 </head>
 <body>
@@ -1470,8 +1597,42 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="dash-cat-line"></div>
   </div>
-  <div class="grid-2">
-    <div class="card dash-card-open-issues"><div class="card-header"><div class="card-title">&#128680; Open Issues (ปัญหาค้างแก้ไข)</div><button class="btn btn-outline btn-sm" onclick="nav('issues')">ดูทั้งหมด →</button></div><div id="dash-issues" class="saas-kanban-column"></div></div>
+    <div class="card dash-card-open-issues" id="dash-issues-summary-card">
+      <div class="card-header" style="flex-wrap:wrap;gap:8px;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;min-width:180px;">
+          <span style="font-size:18px;">🚨</span>
+          <div>
+            <div class="card-title" style="font-size:14px;font-weight:700;">สรุปปัญหา &amp; ติดตามงานซ่อม</div>
+            <div id="dash-issues-card-sub" style="font-size:11px;color:var(--text-muted);margin-top:1px;">ยอดประจำเดือน &amp; งานค้างแก้ไข</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap;">
+          <select id="dash-issues-month-filter" class="form-control" onchange="onDashIssueMonthFilterChange(this.value)" style="width:auto;height:30px;padding:2px 8px;font-size:11.5px;border-radius:6px;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-weight:600;">
+            <option value="auto">📅 เดือนล่าสุด</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="nav('issues')" title="ไปหน้ารายการแจ้งปัญหาทั้งหมด">ดูทั้งหมด →</button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Banner -->
+      <div class="dash-issue-kpi-bar" id="dash-issue-kpi-bar"></div>
+
+      <!-- Filter Tabs (กำลังทำ / เสร็จแล้ว / ทั้งหมด) -->
+      <div class="dash-issue-filter-tabs" id="dash-issue-filter-tabs">
+        <button type="button" class="dash-issue-tab-btn tab-inprog active" id="dash-tab-issue-inprog" onclick="setDashIssuesFilterTab('in_progress')">
+          <span>⏳ กำลังทำ</span> <span class="dash-issue-tab-badge" id="dash-tab-count-inprog">0</span>
+        </button>
+        <button type="button" class="dash-issue-tab-btn tab-done" id="dash-tab-issue-done" onclick="setDashIssuesFilterTab('done')">
+          <span>✅ เสร็จแล้ว</span> <span class="dash-issue-tab-badge" id="dash-tab-count-done">0</span>
+        </button>
+        <button type="button" class="dash-issue-tab-btn tab-all" id="dash-tab-issue-all" onclick="setDashIssuesFilterTab('all')">
+          <span>📋 ทั้งหมด</span> <span class="dash-issue-tab-badge" id="dash-tab-count-all">0</span>
+        </button>
+      </div>
+
+      <!-- Issues List Container -->
+      <div id="dash-issues" class="saas-kanban-column" style="max-height:460px;overflow-y:auto;padding:12px 14px;"></div>
+    </div>
     <div class="card dash-card-tpm-overdue"><div class="card-header"><div class="card-title">&#128308; TPM Overdue (แผนบำรุงรักษาล่าช้า)</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">ดูทั้งหมด →</button></div><div id="dash-tpm-overdue" class="saas-kanban-column"></div></div>
   </div>
 
@@ -4923,27 +5084,8 @@ async function loadDashboard() {
       });
     }
 
-    const issuesEl = document.getElementById('dash-issues');
-    const recentIssues = scopedIssues.slice(0, 5);
-    if (issuesEl) {
-      issuesEl.innerHTML = recentIssues.length === 0 ? emptyState('✅', 'ไม่มีปัญหาค้างแก้ไข', '') :
-        recentIssues.map(function(i) {
-          var sev = (i.Severity || 'Low').toLowerCase();
-          var tagClass = sev === 'critical' ? 'tag-critical' : (sev === 'high' ? 'tag-warning' : 'tag-info');
-          return '<div class="saas-task-card" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเพื่อดูรายละเอียดปัญหา">' +
-            '<div class="saas-task-top">' +
-              '<div class="saas-task-pill-tag ' + tagClass + '"></div>' +
-              '<span class="badge ' + sev + '">' + (i.Severity || 'Normal') + '</span>' +
-            '</div>' +
-            '<div class="saas-task-title">' + (i.TargetName || '-') + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted)">(' + (i.IssueType || '-') + ')</span></div>' +
-            '<div class="saas-task-desc">' + (i.Description || 'ไม่มีรายละเอียดเพิ่มเติม') + '</div>' +
-            '<div class="saas-task-footer">' +
-              '<span class="saas-task-meta"><span>📅 ' + (i.ReportDate ? String(i.ReportDate).substring(0, 10) : '-') + '</span></span>' +
-              '<span class="saas-task-action">ดูรายละเอียด →</span>' +
-            '</div>' +
-          '</div>';
-        }).join('');
-    }
+    // Render interactive Issues Summary card
+    renderDashboardIssuesSummary(scopedIssues, true);
 
     const overdueEl = document.getElementById('dash-tpm-overdue');
     const overdueTPM = scopedTPM.filter(p => getTPMStatus(p) === 'Overdue').slice(0, 5);
@@ -4997,6 +5139,260 @@ async function loadDashboard() {
   } catch (err) {
     console.error('loadDashboard error:', err);
   }
+}
+
+// ============================================
+//  DASHBOARD ISSUES SUMMARY & TRACKING
+// ============================================
+var _dashIssueFilterTab = 'in_progress'; // default tab: กำลังทำ (In Progress / Open)
+var _dashIssueMonth = 'auto';            // default month: auto (latest month with issues)
+var _dashCachedScopedIssues = [];
+
+function setDashIssuesFilterTab(tab) {
+  _dashIssueFilterTab = tab;
+  renderDashboardIssuesSummary(_dashCachedScopedIssues, false);
+}
+
+function onDashIssueMonthFilterChange(val) {
+  _dashIssueMonth = val;
+  renderDashboardIssuesSummary(_dashCachedScopedIssues, false);
+}
+
+function renderDashboardIssuesSummary(scopedIssues, isNewData) {
+  if (isNewData && Array.isArray(scopedIssues)) {
+    _dashCachedScopedIssues = scopedIssues;
+  }
+  var issues = _dashCachedScopedIssues || [];
+
+  function _cleanYM(d) {
+    if (!d) return '';
+    var s = String(d).replace(/\//g, '-').trim();
+    if (s.length >= 7) {
+      var ym = s.substring(0, 7);
+      if (/^\d{4}-\d{2}$/.test(ym)) return ym;
+    }
+    return '';
+  }
+
+  var _TH_M = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+
+  // 1. Unique months from data
+  var monthMap = {};
+  issues.forEach(function(i) {
+    var ym = _cleanYM(i.OccurredAt || i.ReportDate || i.CreatedAt);
+    if (ym) monthMap[ym] = true;
+  });
+  var allMonths = Object.keys(monthMap).sort().reverse();
+
+  var now = new Date();
+  var curYear = now.getFullYear();
+  var curMNum = now.getMonth() + 1;
+  var curYM = curYear + '-' + (curMNum < 10 ? '0' + curMNum : curMNum);
+
+  // Determine effective month (Default: latest month with issues or current month)
+  var effectiveMonth = _dashIssueMonth;
+  if (effectiveMonth === 'auto') {
+    if (monthMap[curYM]) {
+      effectiveMonth = curYM;
+    } else if (allMonths.length > 0) {
+      effectiveMonth = allMonths[0];
+    } else {
+      effectiveMonth = curYM;
+    }
+  }
+
+  // Populate Month Dropdown
+  var sel = document.getElementById('dash-issues-month-filter');
+  if (sel) {
+    var displayMonths = allMonths.slice();
+    if (displayMonths.indexOf(curYM) === -1) {
+      displayMonths.unshift(curYM);
+    }
+    var optionsHtml = '';
+    displayMonths.forEach(function(ym) {
+      var pts = ym.split('-');
+      var y = parseInt(pts[0], 10);
+      var m = parseInt(pts[1], 10);
+      var mName = _TH_M[m] || ('เดือน ' + m);
+      var isCur = (ym === curYM);
+      var lbl = mName + ' ' + y + (isCur ? ' (เดือนนี้)' : '');
+      var isSel = (ym === effectiveMonth);
+      optionsHtml += '<option value="' + ym + '"' + (isSel ? ' selected' : '') + '>📅 ' + lbl + '</option>';
+    });
+    optionsHtml += '<option value="all"' + (effectiveMonth === 'all' ? ' selected' : '') + '>🌐 ทุกเดือน (All Time)</option>';
+    sel.innerHTML = optionsHtml;
+  }
+
+  // Subtitle
+  var subEl = document.getElementById('dash-issues-card-sub');
+  if (subEl) {
+    if (effectiveMonth === 'all') {
+      subEl.textContent = 'ยอดปัญหาทั้งหมดทุกช่วงเวลา';
+    } else {
+      var sPts = effectiveMonth.split('-');
+      var sY = parseInt(sPts[0], 10);
+      var sM = parseInt(sPts[1], 10);
+      var sMName = _TH_M[sM] || ('เดือน ' + sM);
+      subEl.textContent = 'รอบเดือน ' + sMName + ' ' + sY + (effectiveMonth === curYM ? ' (เดือนปัจจุบัน)' : '');
+    }
+  }
+
+  // Month issues
+  var monthIssues = issues.filter(function(i) {
+    if (effectiveMonth === 'all') return true;
+    var ym = _cleanYM(i.OccurredAt || i.ReportDate || i.CreatedAt);
+    return ym === effectiveMonth;
+  });
+
+  var totalInMonth = monthIssues.length;
+  var doneInMonth = monthIssues.filter(function(i) {
+    var st = (i.Status || 'Open').toLowerCase();
+    return st === 'closed' || st === 'resolved';
+  }).length;
+  var inprogInMonth = monthIssues.filter(function(i) {
+    var st = (i.Status || 'Open').toLowerCase();
+    return st !== 'closed' && st !== 'resolved';
+  }).length;
+  var rateInMonth = totalInMonth > 0 ? Math.round((doneInMonth / totalInMonth) * 100) : (totalInMonth === 0 ? 100 : 0);
+
+  // Render KPI Bar
+  var kpiBar = document.getElementById('dash-issue-kpi-bar');
+  if (kpiBar) {
+    kpiBar.innerHTML = 
+      '<div class="dash-issue-kpi-item" style="border-left:3px solid #38bdf8;">' +
+        '<div class="dash-issue-kpi-label"><span>📅</span> <span>ทั้งหมด (เดือนนี้)</span></div>' +
+        '<div class="dash-issue-kpi-val" style="color:#38bdf8;">' + totalInMonth + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);">อัน</span></div>' +
+        '<div class="dash-issue-kpi-sub">ยอดปัญหาที่ตรวจพบ</div>' +
+      '</div>' +
+      '<div class="dash-issue-kpi-item" style="border-left:3px solid #f43f5e;">' +
+        '<div class="dash-issue-kpi-label"><span>⏳</span> <span>กำลังทำ / ค้าง</span></div>' +
+        '<div class="dash-issue-kpi-val" style="color:#f43f5e;">' + inprogInMonth + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);">อัน</span></div>' +
+        '<div class="dash-issue-kpi-sub">Open &amp; In Progress</div>' +
+      '</div>' +
+      '<div class="dash-issue-kpi-item" style="border-left:3px solid #10b981;">' +
+        '<div class="dash-issue-kpi-label"><span>✅</span> <span>เสร็จแล้ว</span></div>' +
+        '<div class="dash-issue-kpi-val" style="color:#34d399;">' + doneInMonth + ' <span style="font-size:11px;font-weight:400;color:var(--text-muted);">อัน</span></div>' +
+        '<div class="dash-issue-kpi-sub">Resolved &amp; Closed</div>' +
+      '</div>' +
+      '<div class="dash-issue-kpi-item" style="border-left:3px solid #818cf8;">' +
+        '<div class="dash-issue-kpi-label"><span>⚡</span> <span>อัตราปิดงาน</span></div>' +
+        '<div class="dash-issue-kpi-val" style="color:#818cf8;">' + rateInMonth + '%</div>' +
+        '<div class="dash-issue-kpi-sub">Resolution Rate</div>' +
+      '</div>';
+  }
+
+  // Update tab counts and active states
+  var bInprog = document.getElementById('dash-tab-count-inprog');
+  var bDone = document.getElementById('dash-tab-count-done');
+  var bAll = document.getElementById('dash-tab-count-all');
+  if (bInprog) bInprog.textContent = inprogInMonth;
+  if (bDone) bDone.textContent = doneInMonth;
+  if (bAll) bAll.textContent = totalInMonth;
+
+  var btnInprog = document.getElementById('dash-tab-issue-inprog');
+  var btnDone = document.getElementById('dash-tab-issue-done');
+  var btnAll = document.getElementById('dash-tab-issue-all');
+  if (btnInprog) btnInprog.classList.toggle('active', _dashIssueFilterTab === 'in_progress');
+  if (btnDone) btnDone.classList.toggle('active', _dashIssueFilterTab === 'done');
+  if (btnAll) btnAll.classList.toggle('active', _dashIssueFilterTab === 'all');
+
+  // Filter list by tab
+  var listToRender = monthIssues.filter(function(i) {
+    var st = (i.Status || 'Open').toLowerCase();
+    var isDone = (st === 'closed' || st === 'resolved');
+    if (_dashIssueFilterTab === 'in_progress') return !isDone;
+    if (_dashIssueFilterTab === 'done') return isDone;
+    return true; // 'all'
+  });
+
+  // Sort by date descending
+  listToRender.sort(function(a, b) {
+    var da = a.OccurredAt || a.ReportDate || a.CreatedAt || '';
+    var db = b.OccurredAt || b.ReportDate || b.CreatedAt || '';
+    return db.localeCompare(da);
+  });
+
+  var issuesEl = document.getElementById('dash-issues');
+  if (!issuesEl) return;
+
+  if (listToRender.length === 0) {
+    if (_dashIssueFilterTab === 'in_progress' && totalInMonth > 0) {
+      issuesEl.innerHTML = 
+        '<div style="text-align:center;padding:32px 16px;background:rgba(16,185,129,0.06);border:1px dashed rgba(16,185,129,0.3);border-radius:12px;margin:8px 0;">' +
+          '<div style="font-size:32px;margin-bottom:6px;">🎉</div>' +
+          '<div style="font-size:14px;font-weight:700;color:#34d399;margin-bottom:4px;">ยอดเยี่ยม! ไม่มีปัญหาค้างแก้ไขในรอบนี้</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">งานซ่อมทั้งหมด ' + doneInMonth + ' รายการได้รับการแก้ไขและปิดงานเรียบร้อยแล้ว</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="setDashIssuesFilterTab(\'done\')" style="color:#34d399;border-color:rgba(16,185,129,0.4);font-size:11.5px;">ดูงานที่เสร็จแล้ว (' + doneInMonth + ' รายการ) →</button>' +
+        '</div>';
+    } else if (_dashIssueFilterTab === 'done' && inprogInMonth > 0) {
+      issuesEl.innerHTML = 
+        '<div style="text-align:center;padding:32px 16px;color:var(--text-muted);">' +
+          '<div style="font-size:28px;margin-bottom:6px;">⏳</div>' +
+          '<div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">ยังไม่มีรายการที่ปิดงานในรอบนี้ (มีงานกำลังทำ ' + inprogInMonth + ' รายการ)</div>' +
+          '<button type="button" class="btn btn-outline btn-sm" onclick="setDashIssuesFilterTab(\'in_progress\')">ดูงานที่กำลังทำ (' + inprogInMonth + ' รายการ) →</button>' +
+        '</div>';
+    } else {
+      issuesEl.innerHTML = emptyState('✅', 'ไม่มีรายการปัญหาตามเงื่อนไขที่เลือก', 'ระบบปกติ ไม่พบปัญหาที่บันทึก');
+    }
+    return;
+  }
+
+  issuesEl.innerHTML = listToRender.map(function(i) {
+    var displayCode = getIssueDisplayCode(i);
+    var st = (i.Status || 'Open');
+    var isDone = (st === 'Closed' || st === 'Resolved');
+    var sev = (i.Severity || 'Low').toLowerCase();
+    var tagClass = isDone ? 'tag-done' : (sev === 'critical' ? 'tag-critical' : (sev === 'high' ? 'tag-warning' : 'tag-info'));
+    var dateStr = (i.OccurredAt || i.ReportDate || i.CreatedAt || '').substring(0, 10) || '-';
+    var isMold = i.TargetType === 'Mold' || ((STATE.molds || []).some(function(m) { return m.ID === i.TargetID; }));
+    var targetIcon = isMold ? '🧩' : '🏭';
+
+    var statusBadgeHtml = '';
+    if (st === 'Closed') {
+      statusBadgeHtml = '<span class="badge" style="background:rgba(16,185,129,0.18);color:#34d399;border:1px solid rgba(16,185,129,0.35);font-size:10px;padding:2px 7px;">✅ ปิดงานแล้ว</span>';
+    } else if (st === 'Resolved') {
+      statusBadgeHtml = '<span class="badge" style="background:rgba(16,185,129,0.18);color:#6ee7b7;border:1px solid rgba(16,185,129,0.35);font-size:10px;padding:2px 7px;">🟢 ซ่อมเสร็จ</span>';
+    } else if (st === 'In Progress') {
+      statusBadgeHtml = '<span class="badge" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35);font-size:10px;padding:2px 7px;">🟡 กำลังทำ</span>';
+    } else {
+      statusBadgeHtml = '<span class="badge" style="background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.35);font-size:10px;padding:2px 7px;">🔴 แจ้งใหม่</span>';
+    }
+
+    var sevBadgeHtml = '<span class="badge ' + sev + '" style="font-size:10px;padding:2px 6px;">' + (i.Severity || 'Normal') + '</span>';
+
+    return '<div class="saas-task-card" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเพื่อดูรายละเอียดใบแจ้งปัญหา">' +
+      '<div class="saas-task-top">' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<div class="saas-task-pill-tag ' + tagClass + '"></div>' +
+          '<span class="badge" style="background:#1e1b4b;color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);font-family:monospace;font-weight:700;font-size:11px;padding:2px 6px;">#' + displayCode + '</span>' +
+          sevBadgeHtml +
+        '</div>' +
+        '<div>' + statusBadgeHtml + '</div>' +
+      '</div>' +
+      '<div class="saas-task-title" style="display:flex;align-items:center;gap:6px;">' +
+        '<span>' + targetIcon + '</span>' +
+        '<strong style="color:var(--text);">' + (i.TargetName || '-') + '</strong>' +
+        (i.IssueType ? '<span style="font-size:11.5px;font-weight:400;color:var(--text-muted)">• ' + i.IssueType + '</span>' : '') +
+      '</div>' +
+      '<div class="saas-task-desc" style="margin-bottom:8px;color:#cbd5e1;line-height:1.4;">' +
+        (i.Description || 'ไม่มีรายละเอียดเพิ่มเติม') +
+      '</div>' +
+      '<div class="saas-task-footer" style="padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">' +
+        '<span class="saas-task-meta" style="font-size:11px;color:var(--text-muted);">' +
+          '<span>📅 ' + dateStr + '</span>' +
+          (i.ReportedBy ? '<span style="margin-left:6px;">👤 ' + i.ReportedBy + '</span>' : '') +
+        '</span>' +
+        '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); printIssueReport(\'' + i.ID + '\')" title="พิมพ์ใบแจ้งปัญหา" style="padding:2px 7px;font-size:11px;color:var(--text-muted);border:1px solid rgba(255,255,255,0.08);">' +
+            '🖨️' +
+          '</button>' +
+          '<button type="button" class="dash-issue-open-ticket-btn" onclick="event.stopPropagation(); openIssueDetailModal(\'' + i.ID + '\')" title="คลิกเปิดดูใบแจ้งปัญหาฉบับเต็ม">' +
+            '📄 เปิดดูใบงาน →' +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // ============================================
