@@ -26,7 +26,7 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:14px;}
 body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
-::-webkit-scrollbar{width:6px;height:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:99px;}
+::-webkit-scrollbar{width:8px;height:8px;}::-webkit-scrollbar-track{background:rgba(0,0,0,0.18);border-radius:99px;}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.22);border-radius:99px;}::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.38);}
 
 /* SIDEBAR */
 #sidebar{width:var(--sidebar);flex-shrink:0;height:100vh;position:fixed;top:0;left:0;background:#121318;border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
@@ -54,8 +54,8 @@ body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--t
 #header{height:var(--header);border-bottom:1px solid var(--border);background:rgba(14,15,19,.85);backdrop-filter:blur(20px);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;flex-shrink:0;}
 #header h1{font-size:18px;font-weight:700;flex:1;}
 #header h1 span{color:var(--text-muted);font-size:13px;font-weight:400;margin-left:8px;}
-#content{flex:1;overflow-y:auto;padding:24px;}
-.page{display:none;}.page.active{display:block;}
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;padding:24px;}
+.page{display:none;padding-bottom:36px;}.page.active{display:block;}
 
 /* CARDS */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;}
@@ -74,7 +74,7 @@ body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--t
 .stat-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.08;}
 
 /* TABLES */
-.table-wrapper{overflow-x:auto;}
+.table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
 table{width:100%;border-collapse:collapse;}
 thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
 tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -1597,6 +1597,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="dash-cat-line"></div>
   </div>
+  <div class="grid-2">
     <div class="card dash-card-open-issues" id="dash-issues-summary-card">
       <div class="card-header" style="flex-wrap:wrap;gap:8px;align-items:center;">
         <div style="display:flex;align-items:center;gap:8px;min-width:180px;">
@@ -1635,17 +1636,6 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="card dash-card-tpm-overdue"><div class="card-header"><div class="card-title">&#128308; TPM Overdue (แผนบำรุงรักษาล่าช้า)</div><button class="btn btn-outline btn-sm" onclick="nav('tpm')">ดูทั้งหมด →</button></div><div id="dash-tpm-overdue" class="saas-kanban-column"></div></div>
   </div>
-
-  <!-- Category 4: Spare Parts & Inventory -->
-  <div class="dash-category-header">
-    <div class="dash-cat-badge">
-      <span class="dash-cat-icon">📦</span>
-      <span>คลังอะไหล่สำรอง</span>
-      <span class="dash-cat-sub">INVENTORY</span>
-    </div>
-    <div class="dash-cat-line"></div>
-  </div>
-  <div class="card dash-card-low-stock"><div class="card-header"><div class="card-title">&#9888;&#65039; Low Stock Parts (อะไหล่ใกล้หมด)</div><button class="btn btn-outline btn-sm" onclick="nav('stock')">ดูคลังอะไหล่ →</button></div><div id="dash-low-stock"></div></div>
 </div>
 
 <!-- MOLDS -->
@@ -2107,7 +2097,13 @@ body.role-engineer .role-admin-only { display: none !important; }
 
     <!-- SECTION 2: ข้อมูลการซ่อมและปิดงาน (AFTER) -->
     <div id="issue-edit-after-section" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;display:none;">
-      <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 2. ข้อมูลการแก้ไข & ปิดงาน (After Repair)</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:13px;font-weight:700;color:var(--success);">🔧 2. ข้อมูลการแก้ไข & ปิดงาน (After Repair)</div>
+        <span style="font-size:11px;color:var(--text-muted);background:rgba(16,185,129,0.1);padding:2px 8px;border-radius:4px;border:1px solid rgba(16,185,129,0.2);">เฉพาะเมื่อเริ่มซ่อม / ปิดงาน</span>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px;line-height:1.4;">
+        ℹ️ <em>ส่วนนี้สำหรับช่างบันทึกวิธีแก้ไขและเบิกอะไหล่จากคลัง Stock (หากเป็นการแจ้งปัญหาใหม่เบื้องต้น ไม่จำเป็นต้องระบุส่วนนี้)</em>
+      </div>
       <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง)</label><textarea id="issue-edit-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
       <div class="form-group"><label>Corrective Action (วิธีแก้ไข)</label><textarea id="issue-edit-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
       <div class="form-row col-2"><div class="form-group"><label>วันที่ปิดงาน</label><input id="issue-edit-closed-date" type="datetime-local"/></div><div class="form-group"><label>ผู้ปิดงาน/ผู้ซ่อม</label><input id="issue-edit-closed-by"/></div></div>
@@ -2115,7 +2111,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
         <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
           <span>📦 อะไหล่ที่ใช้ซ่อม (Parts Used)</span>
-          <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เลือกจาก Stock หรือพิมพ์เพิ่มเติม</span>
+          <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เบิกจากคลัง Stock ตอนซ่อม (ถ้ามี)</span>
         </label>
         <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
           <select id="issue-edit-part-select" onchange="onIssueEditPartSelectChange()" style="flex:2;min-width:200px;">
