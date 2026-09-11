@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -6379,27 +6379,27 @@ function renderMolds() {
     var _prodCell = _prod !== null
       ? '<div style="text-align:center"><span style="font-family:monospace;font-weight:700;font-size:15px;color:#34d399">' + _prod.toLocaleString() + '</span><br><span style="font-size:10px;color:var(--text-muted)">ชิ้น/8ชม.</span><br><span style="font-size:9px;color:var(--text-faint)">(x' + _cav4 + ' Cav)</span></div>'
       : '<span style="color:var(--text-faint);font-size:11px">-</span>';
-    return '<tr>'+
-      '<td style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
-      '<td><strong>'+m.Name+'</strong></td>'+
-      '<td><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
-      '<td>'+(m.MachineTon ? ('<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;">🏗️ ' + m.MachineTon + '</span>') : '<span style="color:var(--text-faint);font-size:11px">-</span>')+'</td>'+
-      '<td>'+(m.AssetNo||'-')+'</td>'+
-      '<td><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
-      '<td>'+(m.Vendor||'-')+'</td>'+
-      '<td>'+(m.Material||'-')+'</td>'+
-      '<td>'+specStr+'</td>'+
-      '<td>'+_cycleCell+'</td>'+
-      '<td>'+_prodCell+'</td>'+
-      '<td><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
-      '<td>'+tpmSummary.badgeHtml+'</td>'+
-      '<td>'+thumbs+'</td>'+
-      '<td style="white-space:nowrap;">'+
-        '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="ดูรายละเอียด & แผน PM" style="margin-right:2px">📋 แผน PM</button>'+
-        '<button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="พิมพ์สติ๊กเกอร์ QR 5x5cm" style="margin-right:2px">🏷️ QR</button>'+
-        '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="พิมพ์แบบฟอร์ม PM" style="margin-right:2px">🖨️ PM</button>'+
-        (can('molds', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\' title="แก้ไข">✏️</button>' : '')+
-        (can('molds', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')" title="ลบ">🗑️</button>' : '')+
+    return '<tr class="m-card-row mld-card">'+
+      '<td class="mld-idx" style="text-align:center;font-weight:600;color:var(--text-muted);font-size:12px">'+(idx + 1)+'</td>'+
+      '<td class="mld-name"><strong>'+m.Name+'</strong></td>'+
+      '<td class="mld-model" data-label="Model"><span style="font-weight:600;color:var(--primary)">'+(m.Model||'-')+'</span></td>'+
+      '<td class="mld-ton" data-label="เธเธเธฒเธ”เน€เธเธฃเธทเนเธญเธ">'+(m.MachineTon ? ('<span class="badge" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;font-size:11px;font-weight:700;padding:2px 8px;white-space:nowrap;">๐—๏ธ ' + m.MachineTon + '</span>') : '<span style="color:var(--text-faint);font-size:11px">-</span>')+'</td>'+
+      '<td class="mld-asset" data-label="Asset No.">'+(m.AssetNo||'-')+'</td>'+
+      '<td class="mld-drawing" data-label="Drawing"><code style="background:rgba(99,102,241,.15);color:var(--primary);padding:2px 6px;border-radius:4px;font-size:11px">'+(m.DrawingNo||'-')+'</code></td>'+
+      '<td class="mld-vendor" data-label="Vendor">'+(m.Vendor||'-')+'</td>'+
+      '<td class="mld-material" data-label="Material">'+(m.Material||'-')+'</td>'+
+      '<td class="mld-specs" data-label="เธเธเธฒเธ”/เธเนเธณเธซเธเธฑเธ">'+specStr+'</td>'+
+      '<td class="mld-cycle" data-label="Cycle Time">'+_cycleCell+'</td>'+
+      '<td class="mld-prod" data-label="เธขเธญเธ”เธเธฅเธดเธ•/8เธเธก.">'+_prodCell+'</td>'+
+      '<td class="mld-status" data-label="เธชเธ–เธฒเธเธฐ"><span class="badge '+(m.Status||'active').toLowerCase()+'">'+(m.Status||'Active')+'</span></td>'+
+      '<td class="mld-pm" data-label="เธชเธ–เธฒเธเธฐ PM">'+tpmSummary.badgeHtml+'</td>'+
+      '<td class="mld-thumb" data-label="เธฃเธนเธเธ เธฒเธ">'+thumbs+'</td>'+
+      '<td class="mld-actions" style="white-space:nowrap;">'+
+        '<button class="btn btn-outline btn-sm" onclick="openMoldTPMDetailModal(\''+m.ID+'\')" title="เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ” & เนเธเธ PM" style="margin-right:2px">๐“ เนเธเธ PM</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="printAssetQRSticker(\''+m.ID+'\', false)" title="เธเธดเธกเธเนเธชเธ•เธดเนเธเน€เธเธญเธฃเน QR 5x5cm" style="margin-right:2px">๐ท๏ธ QR</button>'+
+        '<button class="btn btn-outline btn-sm" onclick="openPMPrintForm(\''+m.ID+'\')" title="เธเธดเธกเธเนเนเธเธเธเธญเธฃเนเธก PM" style="margin-right:2px">๐–จ๏ธ PM</button>'+
+        (can('molds', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick=\'openMoldModal('+JSON.stringify(m)+')\' title="เนเธเนเนเธ">โ๏ธ</button>' : '')+
+        (can('molds', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delMold(\''+m.ID+'\',\''+m.Name+'\')" title="เธฅเธ">๐—‘๏ธ</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
@@ -6801,7 +6801,7 @@ function renderTPMList(container){
     var actionBtns = !isDone
       ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
       : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' + (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
-    return '<tr><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong></td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+    return '<tr class="m-card-row tpm-card"><td class="tpm-date" data-label="เธงเธฑเธเธ—เธตเน">'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td class="tpm-type" data-label="เธเธฃเธฐเน€เธ เธ—"><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td class="tpm-target"><strong>'+(p.TargetName||'-')+'</strong></td><td class="tpm-year" data-label="เธเธต">'+(p.Year||'-')+'</td><td class="tpm-assigned" data-label="เธเธนเนเธฃเธฑเธเธเธดเธ”เธเธญเธ">'+(p.AssignedTo||'-')+'</td><td class="tpm-status" data-label="เธชเธ–เธฒเธเธฐ">'+getTPMStatusBadge(p)+'</td><td class="tpm-actions">'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="เธฅเธเนเธเธเธเธตเน">๐—‘๏ธ</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -7885,27 +7885,27 @@ function filterIssues() {
         : '<span style="color:var(--text-faint);font-size:11px">-</span>';
     }
 
-    return '<tr>' +
-      '<td>' +
-        '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="คลิกดูรายละเอียด">' +
+    return '<tr class="m-card-row iss-card">' +
+      '<td class="iss-code">' +
+        '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-family:monospace;font-weight:700;font-size:12px;letter-spacing:0.5px;padding:3px 8px;cursor:pointer;display:inline-block;" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="เธเธฅเธดเธเธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”">' +
           '#' + displayCode +
         '</span>' +
       '</td>' +
-      '<td><strong>' + (i.TargetName || '-') + '</strong></td>' +
-      '<td>' + (i.IssueType || '-') + '</td>' +
-      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
-      '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
-      '<td><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
-      '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
-      '<td>' + beforeThumbs + '</td>' +
-      '<td>' + afterThumbs + '</td>' +
-      '<td>' + trialThumbs + '</td>' +
-      '<td style="white-space:nowrap">' +
-        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
-        (can('issues', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
-        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
-        (can('issues', 'edit') && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
-        (can('issues', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
+      '<td class="iss-target"><strong>' + (i.TargetName || '-') + '</strong></td>' +
+      '<td class="iss-type" data-label="เธเธฃเธฐเน€เธ เธ—">' + (i.IssueType || '-') + '</td>' +
+      '<td class="iss-desc" data-label="เธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
+      '<td class="iss-sev" data-label="เธเธงเธฒเธกเธฃเธธเธเนเธฃเธ"><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
+      '<td class="iss-stat" data-label="เธชเธ–เธฒเธเธฐ"><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
+      '<td class="iss-date" data-label="เธงเธฑเธเธ—เธตเนเน€เธเธดเธ”">' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
+      '<td class="iss-before" data-label="เธเนเธญเธเธเนเธญเธก">' + beforeThumbs + '</td>' +
+      '<td class="iss-after" data-label="เธซเธฅเธฑเธเธเนเธญเธก">' + afterThumbs + '</td>' +
+      '<td class="iss-trial" data-label="Trial">' + trialThumbs + '</td>' +
+      '<td class="iss-actions" style="white-space:nowrap">' +
+        '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="เธ”เธนเธฃเธฒเธขเธฅเธฐเน€เธญเธตเธขเธ”/เธเธฃเธฐเธงเธฑเธ•เธด">๐” เธ”เธนเธเธฒเธ</button> ' +
+        (can('issues', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="เนเธเนเนเธเธเนเธญเธกเธนเธฅเธเธฑเธเธซเธฒ/เธเนเธญเธก/Trial">โ๏ธ</button> ' : '') +
+        '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="เธเธดเธกเธเนเน€เธญเธเธชเธฒเธฃ">๐–จ๏ธ</button> ' +
+        (can('issues', 'edit') && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="เธเธดเธ”เธเธฒเธ">โ… เธเธดเธ”เธเธฒเธ</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เน€เธฃเธดเนเธกเธ”เธณเน€เธเธดเธเธเธฒเธฃ (In Progress)">โ–ถ๏ธ</button> ' : '') : '') +
+        (can('issues', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="เธฅเธ">๐—‘๏ธ</button>' : '') +
       '</td>' +
     '</tr>';
   }).join('');
@@ -9187,31 +9187,31 @@ function filterStock(){
       }
     }
 
-    return '<tr>'+
-      '<td>'+imgThumb+'</td>'+
-      '<td><strong>'+p.PartName+'</strong></td>'+
-      '<td>'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
-      '<td>'+(p.PartNo||'-')+'</td>'+
-      '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
-      '<td>'+(p.Unit||'-')+'</td>'+
-      '<td>'+min+'</td>'+
-      '<td>'+
+    return '<tr class="m-card-row stk-card">'+
+      '<td class="stk-thumb" data-label="เธฃเธนเธเธ เธฒเธ">'+imgThumb+'</td>'+
+      '<td class="stk-name"><strong>'+p.PartName+'</strong></td>'+
+      '<td class="stk-linked" data-label="เน€เธเธทเนเธญเธกเนเธขเธ">'+(linked?'<span class="badge '+(p.LinkedType==='Mold'?'mold':'machine')+'">'+linked.name+'</span>':'-')+'</td>'+
+      '<td class="stk-partno" data-label="Part No.">'+(p.PartNo||'-')+'</td>'+
+      '<td class="stk-vendor" data-label="เธเธนเนเธเธฒเธข/เธซเธกเธงเธ”เธซเธกเธนเน">'+(p.Vendor||p.Category||'-')+'</td>'+
+      '<td class="stk-unit" data-label="เธซเธเนเธงเธขเธเธฑเธ">'+(p.Unit||'-')+'</td>'+
+      '<td class="stk-min" data-label="เธเธธเธ”เธชเธฑเนเธเธเธทเนเธญ (Min)">'+min+'</td>'+
+      '<td class="stk-cur" data-label="เธเธเน€เธซเธฅเธทเธญ">'+
         '<div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div>'+
         '<div class="stock-progress"><div class="stock-progress-bar" style="width:'+pct+'%;background:'+color+'"></div></div>'+
         statusBadge +
         onOrderBadge +
       '</td>'+
-      '<td>'+(p.Location||'-')+'</td>'+
-      '<td style="white-space:nowrap">'+
+      '<td class="stk-loc" data-label="เธ•เธณเนเธซเธเนเธเน€เธเนเธ">'+(p.Location||'-')+'</td>'+
+      '<td class="stk-actions" style="white-space:nowrap">'+
         (can('stock', 'edit') ? (
-          '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="รับเข้า/เบิกออก">📦 รับ/เบิก</button> '+
+          '<button class="btn btn-success btn-sm" onclick="openStockTxModal(\''+p.ID+'\')" title="เธฃเธฑเธเน€เธเนเธฒ/เน€เธเธดเธเธญเธญเธ">๐“ฆ เธฃเธฑเธ/เน€เธเธดเธ</button> '+
           (p.OnOrderQty > 0 ?
-            '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="รับของที่สั่งเข้าสต็อกทันที (PO: '+(p.PONo||'-')+')">✅ รับของ ('+p.OnOrderQty+')</button> ' :
-            '<button class="btn btn-outline btn-sm" onclick="openStockOrderModal(\''+p.ID+'\')" title="เปิดสั่งซื้อ / ระบุ Lead Time">🛒 สั่งซื้อ</button> '
+            '<button class="btn btn-primary btn-sm" onclick="quickReceiveOrder(\''+p.ID+'\')" title="เธฃเธฑเธเธเธญเธเธ—เธตเนเธชเธฑเนเธเน€เธเนเธฒเธชเธ•เนเธญเธเธ—เธฑเธเธ—เธต (PO: '+(p.PONo||'-')+')">โ… เธฃเธฑเธเธเธญเธ ('+p.OnOrderQty+')</button> ' :
+            '<button class="btn btn-outline btn-sm" onclick="openStockOrderModal(\''+p.ID+'\')" title="เน€เธเธดเธ”เธชเธฑเนเธเธเธทเนเธญ / เธฃเธฐเธเธธ Lead Time">๐’ เธชเธฑเนเธเธเธทเนเธญ</button> '
           ) +
-          '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="แก้ไข">✏️</button> '
+          '<button class="btn btn-ghost btn-sm" onclick=\'openStockPartModal('+JSON.stringify(p)+')\' title="เนเธเนเนเธ">โ๏ธ</button> '
         ) : '') +
-        (can('stock', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="ลบ">🗑️</button>' : '')+
+        (can('stock', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delStockPart(\''+p.ID+'\',\''+p.PartName+'\')" title="เธฅเธ">๐—‘๏ธ</button>' : '')+
       '</td>'+
     '</tr>';
   }).join('');
