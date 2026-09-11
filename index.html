@@ -1490,9 +1490,9 @@ body.role-engineer .role-admin-only { display: none !important; }
 <!-- MOLDS -->
 <div class="page" id="page-molds">
   <div class="toolbar">
-    <input class="search-input" type="text" placeholder="&#128269; &#3588;&#3657;&#3609;&#3627;&#3634;&#3650;&#3617;&#3621;..." oninput="filterMolds()"/>
-    <select id="molds-vendor-filter" style="width:160px" onchange="filterMolds()"><option value="">&#127970; &#3607;&#3640;&#3585; Vendor</option></select>
-    <select id="molds-status-filter" style="width:130px" onchange="filterMolds()"><option value="">&#3607;&#3640;&#3585;&#3626;&#3606;&#3634;&#3609;&#3632;</option><option>Active</option><option>Inactive</option></select>
+    <input class="search-input" id="molds-search" type="text" placeholder="🔍 ค้นหาโมล..." oninput="filterMolds()"/>
+    <select id="molds-vendor-filter" style="width:160px" onchange="filterMolds()"><option value="">🏢 ทุก Vendor</option></select>
+    <select id="molds-status-filter" style="width:130px" onchange="filterMolds()"><option value="">ทุกสถานะ</option><option>Active</option><option>Inactive</option></select>
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="molds:edit" onclick="openMoldModal()">+ เพิ่มโมล</button>
   </div>
@@ -5447,10 +5447,18 @@ async function viewMachinePhoto(machineId) {
   }
 }
 
+function filterMolds() {
+  renderMolds();
+}
+
 function renderMolds() {
   var vendors=[]; STATE.molds.forEach(function(m){if(m.Vendor && vendors.indexOf(m.Vendor)===-1) vendors.push(m.Vendor);});
   var vf=document.getElementById('molds-vendor-filter'); var vfVal=vf?vf.value:'';
-  if(vf){vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');}
+  if(vf && (vf.options.length <= 1 || vf.getAttribute('data-loaded') !== 'true')){
+    vf.innerHTML='<option value="">🏢 ทุก Vendor</option>'+vendors.map(function(v){return '<option value="'+v+'"'+(v===vfVal?' selected':'')+'>'+v+'</option>';}).join('');
+    vf.setAttribute('data-loaded', 'true');
+    if (vfVal) vf.value = vfVal;
+  }
   
   if (!STATE.molds || STATE.molds.length === 0) {
     var tb = document.getElementById('molds-tbody');
@@ -5464,7 +5472,7 @@ function renderMolds() {
     return;
   }
 
-  var q=((document.getElementById('molds-search')||{}).value||'').toLowerCase();
+  var q=((document.getElementById('molds-search')||document.querySelector('#page-molds .search-input')||{}).value||'').trim().toLowerCase();
   var vFilter=((document.getElementById('molds-vendor-filter')||{}).value||'').toLowerCase();
   var sFilter=(document.getElementById('molds-status-filter')||{}).value||'Active';
   var data=STATE.molds.filter(function(m){
@@ -11516,12 +11524,11 @@ function stopQRCameraScan() {
 //  STICKER GENERATION & PRINTING
 // ============================================
 function getAssetQRTargetURL(asset) {
-  var assetKey = asset.AssetNo || asset.ID;
-  var base = window.location.origin + window.location.pathname;
-  if (!window.location.origin || window.location.origin === 'null' || window.location.protocol === 'file:') {
-    base = 'https://tpm-system-wen.vercel.app/';
-  }
-  return base + '?asset=' + encodeURIComponent(assetKey);
+  if (!asset) return '';
+  // เมื่อสร้างหรือสแกน QR ให้ได้เฉพาะรหัส Asset No ล้วนๆ เช่น "1710005130"
+  var rawAssetNo = (asset.AssetNo !== undefined && asset.AssetNo !== null) ? String(asset.AssetNo).trim() : '';
+  if (rawAssetNo) return rawAssetNo;
+  return (asset.ID ? String(asset.ID).trim() : '');
 }
 
 function generateQRDataUrlSync(text, size) {
