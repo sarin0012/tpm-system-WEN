@@ -2453,7 +2453,8 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
       <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:10px;">🚨 1. ข้อมูลการแจ้งปัญหา (Before)</div>
       <div class="form-row col-2"><div class="form-group"><label>ประเภท</label><select id="issue-target-type" onchange="loadIssueTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="issue-target-id" onchange="populateIssueEditPartSelect(this.value)"><option value="">-- เลือก --</option></select></div></div>
-      <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type"><option>Breakdown</option><option>Quality</option><option>Minor Stop</option><option>Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+      <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type" onchange="onIssueTypeChange()"><option value="Breakdown">Breakdown</option><option value="Quality">Quality</option><option value="Minor Stop">Minor Stop</option><option value="DPM">DPM</option><option value="Other">Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
+      <div class="form-group" id="issue-type-other-wrap" style="display:none;margin-top:-4px;"><label>ระบุประเภทปัญหาอื่นๆ (Other Issue Type) <span style="color:var(--danger)">*</span></label><input type="text" id="issue-type-other" placeholder="เช่น ไฟฟ้าดับ, อากาศรั่ว, ปัญหาน้ำหล่อเย็น..."/></div>
       <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
       <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
       <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพตอนแจ้งปัญหา (Before Photos)</label>
@@ -8019,6 +8020,20 @@ function relockIssueEdit() {
   showToast('🔒 ล็อกแบบฟอร์มเพื่อป้องกันข้อมูลแล้ว', 'info');
 }
 
+function onIssueTypeChange() {
+  var sel = document.getElementById('issue-type');
+  var otherWrap = document.getElementById('issue-type-other-wrap');
+  var otherInp = document.getElementById('issue-type-other');
+  if (!sel || !otherWrap) return;
+  if (sel.value === 'Other') {
+    otherWrap.style.display = 'block';
+    if (otherInp) otherInp.focus();
+  } else {
+    otherWrap.style.display = 'none';
+    if (otherInp) otherInp.value = '';
+  }
+}
+
 async function openIssueModal(issueOrId){
   var targetId = null;
   if (issueOrId) {
@@ -8038,7 +8053,10 @@ async function openIssueModal(issueOrId){
     await ensureIssueImages(targetId);
   }
 
-  ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes'].forEach(function(i){v_set(i,'');});
+  ['issue-id','issue-description','issue-reporter','issue-edit-root-cause','issue-edit-corrective','issue-edit-closed-by','issue-edit-parts-used','issue-edit-part-other-name','issue-edit-trial-result','issue-edit-trial-shots','issue-edit-trial-notes','issue-type-other'].forEach(function(i){v_set(i,'');});
+  v_set('issue-type', 'Breakdown');
+  var otherTypeWrap = document.getElementById('issue-type-other-wrap');
+  if (otherTypeWrap) otherTypeWrap.style.display = 'none';
   v_set('issue-reporter', STATE.currentUser ? STATE.currentUser.Name : '');
   v_set('issue-edit-closed-date','');
   v_set('issue-edit-part-qty','1');
@@ -8081,7 +8099,17 @@ async function openIssueModal(issueOrId){
     v_set('issue-target-type', data.TargetType || 'Mold');
     loadIssueTargets(data.TargetID);
     populateIssueEditPartSelect(data.TargetID);
-    v_set('issue-type', data.IssueType || 'Breakdown');
+    var itype = data.IssueType || 'Breakdown';
+    if (['Breakdown', 'Quality', 'Minor Stop', 'DPM'].indexOf(itype) !== -1) {
+      v_set('issue-type', itype);
+      v_set('issue-type-other', '');
+      if (otherTypeWrap) otherTypeWrap.style.display = 'none';
+    } else {
+      v_set('issue-type', 'Other');
+      var customText = itype.replace(/^Other:\s*|^Other\s*\((.*?)\)$/i, '$1').replace(/^Other$/i, '').trim();
+      v_set('issue-type-other', customText);
+      if (otherTypeWrap) otherTypeWrap.style.display = 'block';
+    }
     v_set('issue-severity', data.Severity || 'Medium');
     v_set('issue-description', data.Description || '');
     v_set('issue-occurred', data.OccurredAt || new Date().toISOString().slice(0,16));
@@ -8195,6 +8223,17 @@ async function saveIssue(){
       showToast('กรุณาเลือก Machine/Mold และกรอกรายละเอียด', 'error');
       return;
     }
+    var itypeVal = v('issue-type') || 'Breakdown';
+    if (itypeVal === 'Other') {
+      var otherVal = (v('issue-type-other') || '').trim();
+      if (!otherVal) {
+        showToast('กรุณาระบุประเภทปัญหาอื่นๆ (Other)', 'warning');
+        var elOther = document.getElementById('issue-type-other');
+        if (elOther) elOther.focus();
+        return;
+      }
+      itypeVal = 'Other: ' + otherVal;
+    }
     var type = v('issue-target-type');
     var list = type === 'Mold' ? (STATE.molds || []) : (STATE.machines || []);
     var target = list.find(function(x){ return x.ID === targetId; });
@@ -8214,7 +8253,7 @@ async function saveIssue(){
       TargetType: type,
       TargetID: targetId,
       TargetName: target ? target.Name : (existingIssue ? existingIssue.TargetName : ''),
-      IssueType: v('issue-type'),
+      IssueType: itypeVal,
       Description: desc,
       OccurredAt: v('issue-occurred'),
       ReportedBy: v('issue-reporter'),
