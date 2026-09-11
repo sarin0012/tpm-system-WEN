@@ -74,7 +74,7 @@ body{font-family:'Inter','Sarabun',sans-serif;background:var(--bg);color:var(--t
 .stat-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.08;}
 
 /* TABLES */
-.table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;}
+.table-wrapper{overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:auto;}
 table{width:100%;border-collapse:collapse;}
 thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
 tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
@@ -1474,271 +1474,72 @@ body.role-engineer .role-admin-only { display: none !important; }
   #page-reports .toolbar button {
     flex: 1 1 auto !important;
   }
-
+  /* ========================================================= */
+  /*  TABLE HORIZONTAL SCROLL & RESPONSIVE SUITE               */
+  /* ========================================================= */
   .mobile-view-switcher {
-    display: flex !important;
-    background: #14151e !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 9px !important;
-    padding: 3px !important;
-    gap: 4px !important;
-    margin-bottom: 10px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-  .mobile-view-btn {
-    flex: 1 !important;
-    padding: 6px 8px !important;
-    font-size: 11.5px !important;
-    font-weight: 600 !important;
-    border-radius: 7px !important;
-    border: none !important;
-    background: transparent !important;
-    color: var(--text-muted) !important;
-    cursor: pointer !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 4px !important;
-    transition: all 0.15s ease !important;
-  }
-  .mobile-view-btn.active {
-    background: var(--primary-g) !important;
-    color: #fff !important;
-    box-shadow: 0 2px 8px var(--primary-glow) !important;
-  }
-
-  body:not(.mobile-force-table) .table-wrapper {
-    overflow-x: visible !important;
-  }
-  body:not(.mobile-force-table) #stock-table thead,
-  body:not(.mobile-force-table) #issues-table thead,
-  body:not(.mobile-force-table) #molds-table thead,
-  body:not(.mobile-force-table) #machines-table thead,
-  body:not(.mobile-force-table) #tpm-container table thead {
     display: none !important;
   }
-  body:not(.mobile-force-table) #stock-table,
-  body:not(.mobile-force-table) #issues-table,
-  body:not(.mobile-force-table) #molds-table,
-  body:not(.mobile-force-table) #machines-table,
-  body:not(.mobile-force-table) #tpm-container table {
-    display: block !important;
-    width: 100% !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody,
-  body:not(.mobile-force-table) #issues-table tbody,
-  body:not(.mobile-force-table) #molds-table tbody,
-  body:not(.mobile-force-table) #machines-table tbody,
-  body:not(.mobile-force-table) #tpm-container table tbody {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 12px !important;
-    width: 100% !important;
-  }
 
-  body:not(.mobile-force-table) .m-card-row {
-    display: flex !important;
-    flex-direction: column !important;
-    background: #171822 !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    border-radius: 14px !important;
-    padding: 13px 14px !important;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28) !important;
-    gap: 6px !important;
-    box-sizing: border-box !important;
+  .table-wrapper {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: auto !important;
     width: 100% !important;
+    max-width: 100% !important;
+    display: block !important;
     position: relative !important;
-  }
-  body:not(.mobile-force-table) .m-card-row td {
-    display: block !important;
-    padding: 0 !important;
-    border: none !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-  }
-
-  /* MOLDS card styling */
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(1) {
-    display: none !important;
-  }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(2) {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #f8fafc !important;
-    margin-bottom: 2px !important;
-  }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(3)::before { content: "Model: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(4)::before { content: "\0E02\0E19\0E32\0E14\0E40\0E04\0E23\0E37\0E48\0E2D\0E07: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(5)::before { content: "Asset No.: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(6)::before { content: "Drawing: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(7)::before { content: "Vendor: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(8)::before { content: "Material: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(9)::before { content: "\0E02\0E19\0E32\0E14/\0E19\0E49\0E33\0E2B\0E19\0E31\0E01: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(10)::before { content: "Cycle Time: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(11)::before { content: "\0E22\0E2D\0E14\0E1C\0E25\0E34\0E15/8\0E0A\0E21.: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(12)::before { content: "\0E2A\0E16\0E32\0E19\0E30: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(13)::before { content: "\0E2A\0E16\0E32\0E19\0E30 PM: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(14)::before { content: "Photos: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(15) {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(15) .btn {
-    flex: 1 1 calc(50% - 4px) !important;
-    min-height: 38px !important;
-    justify-content: center !important;
-    font-size: 12px !important;
-  }
-  body:not(.mobile-force-table) #molds-table tbody tr.m-card-row td:nth-child(15) .btn-ghost {
-    flex: 0 0 38px !important;
-  }
-
-  /* MACHINES card styling */
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(1) {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #f8fafc !important;
-    margin-bottom: 2px !important;
-  }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(2)::before { content: "Asset No.: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(3)::before { content: "Vendor: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(4)::before { content: "Model: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(5)::before { content: "\0E41\0E1C\0E19\0E01: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(6)::before { content: "\0E17\0E35\0E48\0E15\0E31\0E49\0E07: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(7)::before { content: "\0E2A\0E16\0E32\0E19\0E30: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(8)::before { content: "Photos: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(9) {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(9) .btn {
-    flex: 1 1 calc(50% - 4px) !important;
-    min-height: 38px !important;
-    justify-content: center !important;
-    font-size: 12px !important;
-  }
-  body:not(.mobile-force-table) #machines-table tbody tr.m-card-row td:nth-child(9) .btn-ghost {
-    flex: 0 0 38px !important;
-  }
-
-  /* ISSUES card styling */
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(1) {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-  }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(2) {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #f8fafc !important;
-  }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(3)::before { content: "\0E1B\0E23\0E30\0E40\0E20\0E17: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(4)::before { content: "\0E23\0E32\0E22\0E25\0E30\0E40\0E2D\0E35\0E22\0E14: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(5)::before { content: "\0E04\0E27\0E32\0E21\0E23\0E38\0E19\0E41\0E23\0E07: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(6)::before { content: "\0E2A\0E16\0E32\0E19\0E30: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(7)::before { content: "\0E27\0E31\0E19\0E17\0E35\0E48\0E40\0E01\0E34\0E14: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(8)::before { content: "\0E01\0E48\0E2D\0E19\0E0b\0E48\0E2D\0E21: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(9)::before { content: "\0E2B\0E25\0E31\0E07\0E0b\0E48\0E2D\0E21: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(10)::before { content: "Trial: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(11) {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(11) .btn {
-    flex: 1 1 calc(50% - 4px) !important;
-    min-height: 38px !important;
-    justify-content: center !important;
-    font-size: 12px !important;
-  }
-  body:not(.mobile-force-table) #issues-table tbody tr.m-card-row td:nth-child(11) .btn-ghost {
-    flex: 0 0 38px !important;
-  }
-
-  /* STOCK card styling */
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(2) {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #f8fafc !important;
-    order: 1 !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(1) {
-    order: 2 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 6px !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(3) { order: 3 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(3)::before { content: "\0E40\0E0A\0E37\0E48\0E2D\0E21\0E42\0E22\0E07: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(8) {
-    order: 4 !important;
-    background: #12131a !important;
-    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    margin-bottom: 8px !important;
     border-radius: 8px !important;
-    padding: 8px 10px !important;
-    margin: 3px 0 !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(8)::before { content: "\0E04\0E07\0E40\0E2B\0E25\0E37\0E2D: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(4) { order: 5 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(4)::before { content: "Part No.: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(5) { order: 6 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(5)::before { content: "Vendor: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(6) { order: 7 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(6)::before { content: "\0E2B\0E19\0E48\0E27\0E22\0E19\0E31\0E1A: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(7) { order: 8 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(7)::before { content: "\0E08\0E38\0E14\0E2A\0E31\0E48\0E07\0E0b\0E37\0E49\0E2D (Min): "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(9) { order: 9 !important; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(9)::before { content: "\0E15\0E33\0E41\0E2B\0E19\0E48\0E07\0E40\0E01\0E47\0E1A: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(10) {
-    order: 10 !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(10) .btn {
-    flex: 1 1 calc(50% - 4px) !important;
-    min-height: 38px !important;
-    justify-content: center !important;
-    font-size: 12px !important;
-  }
-  body:not(.mobile-force-table) #stock-table tbody tr.m-card-row td:nth-child(10) .btn-ghost {
-    flex: 0 0 38px !important;
   }
 
-  /* TPM card styling */
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(3) {
-    font-size: 15px !important;
-    font-weight: 700 !important;
-    color: #f8fafc !important;
+  .table-wrapper::-webkit-scrollbar {
+    height: 7px !important;
+    display: block !important;
   }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(1)::before { content: "Date: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(2)::before { content: "\0E1B\0E23\0E30\0E40\0E20\0E17: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(4)::before { content: "\0E1B\0E35: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(5)::before { content: "\0E1C\0E39\0E49\0E23\0E31\0E1A\0E1C\0E34\0E14\0E0A\0E2D\0E1A: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(6)::before { content: "\0E2A\0E16\0E32\0E19\0E30: "; font-size:11px; font-weight:600; color:var(--text-muted); display:inline-block; min-width:85px; }
-  body:not(.mobile-force-table) #tpm-container table tbody tr.m-card-row td:nth-child(7) {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
-    margin-top: 4px !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.06) !important;
+  .table-wrapper::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border-radius: 4px !important;
   }
+  .table-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(99, 102, 241, 0.4) !important;
+    border-radius: 4px !important;
+  }
+  .table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: rgba(99, 102, 241, 0.7) !important;
+  }
+
+  .table-wrapper table {
+    width: max-content !important;
+    min-width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .table-wrapper thead {
+    display: table-header-group !important;
+  }
+  .table-wrapper tbody {
+    display: table-row-group !important;
+  }
+  .table-wrapper tr {
+    display: table-row !important;
+  }
+  .table-wrapper th,
+  .table-wrapper td {
+    display: table-cell !important;
+    white-space: nowrap !important;
+  }
+
+  /* Specific Table Minimum Widths for Clear Readability on Mobile */
+  #molds-table { min-width: 1200px !important; }
+  #machines-table { min-width: 900px !important; }
+  #issues-table { min-width: 1050px !important; }
+  #stock-table { min-width: 1000px !important; }
+  #tpm-container table { min-width: 850px !important; }
+  #users-table { min-width: 700px !important; }
+  #dash-issues-table { min-width: 650px !important; }
+  #dash-tpm-table { min-width: 650px !important; }
 }
 </style>
 </head>
@@ -1999,10 +1800,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="molds:edit" onclick="openMoldModal()">+ เพิ่มโมล</button>
   </div>
-  <div class="card">    <div class="mobile-view-switcher">
-      <button class="mobile-view-btn active" onclick="setMobileTableView(this, 'card')">&#x1F5C2;&#xFE0F; &#x0E01;&#x0E32;&#x0E23;&#x0E4C;&#x0E14;</button>
-      <button class="mobile-view-btn" onclick="setMobileTableView(this, 'table')">&#x1F4CB; &#x0E15;&#x0E32;&#x0E23;&#x0E32;&#x0E07;</button>
-    </div>
+  <div class="card">
     <div class="table-wrapper"><table id="molds-table">
     <thead><tr><th style="width:45px;text-align:center;">No.</th><th>ชื่อโมล</th><th>Model</th><th>ขนาดเครื่อง (Ton)</th><th>Asset No.</th><th>Drawing No.</th><th>Vendor</th><th>Material</th><th>Size / Weight</th><th>⏱ Cycle Time</th><th>⚡ ยอดผลิต/8ชม.</th><th>Status</th><th>🔧 สถานะ PM</th><th>รูป</th><th>Actions</th></tr></thead>
     <tbody id="molds-tbody"><tr><td colspan="15" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
@@ -2018,10 +1816,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="machines:edit" onclick="openMachineModal()">+ เพิ่มเครื่องจักร</button>
   </div>
-  <div class="card">    <div class="mobile-view-switcher">
-      <button class="mobile-view-btn active" onclick="setMobileTableView(this, 'card')">&#x1F5C2;&#xFE0F; &#x0E01;&#x0E32;&#x0E23;&#x0E4C;&#x0E14;</button>
-      <button class="mobile-view-btn" onclick="setMobileTableView(this, 'table')">&#x1F4CB; &#x0E15;&#x0E32;&#x0E23;&#x0E32;&#x0E07;</button>
-    </div>
+  <div class="card">
     <div class="table-wrapper"><table id="machines-table">
     <thead><tr><th>ชื่อ</th><th>Asset No.</th><th>Vendor</th><th>Model</th><th>Department</th><th>Location</th><th>Status</th><th>รูป</th><th>Actions</th></tr></thead>
     <tbody id="machines-tbody"><tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-muted)">กำลังโหลด...</td></tr></tbody>
@@ -2052,10 +1847,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="issues:edit" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
-  <div class="card">    <div class="mobile-view-switcher">
-      <button class="mobile-view-btn active" onclick="setMobileTableView(this, 'card')">&#x1F5C2;&#xFE0F; &#x0E01;&#x0E32;&#x0E23;&#x0E4C;&#x0E14;</button>
-      <button class="mobile-view-btn" onclick="setMobileTableView(this, 'table')">&#x1F4CB; &#x0E15;&#x0E32;&#x0E23;&#x0E32;&#x0E07;</button>
-    </div>
+  <div class="card">
     <div class="table-wrapper"><table id="issues-table">
     <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
     <tbody id="issues-tbody"></tbody>
@@ -2074,10 +1866,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <button class="btn btn-outline" data-perm="stock:edit" onclick="openStockTxModal()">📦 รับ/เบิก</button>
     <button class="btn btn-primary" data-perm="stock:edit" onclick="openStockPartModal()">+ เพิ่มอะไหล่</button>
   </div>
-  <div class="card">    <div class="mobile-view-switcher">
-      <button class="mobile-view-btn active" onclick="setMobileTableView(this, 'card')">&#x1F5C2;&#xFE0F; &#x0E01;&#x0E32;&#x0E23;&#x0E4C;&#x0E14;</button>
-      <button class="mobile-view-btn" onclick="setMobileTableView(this, 'table')">&#x1F4CB; &#x0E15;&#x0E32;&#x0E23;&#x0E32;&#x0E07;</button>
-    </div>
+  <div class="card">
     <div class="table-wrapper"><table id="stock-table">
     <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
     <tbody id="stock-tbody"></tbody>
@@ -5008,38 +4797,13 @@ function saveEditedProfiles() {
 //  SETUP / CONNECT
 // ============================================
 function getMobileTableView() {
-  return localStorage.getItem('tpm_mobile_view') || 'card';
+  return 'table';
 }
 function setMobileTableView(btn, view) {
-  if (view === 'table') {
-    document.body.classList.add('mobile-force-table');
-    localStorage.setItem('tpm_mobile_view', 'table');
-  } else {
-    document.body.classList.remove('mobile-force-table');
-    localStorage.setItem('tpm_mobile_view', 'card');
-  }
-  document.querySelectorAll('.mobile-view-btn').forEach(function(b) {
-    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'" + view + "'") !== -1) {
-      b.classList.add('active');
-    } else {
-      b.classList.remove('active');
-    }
-  });
+  document.body.classList.add('mobile-force-table');
 }
 function applyMobileTableView() {
-  var v = getMobileTableView();
-  if (v === 'table') {
-    document.body.classList.add('mobile-force-table');
-  } else {
-    document.body.classList.remove('mobile-force-table');
-  }
-  document.querySelectorAll('.mobile-view-btn').forEach(function(b) {
-    if (b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'" + v + "'") !== -1) {
-      b.classList.add('active');
-    } else {
-      b.classList.remove('active');
-    }
-  });
+  document.body.classList.add('mobile-force-table');
 }
 async function initApp() {
   try {
@@ -5056,6 +4820,7 @@ async function initApp() {
 
     initSelects();
     initCurrentUser();
+    applyMobileTableView();
     var setupScreen = document.getElementById('setup-screen');
     if (setupScreen) setupScreen.style.display = 'none';
 
