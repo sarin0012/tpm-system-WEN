@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -2231,6 +2231,61 @@ body.role-engineer .role-admin-only { display: none !important; }
   </div>
 </div>
 
+<!-- VENDOR SHARE LINK MODAL -->
+<div class="modal-overlay" id="vendor-share-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">🔗</span>
+        <span>แชร์ลิงก์ให้ Vendor ทำแผน TPM</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('vendor-share-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <!-- Target Summary Box -->
+      <div id="vendor-share-summary" style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:4px;" id="vendor-share-target-name">-</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.5;" id="vendor-share-target-sub">-</div>
+      </div>
+
+      <!-- Instructions -->
+      <div style="font-size:12px;color:#94a3b8;margin-bottom:12px;line-height:1.4;">
+        ช่างของ Vendor สามารถเปิดลิงก์นี้จากมือถือเพื่อกรอกผลตรวจเช็ค ถ่ายรูป Before/After และเซ็นชื่อได้ทันที <strong>โดยไม่ต้องล็อกอิน</strong>
+      </div>
+
+      <!-- URL Copy Box -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="font-size:11.5px;color:var(--text-muted);font-weight:600;margin-bottom:6px;display:block;">ลิงก์สำหรับส่งให้ช่าง Vendor:</label>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="vendor-share-url-input" readonly style="font-family:monospace;font-size:12px;background:#0f172a;color:#38bdf8;border:1px solid var(--border2);cursor:text;" onclick="this.select();"/>
+          <button type="button" class="btn btn-primary" onclick="copyVendorShareLink()" style="flex-shrink:0;font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+            <span>📋</span> <span>คัดลอก</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Actions (LINE & Preview) -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+        <button type="button" class="btn btn-success" onclick="shareVendorViaLine()" style="background:#06c755;border-color:#06c755;color:#fff;font-weight:600;justify-content:center;font-size:12px;">
+          <span style="font-size:14px;">💬</span> <span>ส่งเข้า LINE</span>
+        </button>
+        <button type="button" class="btn btn-outline" onclick="previewVendorPortal()" style="font-weight:600;justify-content:center;font-size:12px;">
+          <span>📱</span> <span>ทดลองเปิดดู</span>
+        </button>
+      </div>
+
+      <!-- QR Code Section -->
+      <div style="text-align:center;border-top:1px solid var(--border);padding-top:14px;">
+        <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;font-weight:600;">หรือให้ช่างสแกน QR Code นี้หน้างาน:</div>
+        <div id="vendor-share-qrcode" style="display:inline-block;padding:10px;background:#fff;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.3);"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('vendor-share-modal')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
 <!-- ISSUE -->
 <div class="modal-overlay" id="issue-modal">
   <div class="modal modal-lg"><div class="modal-header"><div class="modal-title" id="issue-modal-title">🚨 แจ้งปัญหา / แก้ไขข้อมูล</div><button class="modal-close" onclick="closeModal('issue-modal')">✕</button></div>
@@ -4093,13 +4148,15 @@ var _lastActivityTime = Date.now();
 
 function checkLoginState() {
   var isMobileSign = false;
+  var isVendorPortal = false;
   try {
     var urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mobile_sign') === '1') isMobileSign = true;
+    if (urlParams.get('vendor_tpm')) isVendorPortal = true;
   } catch(e) {}
-  if (isMobileSign) {
+  if (isMobileSign || isVendorPortal) {
     hideLoginScreen();
-    return true; // Bypass login for mobile signature page
+    return true; // Bypass login for mobile signature and vendor TPM portal
   }
 
   var loggedInSession = sessionStorage.getItem('TPM_LOGGED_IN');
@@ -4808,6 +4865,10 @@ function applyMobileTableView() {
 async function initApp() {
   try {
     var urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('vendor_tpm')) {
+      initVendorTPMPortal(urlParams.get('vendor_tpm'));
+      return;
+    }
     if (urlParams.get('mobile_sign') === '1') {
       initMobileSignPage(urlParams.get('mold') || '', urlParams.get('role') || 'sm');
       return;
@@ -5018,6 +5079,7 @@ function nav(page) {
 function getTPMStatus(p) {
   if (!p) return 'Planned';
   if (p.Status === 'Done') return 'Done';
+  if (p.Status === 'Pending Review') return 'Pending Review';
   if (p.TargetType === 'Mold') {
     var m = (STATE.molds || []).find(function(x){ return x.ID === p.TargetID; });
     if (m && m.Status === 'Inactive') return 'Inactive';
@@ -5042,6 +5104,8 @@ function getTPMStatusBadge(p) {
   const status = getTPMStatus(p);
   if (status === 'Done') {
     return '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:600;">\u2705 Done</span>';
+  } else if (status === 'Pending Review') {
+    return '<span class="badge warning" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-weight:600;" title="\u0e0a\u0e48\u0e32\u0e07 Vendor \u0e2a\u0e48\u0e07\u0e07\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27 \u0e23\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e23\u0e31\u0e1a">\u23f3 \u0e23\u0e2d\u0e15\u0e23\u0e27\u0e08\u0e23\u0e31\u0e1a (Vendor)</span>';
   } else if (status === 'Inactive') {
     return '<span class="badge" style="background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);font-weight:600;">\u26aa Inactive</span>';
   } else if (status === 'Overdue') {
@@ -6513,15 +6577,20 @@ function renderTPMList(container){
   if(!plans.length){container.innerHTML='<div class="card">'+emptyState('\ud83d\udd27','\u0e44\u0e21\u0e48\u0e21\u0e35\u0e41\u0e1c\u0e19 TPM','')+'</div>';return;}
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
     var isDone = p.Status === 'Done' || getTPMStatus(p) === 'Done';
+    var isPendingReview = p.Status === 'Pending Review';
     var pImgs = tryParse(p.AfterImageIds || p.ImageIds) || [];
     var photoTag = (pImgs.length > 0)
       ? ' <span style="cursor:pointer;color:var(--primary);font-size:11px;font-weight:600;" onclick="openTPMCompleteModal(\'' + p.ID + '\')" title="มีรูปภาพแนบ ' + pImgs.length + ' รูป (คลิกดู)">📷 ' + pImgs.length + '</span>'
       : '';
-    var actionBtns = !isDone
-      ? (can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>')
-      : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
-         ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
-         (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''));
+    var vendorShareBtn = ' <button class="btn btn-outline btn-sm" onclick="openVendorShareModal(\''+p.ID+'\')" title="แชร์ลิงก์ให้ Vendor กรอก" style="padding:2px 6px;font-size:11px;margin-left:4px;color:#818cf8;border-color:rgba(129,140,248,0.35);">🔗 ลิงก์ Vendor</button>';
+    var actionBtns = isPendingReview
+      ? ('<button class="btn btn-warning btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" style="font-weight:700;box-shadow:0 0 10px rgba(245,158,11,0.25)">🟡 ตรวจรับงาน</button>' + vendorShareBtn)
+      : (!isDone
+        ? ((can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>') + vendorShareBtn)
+        : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
+           ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
+           (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : '') +
+           vendorShareBtn));
     return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
@@ -7042,7 +7111,8 @@ function openTPMCompleteModal(planId, forceEdit){
   }
 
   var isDone = (plan.Status === 'Done');
-  var isReadOnly = isDone && !STATE._tpmEditUnlocked;
+  var isPendingReview = (plan.Status === 'Pending Review');
+  var isReadOnly = (isDone || isPendingReview) && !STATE._tpmEditUnlocked;
 
   v_set('tpm-complete-id',planId);
   v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
@@ -7054,7 +7124,28 @@ function openTPMCompleteModal(planId, forceEdit){
   var titleEl = document.getElementById('tpm-complete-modal-title');
   var bannerEl = document.getElementById('tpm-complete-lock-banner');
 
-  if (isReadOnly) {
+  if (isPendingReview && !STATE._tpmEditUnlocked) {
+    if (titleEl) titleEl.innerHTML = '📋 ตรวจรับผลงาน TPM จาก Vendor (รอการอนุมัติ)';
+    if (bannerEl) {
+      bannerEl.style.display = 'block';
+      bannerEl.innerHTML = 
+        '<div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:26px;">⏳</span>' +
+            '<div>' +
+              '<strong style="color:#fbbf24;font-size:13.5px;">ช่าง Vendor ส่งผลการตรวจแล้ว (รอตรวจรับและอนุมัติ)</strong>' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' +
+                'ตรวจเมื่อ: <strong>' + (plan.ActualDate ? formatDMY(plan.ActualDate) : '-') + '</strong> | ' +
+                'ผู้ส่งงาน: <strong>' + (plan.ActualBy || '-') + '</strong>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<button type="button" class="btn btn-success btn-sm" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">' +
+            '<span>✅</span> <span>อนุมัติและปิดงาน (Approve & Close)</span>' +
+          '</button>' +
+        '</div>';
+    }
+  } else if (isReadOnly) {
     if (titleEl) titleEl.innerHTML = '📋 รายละเอียดผลการตรวจ TPM (บันทึกเสร็จสมบูรณ์)';
     if (bannerEl) {
       bannerEl.style.display = 'block';
@@ -7254,10 +7345,39 @@ function openTPMCompleteModal(planId, forceEdit){
     }
   }
 
+  // Handle Vendor Signature Display
+  var sigWrap = document.getElementById('tpm-complete-vendor-sig-wrap');
+  if (!sigWrap) {
+    sigWrap = document.createElement('div');
+    sigWrap.id = 'tpm-complete-vendor-sig-wrap';
+    var notesEl = document.getElementById('tpm-complete-notes');
+    if (notesEl && notesEl.parentNode) {
+      notesEl.parentNode.appendChild(sigWrap);
+    }
+  }
+  var sigMatch = (plan.Notes || '').match(/\[VENDOR_SIG:([^\]]+)\]/);
+  if (sigMatch && sigMatch[1]) {
+    sigWrap.style.display = 'block';
+    sigWrap.innerHTML = 
+      '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">' +
+        '<div style="font-size:11.5px;color:var(--text-muted);font-weight:600;margin-bottom:6px;">✍️ ลายเซ็นช่างผู้ตรวจเช็ค (Vendor Signature):</div>' +
+        '<div style="display:inline-block;background:#fff;padding:6px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">' +
+          '<img src="' + sigMatch[1] + '" style="max-height:75px;display:block;" />' +
+        '</div>' +
+      '</div>';
+  } else if (sigWrap) {
+    sigWrap.style.display = 'none';
+  }
+
   // Handle Footer Buttons
   var footer = document.getElementById('tpm-complete-footer');
   if (footer) {
-    if (isReadOnly) {
+    if (isPendingReview && !STATE._tpmEditUnlocked) {
+      footer.innerHTML = 
+        '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
+        '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกแก้ไข (Admin)</button> ' +
+        '<button type="button" class="btn btn-success" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">✅ อนุมัติและปิดงาน</button>';
+    } else if (isReadOnly) {
       var printBtn = (plan.TargetType === 'Mold' && plan.TargetID)
         ? '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\'); openPMPrintForm(\'' + plan.TargetID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร A4</button> '
         : '';
@@ -10934,6 +11054,692 @@ async function saveMobSignature() {
     statusBox.style.border = '1px solid #10b981';
     statusBox.style.color = '#34d399';
     statusBox.innerHTML = '✅ <strong>บันทึกลายเซ็น [' + mobCurRole.toUpperCase() + '] ลงฐานข้อมูลหลักเรียบร้อยแล้ว!</strong><br><span style="font-size:11px;color:#94a3b8;">เอกสาร PM บนคอมพิวเตอร์และมือถือจะอัปเดตลายเซ็นนี้ทันที</span>';
+  }
+}
+
+
+
+
+// ============================================================
+//  VENDOR TPM PORTAL & SHARE LINK SYSTEM
+// ============================================================
+var _currentVendorSharePlan = null;
+var _vendorPhotos = { before: [], after: [] };
+var _vendorHasSigned = false;
+var _vendorCanvas = null;
+var _vendorCtx = null;
+var _vendorIsDrawing = false;
+var _vendorPlanData = null;
+var _vendorAssetData = null;
+var _vendorCheckItems = [];
+
+function openVendorShareModal(planId) {
+  var plan = (STATE.tpmPlans || []).find(function(p){ return p.ID === planId; });
+  if (!plan) {
+    showToast('\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E1C\u0E19\u0E07\u0E32\u0E19 TPM', 'warning');
+    return;
+  }
+  _currentVendorSharePlan = plan;
+
+  var targetName = (plan.TargetType || 'Mold') + ': ' + (plan.TargetName || plan.TargetID || '-');
+  var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
+  var vResp = plan.VendorResp || (plan.TargetType === 'Mold' ? (getMoldVendor(plan.TargetID) || '-') : '-');
+
+  var summaryNameEl = document.getElementById('vendor-share-target-name');
+  var summarySubEl = document.getElementById('vendor-share-target-sub');
+  if (summaryNameEl) summaryNameEl.textContent = targetName;
+  if (summarySubEl) {
+    summarySubEl.innerHTML = '\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E17\u0E33: <strong>' + pDate + '</strong> &nbsp;|&nbsp; Vendor: <strong>' + vResp + '</strong> &nbsp;|&nbsp; \u0E2A\u0E16\u0E32\u0E19\u0E30: <strong>' + plan.Status + '</strong>';
+  }
+
+  // Construct absolute URL
+  var baseUrl = window.location.origin + window.location.pathname;
+  var shareUrl = baseUrl + '?vendor_tpm=' + encodeURIComponent(plan.ID);
+  var inp = document.getElementById('vendor-share-url-input');
+  if (inp) inp.value = shareUrl;
+
+  // Generate QR Code
+  var qrContainer = document.getElementById('vendor-share-qrcode');
+  if (qrContainer) {
+    qrContainer.innerHTML = '';
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(qrContainer, {
+        text: shareUrl,
+        width: 150,
+        height: 150,
+        colorDark: '#0f172a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+  }
+
+  openModal('vendor-share-modal');
+}
+
+function copyVendorShareLink() {
+  var inp = document.getElementById('vendor-share-url-input');
+  if (!inp || !inp.value) return;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(inp.value).then(function(){
+      showToast('\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27! \u0E2A\u0E48\u0E07\u0E43\u0E2B\u0E49 Vendor \u0E44\u0E14\u0E49\u0E17\u0E31\u0E19\u0E17\u0E35', 'success');
+    }).catch(function(){
+      inp.select();
+      document.execCommand('copy');
+      showToast('\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27', 'success');
+    });
+  } else {
+    inp.select();
+    document.execCommand('copy');
+    showToast('\u0E04\u0E31\u0E14\u0E25\u0E2D\u0E01\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27', 'success');
+  }
+}
+
+function shareVendorViaLine() {
+  if (!_currentVendorSharePlan) return;
+  var plan = _currentVendorSharePlan;
+  var baseUrl = window.location.origin + window.location.pathname;
+  var shareUrl = baseUrl + '?vendor_tpm=' + encodeURIComponent(plan.ID);
+  var targetName = (plan.TargetType || 'Mold') + ' ' + (plan.TargetName || '');
+  var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
+  
+  var lineText = '\uD83D\uDD27 \u0E07\u0E32\u0E19\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 TPM: ' + targetName + '\n' +
+    '\uD83D\uDCC5 \u0E01\u0E33\u0E2B\u0E19\u0E14\u0E17\u0E33: ' + pDate + '\n' +
+    '\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E1B\u0E34\u0E14\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E14\u0E49\u0E32\u0E19\u0E25\u0E48\u0E32\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 \u0E41\u0E19\u0E1A\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E \u0E41\u0E25\u0E30\u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E37\u0E48\u0E2D:\n' +
+    shareUrl;
+    
+  var lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(lineText);
+  window.open(lineUrl, '_blank');
+}
+
+function previewVendorPortal() {
+  var inp = document.getElementById('vendor-share-url-input');
+  if (inp && inp.value) {
+    window.open(inp.value, '_blank');
+  }
+}
+
+async function approveVendorTPM(planId) {
+  if (!confirm('\u0E22\u0E37\u0E19\u0E22\u0E31\u0E19\u0E01\u0E32\u0E23\u0E2d\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E1C\u0E25\u0E07\u0E32\u0E19 TPM \u0E19\u0E35\u0E49\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19 (Done) \u0E43\u0E0A\u0E48\u0E2B\u0E23\u0E37\u0E2D\u0E44\u0E21\u0E48?')) return;
+  showGlobalLoading(true);
+  try {
+    var sb = await getSupabase();
+    var res = await sb.from('tpm_plans').update({ Status: 'Done' }).eq('ID', planId);
+    showGlobalLoading(false);
+    if (!res.error) {
+      showToast('\u0E2d\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E1C\u0E25\u0E07\u0E32\u0E19 TPM \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27 (Done) \u2705', 'success');
+      closeModal('tpm-complete-modal');
+      await loadTPMPlans();
+    } else {
+      showToast('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + res.error.message, 'error');
+    }
+  } catch(err) {
+    showGlobalLoading(false);
+    showToast('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + err.message, 'error');
+  }
+}
+
+// ------------------------------------------------------------
+//  STANDALONE VENDOR PORTAL VIEW
+// ------------------------------------------------------------
+async function initVendorTPMPortal(planId) {
+  document.title = 'TPM Vendor Portal - \u0E41\u0E1A\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E07\u0E32\u0E19 TPM';
+  
+  // Show Loading Screen
+  document.body.innerHTML = 
+    '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">' +
+      '<div style="text-align:center;max-width:400px;">' +
+        '<div style="font-size:40px;margin-bottom:14px;animation:pulse 1.5s infinite;">\u2699\uFE0F</div>' +
+        '<h3 style="font-size:18px;font-weight:700;margin-bottom:8px;">TPM System WEN - Vendor Portal</h3>' +
+        '<p style="font-size:13px;color:#94a3b8;">\u0E01\u0E33\u0E25\u0E31\u0E07\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E1C\u0E19\u0E07\u0E32\u0E19 TPM...</p>' +
+      '</div>' +
+    '</div>';
+
+  try {
+    var sb = await getSupabase(12000);
+    if (!sb) throw new Error('\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E0A\u0E37\u0E48\u0E2D\u0E21\u0E15\u0E48\u0E2D\u0E10\u0E32\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E44\u0E14\u0E49');
+
+    var pRes = await sb.from('tpm_plans').select('*').eq('ID', planId).single();
+    if (pRes.error || !pRes.data) {
+      document.body.innerHTML = 
+        '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">' +
+          '<div style="text-align:center;max-width:440px;background:#1e293b;border-radius:16px;padding:24px;border:1px solid #334155;">' +
+            '<div style="font-size:48px;margin-bottom:12px;">\u274C</div>' +
+            '<h3 style="font-size:18px;font-weight:700;color:#f87171;margin-bottom:8px;">\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E41\u0E1C\u0E19\u0E07\u0E32\u0E19 TPM \u0E19\u0E35\u0E49\u0E43\u0E19\u0E23\u0E30\u0E1A\u0E1A</h3>' +
+            '<p style="font-size:13px;color:#94a3b8;line-height:1.5;">\u0E23\u0E2B\u0E31\u0E2A\u0E41\u0E1C\u0E19\u0E07\u0E32\u0E19\u0E2d\u0E32\u0E08\u0E16\u0E39\u0E01\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01 \u0E2B\u0E23\u0E37\u0E2d\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E44\u0E21\u0E48\u0E16\u0E39\u0E01\u0E15\u0E49\u0E2D\u0E07 \u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2d\u0E27\u0E34\u0E28\u0E27\u0E01\u0E23\u0E1C\u0E39\u0E49\u0E04\u0E27\u0E1A\u0E04\u0E38\u0E21\u0E07\u0E32\u0E19</p>' +
+          '</div>' +
+        '</div>';
+      return;
+    }
+
+    _vendorPlanData = pRes.data;
+    var plan = _vendorPlanData;
+
+    // Fetch Asset Details
+    _vendorAssetData = null;
+    if (plan.TargetType === 'Mold' && plan.TargetID) {
+      var mRes = await sb.from('molds').select('*').eq('ID', plan.TargetID).single();
+      if (mRes.data) _vendorAssetData = mRes.data;
+    } else if (plan.TargetType === 'Machine' && plan.TargetID) {
+      var mcRes = await sb.from('machines').select('*').eq('ID', plan.TargetID).single();
+      if (mcRes.data) _vendorAssetData = mcRes.data;
+    }
+
+    // Check if already completed
+    var isDone = plan.Status === 'Done';
+    var isPendingReview = plan.Status === 'Pending Review';
+
+    if (isDone || isPendingReview) {
+      renderVendorReadOnlyView(plan, _vendorAssetData);
+    } else {
+      renderVendorInteractiveForm(plan, _vendorAssetData);
+    }
+  } catch(err) {
+    document.body.innerHTML = 
+      '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">' +
+        '<div style="text-align:center;max-width:440px;background:#1e293b;border-radius:16px;padding:24px;border:1px solid #334155;">' +
+          '<div style="font-size:48px;margin-bottom:12px;">\u26A0\uFE0F</div>' +
+          '<h3 style="font-size:18px;font-weight:700;color:#f59e0b;margin-bottom:8px;">\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25</h3>' +
+          '<p style="font-size:13px;color:#94a3b8;line-height:1.5;">' + (err.message || err) + '</p>' +
+          '<button onclick="location.reload()" style="margin-top:14px;padding:8px 16px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-weight:600;cursor:pointer;">\u21BB \u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07</button>' +
+        '</div>' +
+      '</div>';
+  }
+}
+
+function renderVendorReadOnlyView(plan, asset) {
+  var isDone = plan.Status === 'Done';
+  var statusBadge = isDone
+    ? '<span style="background:rgba(16,185,129,0.2);color:#34d399;border:1px solid rgba(16,185,129,0.4);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;">\u2705 \u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34\u0E41\u0E25\u0E30\u0E1B\u0E34\u0E14\u0E07\u0E32\u0E19\u0E41\u0E25\u0E49\u0E27 (Done)</span>'
+    : '<span style="background:rgba(245,158,11,0.2);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700;">\u23F3 \u0E2A\u0E48\u0E07\u0E1C\u0E25\u0E07\u0E32\u0E19\u0E41\u0E25\u0E49\u0E27 (\u0E23\u0E2D\u0E15\u0E23\u0E27\u0E08\u0E23\u0E31\u0E1A)</span>';
+
+  var results = {};
+  try { if (plan.ChecklistResult) results = JSON.parse(plan.ChecklistResult); } catch(e){}
+
+  var photos = [];
+  try { photos = JSON.parse(plan.AfterImageIds || plan.ImageIds || '[]'); } catch(e){}
+
+  var sigMatch = (plan.Notes || '').match(/\[VENDOR_SIG:([^\]]+)\]/);
+  var sigImg = sigMatch ? sigMatch[1] : '';
+  var cleanNotes = (plan.Notes || '').replace(/\[VENDOR_SIG:[^\]]+\]/g, '').replace(/\[VENDOR_PHONE:[^\]]+\]/g, '').trim();
+
+  var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
+  var actDate = plan.ActualDate ? formatDMY(plan.ActualDate) : '-';
+
+  var checkRows = Object.keys(results).map(function(k){
+    var item = results[k] || {};
+    var isOK = item.result === 'OK';
+    var isNG = item.result === 'NG';
+    var badge = isOK 
+      ? '<span style="color:#10b981;font-weight:700;font-size:12px;">\u2714 OK</span>'
+      : (isNG ? '<span style="color:#ef4444;font-weight:700;font-size:12px;">\u2716 NG</span>' : '-');
+    return '<tr style="border-bottom:1px solid #334155;">' +
+      '<td style="padding:10px 8px;font-size:12px;color:#94a3b8;text-align:center;width:32px;">' + k + '</td>' +
+      '<td style="padding:10px 8px;font-size:13px;">' + (item.th || ('\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D\u0E17\u0E35\u0E48 ' + k)) + '</td>' +
+      '<td style="padding:10px 8px;text-align:center;width:70px;">' + badge + '</td>' +
+      '<td style="padding:10px 8px;font-size:12px;color:' + (isNG ? '#f87171' : '#94a3b8') + ';">' + (item.remark || '-') + '</td>' +
+    '</tr>';
+  }).join('');
+
+  var photosHtml = photos.length > 0
+    ? photos.map(function(url){
+        return '<div style="border-radius:8px;overflow:hidden;border:1px solid #334155;background:#0f172a;aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;cursor:pointer;" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')">' +
+          '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" />' +
+        '</div>';
+      }).join('')
+    : '<div style="font-size:12px;color:#94a3b8;grid-column:1/-1;">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E41\u0E19\u0E1A</div>';
+
+  document.body.innerHTML = 
+    '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:14px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">' +
+      '<div style="max-width:600px;margin:0 auto;">' +
+        
+        // Header
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #334155;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<div style="font-size:24px;background:rgba(99,102,241,0.2);padding:6px 10px;border-radius:10px;">\uD83D\uDD27</div>' +
+            '<div>' +
+              '<h2 style="margin:0;font-size:16px;font-weight:700;color:#fff;">TPM System WEN</h2>' +
+              '<div style="font-size:12px;color:#94a3b8;">\u0E41\u0E1A\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E07\u0E32\u0E19 Vendor (Read-Only)</div>' +
+            '</div>' +
+          '</div>' +
+          statusBadge +
+        '</div>' +
+
+        // Asset Card
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="font-size:11px;color:#38bdf8;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">' + (plan.TargetType || 'Mold') + ' Details</div>' +
+          '<div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:6px;">' + (plan.TargetName || plan.TargetID || '-') + '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;color:#94a3b8;">' +
+            '<div>\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E17\u0E33: <strong style="color:#f8fafc;">' + pDate + '</strong></div>' +
+            '<div>\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07: <strong style="color:#f8fafc;">' + actDate + '</strong></div>' +
+            '<div>\u0E1C\u0E39\u0E49\u0E2A\u0E48\u0E07\u0E07\u0E32\u0E19: <strong style="color:#f8fafc;">' + (plan.ActualBy || '-') + '</strong></div>' +
+            '<div>Vendor: <strong style="color:#f8fafc;">' + (plan.VendorResp || (asset ? asset.Vendor : '-') || '-') + '</strong></div>' +
+          '</div>' +
+        '</div>' +
+
+        // Checkpoints Table
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+            '<span>\uD83D\uDCCB</span> <span>\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 (Checklist)</span>' +
+          '</div>' +
+          '<div style="overflow-x:auto;">' +
+            '<table style="width:100%;border-collapse:collapse;">' +
+              '<thead><tr style="background:#0f172a;color:#94a3b8;font-size:11px;">' +
+                '<th style="padding:8px;text-align:center;width:32px;">No.</th>' +
+                '<th style="padding:8px;text-align:left;">\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D</th>' +
+                '<th style="padding:8px;text-align:center;width:70px;">\u0E1C\u0E25</th>' +
+                '<th style="padding:8px;text-align:left;">Remark</th>' +
+              '</tr></thead>' +
+              '<tbody>' + (checkRows || '<tr><td colspan="4" style="padding:14px;text-align:center;color:#64748b;">\u0E44\u0E21\u0E48\u0E21\u0E35\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08</td></tr>') + '</tbody>' +
+            '</table>' +
+          '</div>' +
+        '</div>' +
+
+        // Photos Grid
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+            '<span>\uD83D\uDCF7</span> <span>\u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E2B\u0E25\u0E31\u0E01\u0E10\u0E32\u0E19\u0E01\u0E32\u0E23\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E07\u0E32\u0E19</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));gap:8px;">' +
+            photosHtml +
+          '</div>' +
+        '</div>' +
+
+        // Notes & Signature
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          (cleanNotes ? '<div style="margin-bottom:14px;"><div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E40\u0E1E\u0E34\u0E48\u0E21\u0E40\u0E15\u0E34\u0E21:</div><div style="font-size:13px;color:#f8fafc;background:#0f172a;padding:10px;border-radius:8px;border:1px solid #334155;">' + cleanNotes + '</div></div>' : '') +
+          (sigImg ? '<div><div style="font-size:12px;color:#94a3b8;font-weight:600;margin-bottom:6px;">\u270D\uFE0F \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E48\u0E32\u0E07 Vendor:</div><div style="display:inline-block;background:#fff;padding:6px;border-radius:8px;"><img src="' + sigImg + '" style="max-height:80px;display:block;" /></div></div>' : '') +
+        '</div>' +
+
+        // Lock Notice
+        '<div style="text-align:center;padding:16px;font-size:12px;color:#64748b;">' +
+          '\uD83D\uDD12 \u0E43\u0E1A\u0E07\u0E32\u0E19\u0E19\u0E35\u0E49\u0E16\u0E39\u0E01\u0E2A\u0E48\u0E07\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27 \u0E2B\u0E32\u0E01\u0E15\u0E49\u0E2D\u0E01\u0E32\u0E23\u0E41\u0E01\u0E49\u0E4ไข\u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D\u0E27\u0E34\u0E28\u0E27\u0E01\u0E23\u0E1C\u0E39\u0E49\u0E14\u0E39\u0E41\u0E25\u0E23\u0E30\u0E1A\u0E1A' +
+        '</div>' +
+
+      '</div>' +
+    '</div>';
+}
+
+function renderVendorInteractiveForm(plan, asset) {
+  _vendorPhotos = { before: [], after: [] };
+  _vendorHasSigned = false;
+
+  var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
+  var vResp = plan.VendorResp || (asset ? asset.Vendor : '') || '';
+
+  // Prepare checkpoints list
+  var items = [];
+  if (plan.TargetType === 'Mold') {
+    items = [
+      { id: 1, th: '\u0E0A\u0E34\u0E49\u0E19\u0E07\u0E32\u0E19\u0E2A\u0E38\u0E14\u0E17\u0E49\u0E32\u0E22\u0E2B\u0E25\u0E31\u0E07\u0E01\u0E32\u0E23\u0E1C\u0E25\u0E34\u0E15', en: 'Last part inspection', std: '\u0E15\u0E49\u0E2D\u0E01\u0E44\u0E21\u0E48\u0E40\u0E1B\u0E47\u0E19\u0E23\u0E2D\u0E22\u0E41\u0E25\u0E30\u0E21\u0E35\u0E04\u0E23\u0E35\u0E1A' },
+      { id: 2, th: '\u0E08\u0E38\u0E14\u0E22\u0E36\u0E14\u0E15\u0E34\u0E14\u0E15\u0E48\u0E32\u0E07\u0E46 \u0E02\u0E2D\u0E07\u0E41\u0E21\u0E48\u0E1E\u0E34\u0E21\u0E1E\u0E4C', en: 'Mold fasteners / Screws', std: 'SCREW \u0E15\u0E49\u0E2D\u0E01\u0E22\u0E36\u0E14\u0E41\u0E19\u0E48\u0E19 \u0E44\u0E21\u0E48\u0E02\u0E32\u0E14' },
+      { id: 3, th: '\u0E01\u0E32\u0E23\u0E2B\u0E25\u0E48\u0E2d\u0E25\u0E37\u0E48\u0E19 GUIDE POST, EJECTOR PIN \u0E41\u0E25\u0E30 SLIDE', en: 'Lubricate Guide Post & Slides', std: '\u0E1B\u0E34\u0E14-\u0E40\u0E1B\u0E34\u0E14\u0E04\u0E25\u0E48\u0E2D\u0E07\u0E15\u0E31\u0E27 \u0E44\u0E21\u0E48\u0E15\u0E34\u0E14\u0E02\u0E31\u0E14' },
+      { id: 4, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E23\u0E39\u0E19\u0E49\u0E33\u0E2B\u0E25\u0E48\u0E2d\u0E40\u0E22\u0E47\u0E19', en: 'Check cooling water channels', std: '\u0E23\u0E39\u0E19\u0E49\u0E33\u0E44\u0E21\u0E48\u0E2d\u0E38\u0E14\u0E15\u0E31\u0E19 \u0E44\u0E21\u0E48\u0E23\u0E31\u0E48\u0E27\u0E0B\u0E36\u0E21' },
+      { id: 5, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 SPRING FOR RETURN PIN & SLIDE', en: 'Check Springs', std: '\u0E44\u0E21\u0E48\u0E41\u0E15\u0E01\u0E2B\u0E31\u0E01 \u0E44\u0E21\u0E48\u0E40\u0E2A\u0E35\u0E22\u0E23\u0E39\u0E1B\u0E17\u0E23\u0E07' },
+      { id: 6, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 EJECTOR PIN', en: 'Check Ejector Pins', std: '\u0E44\u0E21\u0E48\u0E04\u0E14\u0E07\u0E2d\u0E2B\u0E23\u0E37\u0E2d\u0E41\u0E15\u0E01\u0E2B\u0E31\u0E01 \u0E01\u0E32\u0E23\u0E04\u0E37\u0E19\u0E15\u0E31\u0E27\u0E2A\u0E21\u0E1A\u0E39\u0E23\u0E13\u0E4C' },
+      { id: 7, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 GUIDE POST & BUSH', en: 'Check Guide Post & Bush', std: '\u0E44\u0E21\u0E48\u0E2B\u0E25\u0E27\u0E21 \u0E21\u0E35\u0E08\u0E32\u0E23\u0E1A\u0E35\u0E0A\u0E42\u0E25\u0E21' },
+      { id: 8, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E2A\u0E20\u0E32\u0E1E\u0E2A\u0E19\u0E34\u0E21\u0E2B\u0E19\u0E49\u0E32\u0E42\u0E21\u0E25', en: 'Check Mold Face for Rust', std: '\u0E44\u0E21\u0E48\u0E21\u0E35\u0E2A\u0E19\u0E34\u0E21\u0E17\u0E31\u0E49\u0E07 CORE \u0E41\u0E25\u0E30 CAVITY' },
+      { id: 9, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E04\u0E27\u0E32\u0E21\u0E2A\u0E30\u0E2d\u0E32\u0E14\u0E42\u0E14\u0E22\u0E23\u0E27\u0E21', en: 'Overall Mold Cleanliness', std: '\u0E2A\u0E20\u0E32\u0E1E\u0E42\u0E14\u0E22\u0E23\u0E27\u0E21\u0E2A\u0E30\u0E2d\u0E32\u0E14' }
+    ];
+  } else {
+    items = [
+      { id: 1, th: '\u0E15\u0E23\u0E27\u0E08\u0E23\u0E30\u0E14\u0E31\u0E1A\u0E19\u0E49\u0E33\u0E21\u0E31\u0E19\u0E44\u0E2E\u0E14\u0E23\u0E2d\u0E25\u0E34\u0E04/\u0E2B\u0E25\u0E48\u0E2d\u0E25\u0E37\u0E48\u0E19', en: 'Check Oil Level', std: '\u0E23\u0E30\u0E14\u0E31\u0E1A\u0E2D\u0E22\u0E39\u0E48\u0E43\u0E19\u0E40\u0E01\u0E13\u0E11\u0E4C\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19' },
+      { id: 2, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E23\u0E30\u0E1A\u0E1A\u0E25\u0E21\u0E41\u0E25\u0E30\u0E08\u0E38\u0E14\u0E23\u0E31\u0E48\u0E27\u0E0B\u0E36\u0E21', en: 'Check Air Leaks', std: '\u0E44\u0E21\u0E48\u0E21\u0E35\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E25\u0E21\u0E23\u0E31\u0E48\u0E27 \u0E41\u0E23\u0E07\u0E14\u0E31\u0E19\u0E15\u0E32\u0E21\u0E40\u0E01\u0E13\u0E11\u0E4C' },
+      { id: 3, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E1F\u0E1F\u0E49\u0E32\u0E41\u0E25\u0E30\u0E15\u0E39\u0E49\u0E04\u0E2D\u0E19\u0E42\u0E17\u0E23\u0E25', en: 'Electrical & Control Box', std: '\u0E2A\u0E32\u0E22\u0E44\u0E1F\u0E41\u0E19\u0E48\u0E19\u0E2B\u0E19\u0E32 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E01\u0E25\u0E34\u0E48\u0E19\u0E44\u0E2B\u0E21\u0E49' },
+      { id: 4, th: '\u0E15\u0E23\u0E27\u0E08\u0E23\u0E30\u0E1A\u0E1A\u0E23\u0E30\u0E1A\u0E32\u0E22\u0E04\u0E27\u0E32\u0E21\u0E23\u0E49\u0E2d\u0E19', en: 'Cooling System', std: '\u0E1E\u0E31\u0E14\u0E25\u0E21\u0E17\u0E33\u0E07\u0E32\u0E19\u0E1B\u0E01\u0E15\u0E34 \u0E2d\u0E38\u0E13\u0E2B\u0E20\u0E39\u0E21\u0E34\u0E44\u0E21\u0E48\u0E40\u0E01\u0E34\u0E19\u0E40\u0E01\u0E13\u0E11\u0E4C' },
+      { id: 5, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E23\u0E30\u0E1A\u0E1A Safety / Emergency Switch', en: 'Emergency & Interlocks', std: '\u0E15\u0E31\u0E14\u0E01\u0E32\u0E23\u0E17\u0E33\u0E07\u0E32\u0E19\u0E17\u0E31\u0E19\u0E17\u0E35\u0E40\u0E21\u0E37\u0E48\u0E2d\u0E01\u0E14' },
+      { id: 6, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E41\u0E25\u0E30\u0E01\u0E32\u0E23\u0E2A\u0E31\u0E48\u0E19\u0E2A\u0E30\u0E40\u0E17\u0E37\u0E2d\u0E19', en: 'Noise & Vibration', std: '\u0E40\u0E14\u0E34\u0E19\u0E40\u0E04\u0E23\u0E37\u0E48\u0E2d\u0E07\u0E23\u0E32\u0E1A\u0E23\u0E37\u0E48\u0E19 \u0E44\u0E21\u0E48\u0E21\u0E35\u0E40\u0E2A\u0E35\u0E22\u0E07\u0E1C\u0E34\u0E14\u0E1B\u0E01\u0E15\u0E34' },
+      { id: 7, th: '\u0E01\u0E32\u0E23\u0E17\u0E33\u0E04\u0E27\u0E32\u0E21\u0E2A\u0E30\u0E2d\u0E32\u0E14\u0E41\u0E25\u0E30\u0E2B\u0E25\u0E48\u0E2d\u0E25\u0E37\u0E48\u0E19\u0E08\u0E38\u0E14\u0E2B\u0E21\u0E38\u0E19', en: 'Clean & Lubricate', std: '\u0E44\u0E21\u0E48\u0E21\u0E35\u0E04\u0E23\u0E32\u0E1A\u0E2A\u0E30\u0E2A\u0E21 \u0E2B\u0E25\u0E48\u0E2d\u0E25\u0E37\u0E48\u0E19\u0E04\u0E23\u0E1A\u0E16\u0E49\u0E27\u0E19' },
+      { id: 8, th: '\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E04\u0E27\u0E32\u0E21\u0E41\u0E19\u0E48\u0E19\u0E2B\u0E19\u0E32\u0E02\u0E2d\u0E07\u0E19\u0E47\u0E2d\u0E15', en: 'Bolts & Mechanical Tightness', std: '\u0E02\u0E31\u0E19\u0E41\u0E19\u0E48\u0E19\u0E17\u0E38\u0E01\u0E08\u0E38\u0E14 \u0E44\u0E21\u0E48\u0E2B\u0E25\u0E27\u0E21\u0E04\u0E25\u0E2d\u0E19' }
+    ];
+  }
+  _vendorCheckItems = items;
+
+  var checkItemsHtml = items.map(function(item){
+    return '<div style="background:#0f172a;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #334155;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">' +
+        '<div>' +
+          '<div style="font-size:13.5px;font-weight:700;color:#fff;">' + item.id + '. ' + item.th + '</div>' +
+          '<div style="font-size:11px;color:#94a3b8;">' + (item.en || '') + ' &bull; \u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19: <span style="color:#38bdf8;">' + (item.std || '-') + '</span></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-shrink:0;">' +
+          '<button type="button" class="v-chk-btn v-chk-ok" id="vchk-ok-' + item.id + '" onclick="setVendorCheck(' + item.id + ',\'OK\')" style="padding:6px 12px;border-radius:8px;border:1px solid #059669;background:#10b981;color:#fff;font-weight:700;font-size:12px;cursor:pointer;">\u2714 OK</button>' +
+          '<button type="button" class="v-chk-btn v-chk-ng" id="vchk-ng-' + item.id + '" onclick="setVendorCheck(' + item.id + ',\'NG\')" style="padding:6px 12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#94a3b8;font-weight:700;font-size:12px;cursor:pointer;">\u2716 NG</button>' +
+        '</div>' +
+      '</div>' +
+      '<input type="hidden" id="vchk-val-' + item.id + '" value="OK" />' +
+      '<div id="vchk-remark-wrap-' + item.id + '" style="display:none;margin-top:8px;">' +
+        '<input type="text" id="vchk-remark-' + item.id + '" placeholder="\u0E23\u0E30\u0E1A\u0E38\u0E2A\u0E32\u0E40\u0E2B\u0E15\u0E38\u0E17\u0E35\u0E48\u0E1C\u0E34\u0E14\u0E1B\u0E01\u0E15\u0E34 (NG) \u0E2B\u0E23\u0E37\u0E2d\u0E27\u0E34\u0E18\u0E35\u0E41\u0E01\u0E49\u0E44\u0E02..." style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid #ef4444;color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;" />' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  var todayYMD = new Date().toISOString().substring(0, 10);
+
+  document.body.innerHTML = 
+    '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;padding:12px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">' +
+      '<div style="max-width:600px;margin:0 auto;padding-bottom:50px;">' +
+
+        // Top Banner
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #334155;">' +
+          '<div style="font-size:26px;background:rgba(99,102,241,0.2);padding:6px 10px;border-radius:10px;">\uD83D\uDD27</div>' +
+          '<div>' +
+            '<h2 style="margin:0;font-size:16.5px;font-weight:700;color:#fff;">TPM Management System WEN</h2>' +
+            '<div style="font-size:12px;color:#94a3b8;">\u0E41\u0E1A\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E07\u0E32\u0E19\u0E1A\u0E33\u0E23\u0E38\u0E07\u0E23\u0E31\u0E01\u0E29\u0E32 (Vendor Portal)</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Target Asset Card
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">' +
+            '<span style="background:rgba(99,102,241,0.25);color:#a5b4fc;font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;border:1px solid rgba(99,102,241,0.4);">' + (plan.TargetType || 'Mold') + '</span>' +
+            '<span style="font-size:11.5px;color:#94a3b8;">\u0E01\u0E33\u0E2B\u0E19\u0E14\u0E17\u0E33: <strong style="color:#fff;">' + pDate + '</strong></span>' +
+          '</div>' +
+          '<div style="font-size:18px;font-weight:700;color:#fff;margin-bottom:8px;">' + (plan.TargetName || plan.TargetID || '-') + '</div>' +
+          (asset ? '<div style="font-size:12px;color:#94a3b8;line-height:1.5;">' +
+            (asset.AssetNo ? 'Asset No: <strong style="color:#f8fafc;">' + asset.AssetNo + '</strong> &nbsp;|&nbsp; ' : '') +
+            (asset.Model ? 'Model: <strong style="color:#f8fafc;">' + asset.Model + '</strong> &nbsp;|&nbsp; ' : '') +
+            (asset.Location ? '\u0E2A\u0E16\u0E32\u0E19\u0E17\u0E35\u0E48: <strong style="color:#f8fafc;">' + asset.Location + '</strong>' : '') +
+          '</div>' : '') +
+        '</div>' +
+
+        // Vendor Technician Info
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+            '<span>\uD83D\uDC64</span> <span>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E07\u0E32\u0E19 (Technician Info)</span>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">' +
+            '<div>' +
+              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E1A\u0E23\u0E34\u0E29\u0E31\u0E17 / Vendor:</label>' +
+              '<input type="text" id="vendor-company" value="' + vResp + '" placeholder="\u0E23\u0E30\u0E1A\u0E38\u0E0A\u0E37\u0E48\u0E2d\u0E1A\u0E23\u0E34\u0E29\u0E31\u0E17 Vendor" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '</div>' +
+            '<div>' +
+              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E0A\u0E37\u0E48\u0E2d\u0E0A\u0E48\u0E32\u0E07\u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 <span style="color:#ef4444;">*</span></label>' +
+              '<input type="text" id="vendor-tech-name" placeholder="\u0E0A\u0E37\u0E48\u0E2d - \u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25 \u0E0A\u0E48\u0E32\u0E07" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
+            '<div>' +
+              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E40\u0E1A\u0E2d\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2d:</label>' +
+              '<input type="tel" id="vendor-tech-phone" placeholder="08x-xxx-xxxx" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '</div>' +
+            '<div>' +
+              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07:</label>' +
+              '<input type="date" id="vendor-actual-date" value="' + todayYMD + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+
+        // Checkpoints Section
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+            '<div style="font-size:13.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">' +
+              '<span>\uD83D\uDCCB</span> <span>\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 (Checklist)</span>' +
+            '</div>' +
+            '<button type="button" onclick="setAllVendorChecks(\'OK\')" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">\u2714 OK \u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>' +
+          '</div>' +
+          checkItemsHtml +
+        '</div>' +
+
+        // Photo Uploads (Before & After)
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
+            '<span>\uD83D\uDCF7</span> <span>\u0E23\u0E39\u0E1B\u0E16\u0E48\u0E32\u0E22\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19 (Photos Before & After)</span>' +
+          '</div>' +
+          
+          // Photo Buttons
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
+            '<div>' +
+              '<input type="file" id="vendor-input-before" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleVendorPhotoUpload(this, \'before\')" />' +
+              '<button type="button" onclick="document.getElementById(\'vendor-input-before\').click()" style="width:100%;padding:10px;border-radius:10px;border:1px dashed #6366f1;background:rgba(99,102,241,0.1);color:#818cf8;font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+                '<span style="font-size:20px;">\uD83D\uDCF8</span>' +
+                '<span>+ \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B\u0E01\u0E48\u0E2d\u0E19\u0E17\u0E33 (Before)</span>' +
+              '</button>' +
+            '</div>' +
+            '<div>' +
+              '<input type="file" id="vendor-input-after" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleVendorPhotoUpload(this, \'after\')" />' +
+              '<button type="button" onclick="document.getElementById(\'vendor-input-after\').click()" style="width:100%;padding:10px;border-radius:10px;border:1px dashed #10b981;background:rgba(16,185,129,0.1);color:#34d399;font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+                '<span style="font-size:20px;">\uD83D\uDCF8</span>' +
+                '<span>+ \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B\u0E2B\u0E25\u0E31\u0E07\u0E17\u0E33 (After)</span>' +
+              '</button>' +
+            '</div>' +
+          '</div>' +
+
+          // Previews
+          '<div id="vendor-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(95px, 1fr));gap:8px;"></div>' +
+        '</div>' +
+
+        // Notes & Findings
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
+          '<label style="display:block;font-size:13.5px;font-weight:700;color:#fff;margin-bottom:6px;">\uD83D\uDCDD \u0E23\u0E32\u0E22\u0E25\u0E30\u0E40\u0E2d\u0E35\u0E22\u0E14\u0E07\u0E32\u0E19\u0E17\u0E35\u0E48\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34 / \u0E2d\u0E30\u0E44\u0E2B\u0E25\u0E48\u0E17\u0E35\u0E48\u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19:</label>' +
+          '<textarea id="vendor-notes" placeholder="\u0E40\u0E0A\u0E48\u0E19 \u0E40\u0E1B\u0E25\u0E35\u0E48\u0E22\u0E19 O-Ring \u0E23\u0E39\u0E19\u0E49\u0E33 4 \u0E15\u0E31\u0E27, \u0E17\u0E32\u0E08\u0E32\u0E23\u0E30\u0E1A\u0E35\u0E17\u0E19\u0E04\u0E27\u0E32\u0E21\u0E23\u0E49\u0E2d\u0E19, \u0E2A\u0E20\u0E32\u0E1E\u0E42\u0E14\u0E22\u0E23\u0E27\u0E21\u0E1E\u0E23\u0E49\u0E2d\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19..." style="width:100%;box-sizing:border-box;min-height:75px;background:#0f172a;border:1px solid #475569;color:#fff;padding:10px;border-radius:8px;font-size:12.5px;"></textarea>' +
+        '</div>' +
+
+        // Digital Signature Pad
+        '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:18px;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+            '<label style="font-size:13.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">' +
+              '<span>\u270D\uFE0F</span> <span>\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E48\u0E32\u0E07\u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 <span style="color:#ef4444;">*</span></span>' +
+            '</label>' +
+            '<button type="button" onclick="clearVendorSigCanvas()" style="background:transparent;border:1px solid #475569;color:#94a3b8;padding:3px 8px;border-radius:6px;font-size:11px;cursor:pointer;">\u21BB \u0E25\u0E49\u0E32\u0E07\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19</button>' +
+          '</div>' +
+          '<div style="background:#fff;border-radius:10px;overflow:hidden;touch-action:none;">' +
+            '<canvas id="vendor-sig-canvas" width="550" height="180" style="display:block;width:100%;height:160px;cursor:crosshair;touch-action:none;"></canvas>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#94a3b8;margin-top:6px;text-align:center;">*\u0E43\u0E0A\u0E49\u0E19\u0E34\u0E49\u0E27\u0E2B\u0E23\u0E37\u0E2d\u0E1B\u0E32\u0E01\u0E01\u0E32 Stylus \u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E37\u0E48\u0E2d\u0E25\u0E07\u0E43\u0E19\u0E01\u0E23\u0E2d\u0E1A\u0E2A\u0E35\u0E02\u0E32\u0E27</div>' +
+        '</div>' +
+
+        // Submit Button
+        '<button type="button" id="vendor-submit-btn" onclick="submitVendorTPM(\'' + plan.ID + '\')" style="width:100%;padding:14px;font-size:15.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(16,185,129,0.3);">' +
+          '<span>\uD83D\uDCE4</span> <span>\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E30\u0E2A\u0E48\u0E07\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08 TPM</span>' +
+        '</button>' +
+
+      '</div>' +
+    '</div>';
+
+  initVendorSigCanvas();
+}
+
+function setVendorCheck(id, val) {
+  var valInp = document.getElementById('vchk-val-' + id);
+  if (valInp) valInp.value = val;
+
+  var okBtn = document.getElementById('vchk-ok-' + id);
+  var ngBtn = document.getElementById('vchk-ng-' + id);
+  var remarkWrap = document.getElementById('vchk-remark-wrap-' + id);
+
+  if (val === 'OK') {
+    if (okBtn) { okBtn.style.background = '#10b981'; okBtn.style.borderColor = '#059669'; okBtn.style.color = '#fff'; }
+    if (ngBtn) { ngBtn.style.background = '#1e293b'; ngBtn.style.borderColor = '#475569'; ngBtn.style.color = '#94a3b8'; }
+    if (remarkWrap) remarkWrap.style.display = 'none';
+  } else {
+    if (okBtn) { okBtn.style.background = '#1e293b'; okBtn.style.borderColor = '#475569'; okBtn.style.color = '#94a3b8'; }
+    if (ngBtn) { ngBtn.style.background = '#ef4444'; ngBtn.style.borderColor = '#dc2626'; ngBtn.style.color = '#fff'; }
+    if (remarkWrap) {
+      remarkWrap.style.display = 'block';
+      var rInp = document.getElementById('vchk-remark-' + id);
+      if (rInp) rInp.focus();
+    }
+  }
+}
+
+function setAllVendorChecks(val) {
+  (_vendorCheckItems || []).forEach(function(it){
+    setVendorCheck(it.id, val);
+  });
+}
+
+function initVendorSigCanvas() {
+  _vendorCanvas = document.getElementById('vendor-sig-canvas');
+  if (!_vendorCanvas) return;
+  _vendorCtx = _vendorCanvas.getContext('2d');
+  _vendorCtx.strokeStyle = '#000080';
+  _vendorCtx.lineWidth = 2.8;
+  _vendorCtx.lineCap = 'round';
+  _vendorCtx.lineJoin = 'round';
+
+  function getPos(e) {
+    var r = _vendorCanvas.getBoundingClientRect();
+    var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - r.left) * (_vendorCanvas.width / r.width),
+      y: (clientY - r.top) * (_vendorCanvas.height / r.height)
+    };
+  }
+  function start(e) {
+    _vendorIsDrawing = true;
+    _vendorHasSigned = true;
+    var p = getPos(e);
+    _vendorCtx.beginPath();
+    _vendorCtx.moveTo(p.x, p.y);
+    if (e.touches) e.preventDefault();
+  }
+  function move(e) {
+    if (!_vendorIsDrawing) return;
+    var p = getPos(e);
+    _vendorCtx.lineTo(p.x, p.y);
+    _vendorCtx.stroke();
+    if (e.touches) e.preventDefault();
+  }
+  function end(e) { _vendorIsDrawing = false; }
+
+  _vendorCanvas.addEventListener('mousedown', start);
+  _vendorCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  _vendorCanvas.addEventListener('touchstart', start, { passive: false });
+  _vendorCanvas.addEventListener('touchmove', move, { passive: false });
+  _vendorCanvas.addEventListener('touchend', end);
+}
+
+function clearVendorSigCanvas() {
+  if (_vendorCanvas && _vendorCtx) {
+    _vendorCtx.clearRect(0, 0, _vendorCanvas.width, _vendorCanvas.height);
+    _vendorHasSigned = false;
+  }
+}
+
+function handleVendorPhotoUpload(input, type) {
+  if (!input.files || !input.files.length) return;
+  Array.from(input.files).forEach(function(file){
+    compressImage(file, 900, 0.7).then(function(dataUrl){
+      if (!dataUrl) return;
+      _vendorPhotos[type].push(dataUrl);
+      renderVendorPhotoPreviews();
+    });
+  });
+  input.value = '';
+}
+
+function renderVendorPhotoPreviews() {
+  var grid = document.getElementById('vendor-preview-grid');
+  if (!grid) return;
+  var html = '';
+  ['before', 'after'].forEach(function(type){
+    (_vendorPhotos[type] || []).forEach(function(url, idx){
+      var tag = type === 'before' ? 'Before' : 'After';
+      var tagColor = type === 'before' ? '#6366f1' : '#10b981';
+      html += 
+        '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid #334155;background:#0f172a;aspect-ratio:4/3;">' +
+          '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" />' +
+          '<span style="position:absolute;top:3px;left:3px;background:' + tagColor + ';color:#fff;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px;">' + tag + '</span>' +
+          '<button type="button" onclick="rmVendorPhoto(\'' + type + '\',' + idx + ')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.85);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2715</button>' +
+        '</div>';
+    });
+  });
+  grid.innerHTML = html;
+}
+
+function rmVendorPhoto(type, idx) {
+  if (_vendorPhotos[type]) {
+    _vendorPhotos[type].splice(idx, 1);
+    renderVendorPhotoPreviews();
+  }
+}
+
+async function submitVendorTPM(planId) {
+  var techName = (document.getElementById('vendor-tech-name') ? document.getElementById('vendor-tech-name').value : '').trim();
+  var company = (document.getElementById('vendor-company') ? document.getElementById('vendor-company').value : '').trim();
+  var techPhone = (document.getElementById('vendor-tech-phone') ? document.getElementById('vendor-tech-phone').value : '').trim();
+  var actDate = (document.getElementById('vendor-actual-date') ? document.getElementById('vendor-actual-date').value : '').trim();
+  var notes = (document.getElementById('vendor-notes') ? document.getElementById('vendor-notes').value : '').trim();
+
+  if (!techName) {
+    alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E0A\u0E37\u0E48\u0E2D\u0E0A\u0E48\u0E32\u0E07\u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04');
+    var el = document.getElementById('vendor-tech-name');
+    if (el) el.focus();
+    return;
+  }
+
+  if (!_vendorHasSigned || !_vendorCanvas) {
+    alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E37\u0E48\u0E2D\u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E43\u0E19\u0E01\u0E23\u0E2D\u0E1A\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E01\u0E48\u0E2d\u0E19\u0E2A\u0E48\u0E07\u0E07\u0E32\u0E19');
+    return;
+  }
+
+  // Collect results
+  var results = {};
+  (_vendorCheckItems || []).forEach(function(it){
+    var vInp = document.getElementById('vchk-val-' + it.id);
+    var rInp = document.getElementById('vchk-remark-' + it.id);
+    var resVal = vInp ? vInp.value : 'OK';
+    var remVal = rInp ? rInp.value.trim() : '';
+    results[it.id] = {
+      id: it.id,
+      th: it.th,
+      std: it.std,
+      result: resVal,
+      remark: remVal
+    };
+  });
+
+  // Collect photos
+  var allPhotos = (_vendorPhotos.before || []).concat(_vendorPhotos.after || []);
+
+  // Signature data URL
+  var sigDataUrl = _vendorCanvas.toDataURL('image/png');
+
+  var btn = document.getElementById('vendor-submit-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<span>\u23F3</span> <span>\u0E01\u0E33\u0E25\u0E31\u0E07\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E30\u0E2D\u0E31\u0E1B\u0E42\u0E2B\u0E25\u0E14\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25...</span>';
+  }
+
+  try {
+    var sb = await getSupabase();
+    var updatePayload = {
+      Status: 'Pending Review',
+      ActualDate: actDate || new Date().toISOString().substring(0, 10),
+      ActualBy: techName + (company ? ' (' + company + ')' : ''),
+      CoInspector: techName,
+      ChecklistResult: JSON.stringify(results),
+      Notes: (notes ? notes + '\n' : '') +
+             (techPhone ? '[VENDOR_PHONE:' + techPhone + ']\n' : '') +
+             '[VENDOR_SIG:' + sigDataUrl + ']',
+      AfterImageIds: JSON.stringify(allPhotos)
+    };
+
+    var res = await sb.from('tpm_plans').update(updatePayload).eq('ID', planId);
+    if (res.error) throw res.error;
+
+    // Show Success Screen
+    document.body.innerHTML = 
+      '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">' +
+        '<div style="text-align:center;max-width:440px;background:#1e293b;border-radius:18px;padding:28px 20px;border:1px solid #334155;box-shadow:0 12px 36px rgba(0,0,0,0.5);">' +
+          '<div style="font-size:52px;margin-bottom:12px;">\uD83C\uDF89</div>' +
+          '<h3 style="font-size:20px;font-weight:700;color:#34d399;margin-bottom:8px;">\u0E2A\u0E48\u0E07\u0E21\u0E2D\u0E1A\u0E07\u0E32\u0E19 TPM \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!</h3>' +
+          '<p style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:18px;">' +
+            '\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E14\u0E49\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08 \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E \u0E41\u0E25\u0E30\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E10\u0E32\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E25\u0E49\u0E27<br>' +
+            '\u0E02\u0E2D\u0E02\u0E2d\u0E1A\u0E04\u0E38\u0E13\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E07\u0E32\u0E19' +
+          '</p>' +
+          '<button onclick="location.reload()" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;">\uD83D\uDCCB \u0E14\u0E39\u0E43\u0E1A\u0E07\u0E32\u0E19\u0E17\u0E35\u0E48\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27</button>' +
+        '</div>' +
+      '</div>';
+  } catch(err) {
+    alert('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14\u0E43\u0E19\u0E01\u0E32\u0E23\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01: ' + (err.message || err));
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<span>\uD83D\uDCE4</span> <span>\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E30\u0E2A\u0E48\u0E07\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08 TPM</span>';
+    }
   }
 }
 
