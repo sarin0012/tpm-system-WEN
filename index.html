@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -1832,7 +1832,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="tpm-filter-status" onchange="renderTPM()"><option value="">ทุกสถานะ</option><option value="Overdue">🔴 Overdue (ช้ากว่ากำหนด)</option><option value="Due Soon">🟡 Due Soon (ใกล้ถึงแผน)</option><option value="Planned">🔵 Planned (ตามแผน)</option><option value="Done">🟢 Done (เสร็จแล้ว)</option></select>
     <select id="tpm-target-type-filter" onchange="renderTPM()" style="width:145px;"><option value="">🔄 ทุกประเภท</option><option value="Mold">🧩 เฉพาะโมล</option><option value="Machine">🏭 เฉพาะเครื่องจักร</option></select>
     <div style="flex:1"></div>
-    <button class="btn btn-outline" data-perm="tpm:edit" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary" data-perm="tpm:edit" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
+    <button class="btn btn-outline" data-perm="tpm:edit" onclick="openLineConfigModal()" style="margin-right:6px;border-color:rgba(6,199,85,0.4);color:#06c755;"><i class="fab fa-line" style="font-size:15px;margin-right:4px;"></i> ตั้งค่า LINE แจ้งเตือน</button><button class="btn btn-outline" data-perm="tpm:edit" onclick="openSignatureManagerModal('sm')" style="margin-right:6px">✍️ ลายเซ็นหัวเอกสาร</button><button class="btn btn-primary" data-perm="tpm:edit" onclick="openBulkTPMModal()">📋 สร้างแผน TPM ประจำปี</button>
   </div>
   <div id="tpm-container"></div>
 </div>
@@ -2282,6 +2282,45 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal('vendor-share-modal')">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+</div>
+
+<!-- LINE NOTIFY / WEBHOOK CONFIG MODAL -->
+<div class="modal-overlay" id="line-config-modal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
+        <i class="fab fa-line" style="color:#06c755;font-size:22px;"></i>
+        <span>ตั้งค่า LINE แจ้งเตือนกลุ่มโรงงาน</span>
+      </div>
+      <button class="modal-close" onclick="closeModal('line-config-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:16px;">
+      <div style="background:rgba(6,199,85,0.1);border:1px solid rgba(6,199,85,0.3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:#d1fae5;line-height:1.5;">
+        🔔 <strong>การแจ้งเตือนอัตโนมัติ:</strong> เมื่อช่าง Vendor กดส่งผลงานตรวจเช็ค TPM ระบบจะส่งข้อความแจ้งเตือนสรุปผลและลิงก์ตรวจรับเข้ากลุ่ม LINE ของโรงงานทันที
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">LINE Webhook URL (เช่น Google Apps Script, Make, n8n หรือ LINE Bot):</label>
+        <input type="url" id="line-webhook-url" placeholder="https://script.google.com/macros/s/.../exec" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:#fff;padding:8px 10px;border-radius:8px;" />
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">* หากยังไม่มี Webhook ในหน้าจอส่งงานของ Vendor จะมีปุ่มให้กด <strong>"ส่งแจ้งเตือนเข้ากลุ่ม LINE"</strong> ได้โดยตรง 100%</div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="font-weight:600;font-size:12px;margin-bottom:6px;display:block;">ชื่อกลุ่ม LINE หรือหมายเหตุ (Optional):</label>
+        <input type="text" id="line-group-label" placeholder="เช่น กลุ่มวิศวกรแม่พิมพ์ / ช่างบำรุงรักษา WEN" style="width:100%;font-size:12px;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);color:#fff;padding:8px 10px;border-radius:8px;" />
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+        <button type="button" class="btn btn-outline" onclick="testSendLineNotification()" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+          <span>🧪</span> <span>ทดสอบส่งข้อความ (Test)</span>
+        </button>
+        <div style="flex:1"></div>
+        <button type="button" class="btn btn-primary" onclick="saveLineNotificationConfig()" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;background:#06c755;border-color:#06c755;">
+          <span>💾</span> <span>บันทึกการตั้งค่า</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -11657,6 +11696,165 @@ function rmVendorPhoto(type, idx) {
   }
 }
 
+// ============================================================
+//  LINE NOTIFICATION SYSTEM (TPM VENDOR SUBMISSION)
+// ============================================================
+var _cachedLineConfig = null;
+
+async function getLineNotificationConfig() {
+  if (_cachedLineConfig) return _cachedLineConfig;
+  try {
+    var sb = await getSupabase();
+    if (sb) {
+      var res = await sb.from('stock_parts').select('Notes').eq('ID', '__SYS_LINE_NOTIFY_CONFIG__').maybeSingle();
+      if (res && res.data && res.data.Notes) {
+        var cfg = JSON.parse(res.data.Notes);
+        _cachedLineConfig = cfg;
+        try { localStorage.setItem('TPM_LINE_CONFIG', JSON.stringify(cfg)); } catch(e){}
+        return cfg;
+      }
+    }
+  } catch(e) {
+    console.warn('Fetch LINE config cloud error:', e);
+  }
+  try {
+    var local = localStorage.getItem('TPM_LINE_CONFIG');
+    if (local) {
+      _cachedLineConfig = JSON.parse(local);
+      return _cachedLineConfig;
+    }
+  } catch(e){}
+  return { webhookUrl: '', groupLabel: '' };
+}
+
+async function openLineConfigModal() {
+  var cfg = await getLineNotificationConfig();
+  var urlInp = document.getElementById('line-webhook-url');
+  var lblInp = document.getElementById('line-group-label');
+  if (urlInp) urlInp.value = (cfg && cfg.webhookUrl) || '';
+  if (lblInp) lblInp.value = (cfg && cfg.groupLabel) || '';
+  openModal('line-config-modal');
+}
+
+async function saveLineNotificationConfig() {
+  var urlInp = document.getElementById('line-webhook-url');
+  var lblInp = document.getElementById('line-group-label');
+  var url = urlInp ? urlInp.value.trim() : '';
+  var label = lblInp ? lblInp.value.trim() : '';
+
+  var cfg = { webhookUrl: url, groupLabel: label, updatedAt: new Date().toISOString() };
+  _cachedLineConfig = cfg;
+  try { localStorage.setItem('TPM_LINE_CONFIG', JSON.stringify(cfg)); } catch(e){}
+
+  showGlobalLoading(true);
+  try {
+    var sb = await getSupabase();
+    if (sb) {
+      await sb.from('stock_parts').upsert({
+        ID: '__SYS_LINE_NOTIFY_CONFIG__',
+        PartName: '__SYSTEM_CONFIG_LINE_NOTIFY__',
+        Category: '__CONFIG__',
+        Notes: JSON.stringify(cfg),
+        Qty: 0,
+        MinQty: 0,
+        Unit: 'config'
+      });
+    }
+    showGlobalLoading(false);
+    showToast('\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E01\u0E32\u0E23\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32 LINE \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08 \u2705', 'success');
+    closeModal('line-config-modal');
+  } catch(err) {
+    showGlobalLoading(false);
+    showToast('\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + err.message, 'error');
+  }
+}
+
+async function testSendLineNotification() {
+  var urlInp = document.getElementById('line-webhook-url');
+  var url = urlInp ? urlInp.value.trim() : '';
+  if (!url) {
+    showToast('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38 LINE Webhook URL \u0E01\u0E48\u0E2d\u0E19\u0E17\u0E14\u0E2a\u0E2d\u0E1A', 'warning');
+    return;
+  }
+
+  var testMsg = '\uD83D\uDD14 [\u0E17\u0E14\u0E2a\u0E2d\u0E1A\u0E23\u0E30\u0E1A\u0E1A] \u0E01\u0E32\u0E23\u0E40\u0E0A\u0E37\u0E48\u0E2d\u0E21\u0E15\u0E48\u0E2d\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2d\u0E19 TPM System WEN \u0E40\u0E02\u0E49\u0E32\u0E01\u0E25\u0E38\u0E48\u0E21 LINE \u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!\n\u0E40\u0E27\u0E25\u0E32\u0E17\u0E14\u0E2a\u0E2d\u0E1A: ' + new Date().toLocaleString('th-TH');
+  showGlobalLoading(true);
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: testMsg,
+        type: 'test',
+        timestamp: new Date().toISOString()
+      })
+    });
+    showGlobalLoading(false);
+    showToast('\u0E2A\u0E48\u0E07\u0E04\u0E33\u0E02\u0E2d\u0E17\u0E14\u0E2a\u0E2d\u0E1A\u0E44\u0E1B\u0E22\u0E31\u0E07 Webhook \u0E41\u0E25\u0E49\u0E27 (\u0E42\u0E1B\u0E23\u0E14\u0E15\u0E23\u0E27\u0E08\u0E2a\u0E2d\u0E1A\u0E43\u0E19\u0E01\u0E25\u0E38\u0E48\u0E21 LINE) \uD83D\uDCF2', 'success');
+  } catch(err) {
+    showGlobalLoading(false);
+    showToast('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + err.message, 'error');
+  }
+}
+
+function buildLineNotificationText(plan, techName, company, okCount, ngCount, photosCount) {
+  var baseUrl = window.location.origin + window.location.pathname;
+  var reviewUrl = baseUrl + '?vendor_tpm=' + encodeURIComponent(plan.ID);
+  var targetName = (plan.TargetType || 'Mold') + ': ' + (plan.TargetName || plan.TargetID || '-');
+  var todayDate = new Date().toLocaleDateString('th-TH');
+  var worker = techName + (company ? ' (' + company + ')' : '');
+
+  var text = '\uD83D\uDD14 [\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2d\u0E19 TPM] \u0E0A\u0E48\u0E32\u0E07 Vendor \u0E2A\u0E48\u0E07\u0E1C\u0E25\u0E07\u0E32\u0E19\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E41\u0E25\u0E49\u0E27!\n' +
+    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' +
+    '\uD83D\uDCCC \u0E0A\u0E34\u0E49\u0E19\u0E07\u0E32\u0E19: ' + targetName + '\n' +
+    '\uD83C\uDFE2 \u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08: ' + worker + '\n' +
+    '\uD83D\uDCC5 \u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E17\u0E33: ' + todayDate + '\n' +
+    '\uD83D\uDCCA \u0E1C\u0E25\u0E15\u0E23\u0E27\u0E08: \u2714 OK ' + okCount + ' \u0E02\u0E49\u0E2D' + (ngCount > 0 ? ' | \u274C NG ' + ngCount + ' \u0E02\u0E49\u0E2D' : '') + '\n' +
+    '\uD83D\uDCF7 \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E\u0E41\u0E19\u0E1A: ' + photosCount + ' \u0E23\u0E39\u0E1B\n' +
+    '\u270D\uFE0F \u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19: \u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\n' +
+    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' +
+    '\uD83D\uDFE1 \u0E2A\u0E16\u0E32\u0E19\u0E30: \u0E23\u0E2d\u0E27\u0E34\u0E28\u0E27\u0E01\u0E23\u0E15\u0E23\u0E27\u0E08\u0E23\u0E31\u0E1A (Pending Review)\n' +
+    '\uD83D\uDD17 \u0E15\u0E23\u0E27\u0E08\u0E23\u0E31\u0E1A\u0E07\u0E32\u0E19\u0E44\u0E14\u0E49\u0E17\u0E35\u0E48:\n' + reviewUrl;
+  return { text: text, reviewUrl: reviewUrl };
+}
+
+async function sendLineAutoWebhook(plan, techName, company, okCount, ngCount, photosCount) {
+  try {
+    var cfg = await getLineNotificationConfig();
+    if (!cfg || !cfg.webhookUrl) return;
+    var info = buildLineNotificationText(plan, techName, company, okCount, ngCount, photosCount);
+    
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutId = controller ? setTimeout(function(){ controller.abort(); }, 4000) : null;
+    
+    await fetch(cfg.webhookUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      signal: controller ? controller.signal : undefined,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'vendor_tpm_submitted',
+        planId: plan.ID,
+        targetType: plan.TargetType,
+        targetName: plan.TargetName,
+        techName: techName,
+        company: company,
+        okCount: okCount,
+        ngCount: ngCount,
+        photosCount: photosCount,
+        message: info.text,
+        reviewUrl: info.reviewUrl,
+        timestamp: new Date().toISOString()
+      })
+    });
+    if (timeoutId) clearTimeout(timeoutId);
+    console.log('\u2705 LINE Auto Webhook dispatched');
+  } catch(e) {
+    console.warn('LINE Auto Webhook error (silently ignored):', e);
+  }
+}
+
 async function submitVendorTPM(planId) {
   var techName = (document.getElementById('vendor-tech-name') ? document.getElementById('vendor-tech-name').value : '').trim();
   var company = (document.getElementById('vendor-company') ? document.getElementById('vendor-company').value : '').trim();
@@ -11678,11 +11876,14 @@ async function submitVendorTPM(planId) {
 
   // Collect results
   var results = {};
+  var okCount = 0, ngCount = 0;
   (_vendorCheckItems || []).forEach(function(it){
     var vInp = document.getElementById('vchk-val-' + it.id);
     var rInp = document.getElementById('vchk-remark-' + it.id);
     var resVal = vInp ? vInp.value : 'OK';
     var remVal = rInp ? rInp.value.trim() : '';
+    if (resVal === 'OK') okCount++;
+    else if (resVal === 'NG') ngCount++;
     results[it.id] = {
       id: it.id,
       th: it.th,
@@ -11721,17 +11922,36 @@ async function submitVendorTPM(planId) {
     var res = await sb.from('tpm_plans').update(updatePayload).eq('ID', planId);
     if (res.error) throw res.error;
 
-    // Show Success Screen
+    var planObj = _vendorPlanData || { ID: planId };
+
+    // Fire background auto-notification
+    sendLineAutoWebhook(planObj, techName, company, okCount, ngCount, allPhotos.length);
+
+    // Build manual 1-tap LINE Share text
+    var lineInfo = buildLineNotificationText(planObj, techName, company, okCount, ngCount, allPhotos.length);
+    var lineShareUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(lineInfo.text);
+
+    // Show Success Screen with prominent 1-Tap LINE Group Notification Button
     document.body.innerHTML = 
-      '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">' +
-        '<div style="text-align:center;max-width:440px;background:#1e293b;border-radius:18px;padding:28px 20px;border:1px solid #334155;box-shadow:0 12px 36px rgba(0,0,0,0.5);">' +
-          '<div style="font-size:52px;margin-bottom:12px;">\uD83C\uDF89</div>' +
-          '<h3 style="font-size:20px;font-weight:700;color:#34d399;margin-bottom:8px;">\u0E2A\u0E48\u0E07\u0E21\u0E2D\u0E1A\u0E07\u0E32\u0E19 TPM \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!</h3>' +
+      '<div style="font-family:\'Inter\',\'Sarabun\',sans-serif;background:#0f172a;min-height:100vh;color:#f8fafc;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;-webkit-font-smoothing:antialiased;">' +
+        '<div style="text-align:center;max-width:440px;width:100%;background:#1e293b;border-radius:18px;padding:26px 20px;border:1px solid #334155;box-shadow:0 12px 36px rgba(0,0,0,0.5);">' +
+          '<div style="font-size:50px;margin-bottom:10px;">\uD83C\uDF89</div>' +
+          '<h3 style="font-size:19.5px;font-weight:700;color:#34d399;margin-bottom:6px;">\u0E2A\u0E48\u0E07\u0E21\u0E2D\u0E1A\u0E07\u0E32\u0E19 TPM \u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27!</h3>' +
+          '<div style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#fbbf24;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;display:inline-block;margin-bottom:14px;">' +
+            '\uD83D\uDFE1 \u0E2A\u0E16\u0E32\u0E19\u0E30: \u0E23\u0E2d\u0E27\u0E34\u0E28\u0E27\u0E01\u0E23\u0E42\u0E23\u0E07\u0E07\u0E32\u0E19\u0E15\u0E23\u0E27\u0E08\u0E23\u0E31\u0E1A (Pending Review)' +
+          '</div>' +
           '<p style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:18px;">' +
-            '\u0E23\u0E30\u0E1A\u0E1A\u0E44\u0E14\u0E49\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08 \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E \u0E41\u0E25\u0E30\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E10\u0E32\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E25\u0E49\u0E27<br>' +
-            '\u0E02\u0E2D\u0E02\u0E2d\u0E1A\u0E04\u0E38\u0E13\u0E2A\u0E33\u0E2B\u0E23\u0E31\u0E1A\u0E01\u0E32\u0E23\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E07\u0E32\u0E19' +
+            '\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E15\u0E23\u0E27\u0E08 <strong>' + (okCount + ngCount) + ' \u0E02\u0E49\u0E2D</strong>, \u0E23\u0E39\u0E1B\u0E20\u0E32\u0E1E <strong>' + allPhotos.length + ' \u0E23\u0E39\u0E1B</strong> \u0E41\u0E25\u0E30\u0E25\u0E32\u0E22\u0E40\u0E0B\u0E47\u0E19\u0E40\u0E02\u0E49\u0E32\u0E2A\u0E39\u0E48\u0E10\u0E32\u0E19\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E41\u0E25\u0E49\u0E27' +
           '</p>' +
-          '<button onclick="location.reload()" style="padding:10px 20px;background:#6366f1;color:#fff;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:13px;">\uD83D\uDCCB \u0E14\u0E39\u0E43\u0E1A\u0E07\u0E32\u0E19\u0E17\u0E35\u0E48\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27</button>' +
+
+          // 1-Tap LINE Group Notification Button
+          '<a href="' + lineShareUrl + '" target="_blank" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;box-sizing:border-box;padding:12px 14px;background:#06c755;color:#fff;border-radius:12px;font-weight:700;font-size:14px;margin-bottom:10px;box-shadow:0 4px 14px rgba(6,199,85,0.35);">' +
+            '<span style="font-size:18px;">\uD83D\uDCAC</span> <span>\u0E2A\u0E48\u0E07\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2d\u0E19\u0E40\u0E02\u0E49\u0E32\u0E01\u0E25\u0E38\u0E48\u0E21 LINE \u0E42\u0E23\u0E07\u0E07\u0E32\u0E19</span>' +
+          '</a>' +
+
+          '<button onclick="location.reload()" style="width:100%;padding:10px 14px;background:#334155;color:#cbd5e1;border:1px solid #475569;border-radius:10px;font-weight:600;cursor:pointer;font-size:12.5px;display:flex;align-items:center;justify-content:center;gap:6px;">' +
+            '<span>\uD83D\uDCCB</span> <span>\u0E14\u0E39\u0E43\u0E1A\u0E07\u0E32\u0E19\u0E17\u0E35\u0E48\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E41\u0E25\u0E49\u0E27 (Read-Only)</span>' +
+          '</button>' +
         '</div>' +
       '</div>';
   } catch(err) {
