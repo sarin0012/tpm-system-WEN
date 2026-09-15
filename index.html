@@ -11166,6 +11166,18 @@ var _vendorPlanData = null;
 var _vendorAssetData = null;
 var _vendorCheckItems = [];
 
+function getMoldVendor(id) {
+  if (!id) return '';
+  var m = (STATE.molds || []).find(function(x){ return x.ID === id; });
+  return (m && m.Vendor) ? m.Vendor : '';
+}
+
+function getMachineVendor(id) {
+  if (!id) return '';
+  var mc = (STATE.machines || []).find(function(x){ return x.ID === id; });
+  return (mc && mc.Vendor) ? mc.Vendor : '';
+}
+
 function openVendorShareModal(planId) {
   var plan = (STATE.tpmPlans || []).find(function(p){ return p.ID === planId; });
   if (!plan) {
@@ -11176,7 +11188,8 @@ function openVendorShareModal(planId) {
 
   var targetName = (plan.TargetType || 'Mold') + ': ' + (plan.TargetName || plan.TargetID || '-');
   var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
-  var vResp = plan.VendorResp || (plan.TargetType === 'Mold' ? (getMoldVendor(plan.TargetID) || '-') : '-');
+  var assetVendor = (plan.TargetType === 'Mold') ? getMoldVendor(plan.TargetID) : getMachineVendor(plan.TargetID);
+  var vResp = plan.VendorResp || assetVendor || '-';
 
   var summaryNameEl = document.getElementById('vendor-share-target-name');
   var summarySubEl = document.getElementById('vendor-share-target-sub');
