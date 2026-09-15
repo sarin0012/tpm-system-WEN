@@ -5119,6 +5119,7 @@ function getTPMStatus(p) {
   if (!p) return 'Planned';
   if (p.Status === 'Done') return 'Done';
   if (p.Status === 'Pending Review') return 'Pending Review';
+  if (p.Status === 'Rejected') return 'Rejected';
   if (p.TargetType === 'Mold') {
     var m = (STATE.molds || []).find(function(x){ return x.ID === p.TargetID; });
     if (m && m.Status === 'Inactive') return 'Inactive';
@@ -5145,6 +5146,8 @@ function getTPMStatusBadge(p) {
     return '<span class="badge done" style="background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.3);font-weight:600;">\u2705 Done</span>';
   } else if (status === 'Pending Review') {
     return '<span class="badge warning" style="background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.4);font-weight:600;" title="\u0e0a\u0e48\u0e32\u0e07 Vendor \u0e2a\u0e48\u0e07\u0e07\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27 \u0e23\u0e2d\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08\u0e23\u0e31\u0e1a">\u23f3 \u0e23\u0e2d\u0e15\u0e23\u0e27\u0e08\u0e23\u0e31\u0e1a (Vendor)</span>';
+  } else if (status === 'Rejected') {
+    return '<span class="badge" style="background:rgba(239,68,68,0.18);color:#f87171;border:1px solid rgba(239,68,68,0.4);font-weight:600;" title="\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E2B\u0E49\u0E41\u0E01\u0E49\u0E44\u0E02 / \u0E15\u0E23\u0E27\u0E08\u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48">\u274C \u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E2B\u0E49\u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48 (Rejected)</span>';
   } else if (status === 'Inactive') {
     return '<span class="badge" style="background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);font-weight:600;">\u26aa Inactive</span>';
   } else if (status === 'Overdue') {
@@ -6617,6 +6620,7 @@ function renderTPMList(container){
   container.innerHTML='<div class="card"><div class="table-wrapper"><table><thead><tr><th>\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</th><th>\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17</th><th>Mold/Machine</th><th>\u0e1b\u0e35</th><th>\u0e1c\u0e39\u0e49\u0e23\u0e31\u0e1a\u0e1c\u0e34\u0e14\u0e0a\u0e2d\u0e1a</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+plans.map(function(p){
     var isDone = p.Status === 'Done' || getTPMStatus(p) === 'Done';
     var isPendingReview = p.Status === 'Pending Review';
+    var isRejected = p.Status === 'Rejected';
     var pImgs = tryParse(p.AfterImageIds || p.ImageIds) || [];
     var photoTag = (pImgs.length > 0)
       ? ' <span style="cursor:pointer;color:var(--primary);font-size:11px;font-weight:600;" onclick="openTPMCompleteModal(\'' + p.ID + '\')" title="มีรูปภาพแนบ ' + pImgs.length + ' รูป (คลิกดู)">📷 ' + pImgs.length + '</span>'
@@ -6624,12 +6628,14 @@ function renderTPMList(container){
     var vendorShareBtn = ' <button class="btn btn-outline btn-sm" onclick="openVendorShareModal(\''+p.ID+'\')" title="แชร์ลิงก์ให้ Vendor กรอก" style="padding:2px 6px;font-size:11px;margin-left:4px;color:#818cf8;border-color:rgba(129,140,248,0.35);">🔗 ลิงก์ Vendor</button>';
     var actionBtns = isPendingReview
       ? ('<button class="btn btn-warning btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" style="font-weight:700;box-shadow:0 0 10px rgba(245,158,11,0.25)">🟡 ตรวจรับงาน</button>' + vendorShareBtn)
-      : (!isDone
-        ? ((can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>') + vendorShareBtn)
-        : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
-           ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
-           (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : '') +
-           vendorShareBtn));
+      : (isRejected
+        ? ('<button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" style="font-weight:600;color:#f87171;border-color:rgba(239,68,68,0.4);" title="งานถูกตีกลับให้แก้ไข">❌ ตีกลับแล้ว</button>' + vendorShareBtn)
+        : (!isDone
+          ? ((can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>') + vendorShareBtn)
+          : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
+             ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
+             (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : '') +
+             vendorShareBtn)));
     return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
@@ -7151,7 +7157,8 @@ function openTPMCompleteModal(planId, forceEdit){
 
   var isDone = (plan.Status === 'Done');
   var isPendingReview = (plan.Status === 'Pending Review');
-  var isReadOnly = (isDone || isPendingReview) && !STATE._tpmEditUnlocked;
+  var isRejected = (plan.Status === 'Rejected');
+  var isReadOnly = (isDone || isPendingReview || isRejected) && !STATE._tpmEditUnlocked;
 
   v_set('tpm-complete-id',planId);
   v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
@@ -7162,6 +7169,7 @@ function openTPMCompleteModal(planId, forceEdit){
     .replace(/\[CO_INSPECTOR:[^\]]+\]/g, '')
     .replace(/\[VENDOR_SIG:[^\]]+\]/g, '')
     .replace(/\[VENDOR_PHONE:[^\]]+\]/g, '')
+    .replace(/\[REJECT_REASON:[^\]]+\]/g, '')
     .trim();
   v_set('tpm-complete-notes', cleanDisplayNotes);
 
@@ -7185,9 +7193,41 @@ function openTPMCompleteModal(planId, forceEdit){
               '</div>' +
             '</div>' +
           '</div>' +
-          '<button type="button" class="btn btn-success btn-sm" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">' +
-            '<span>✅</span> <span>อนุมัติและปิดงาน (Approve & Close)</span>' +
-          '</button>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+            '<button type="button" class="btn btn-danger btn-sm" onclick="rejectVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">' +
+              '<span>❌</span> <span>ตีกลับให้ทำใหม่ (Reject)</span>' +
+            '</button>' +
+            '<button type="button" class="btn btn-success btn-sm" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">' +
+              '<span>✅</span> <span>อนุมัติและปิดงาน</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+    }
+  } else if (isRejected && !STATE._tpmEditUnlocked) {
+    if (titleEl) titleEl.innerHTML = '📋 ตรวจสอบผลงาน TPM (สถานะ: ตีกลับให้ทำใหม่)';
+    var rejectMatch = (plan.Notes || '').match(/\[REJECT_REASON:([^\]]+)\]/);
+    var rejectReason = rejectMatch ? rejectMatch[1] : '-';
+    if (bannerEl) {
+      bannerEl.style.display = 'block';
+      bannerEl.innerHTML = 
+        '<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);border-radius:var(--r-sm);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;">' +
+            '<span style="font-size:26px;">❌</span>' +
+            '<div>' +
+              '<strong style="color:#f87171;font-size:13.5px;">แผนงานนี้ถูกตีกลับให้ช่าง Vendor แก้ไข / ตรวจทำใหม่ (Rejected)</strong>' +
+              '<div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">' +
+                'เหตุผล: <strong style="color:#fff;">' + rejectReason + '</strong>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;">' +
+            '<button type="button" class="btn btn-outline btn-sm" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.35);font-weight:600;">' +
+              '<span>🔗</span> <span>คัดลอกลิงก์ให้ Vendor</span>' +
+            '</button>' +
+            '<button type="button" class="btn btn-success btn-sm" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">' +
+              '<span>✅</span> <span>เปลี่ยนใจอนุมัติ (Approve)</span>' +
+            '</button>' +
+          '</div>' +
         '</div>';
     }
   } else if (isReadOnly) {
@@ -7422,7 +7462,14 @@ function openTPMCompleteModal(planId, forceEdit){
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
         '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกแก้ไข (Admin)</button> ' +
+        '<button type="button" class="btn btn-danger" onclick="rejectVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">❌ ตีกลับให้ทำใหม่ (Reject)</button> ' +
         '<button type="button" class="btn btn-success" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">✅ อนุมัติและปิดงาน</button>';
+    } else if (isRejected && !STATE._tpmEditUnlocked) {
+      footer.innerHTML = 
+        '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
+        '<button type="button" class="btn btn-outline" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.35);font-weight:600;">🔗 ลิงก์ Vendor</button> ' +
+        '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกแก้ไข (Admin)</button> ' +
+        '<button type="button" class="btn btn-success" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">✅ อนุมัติและปิดงาน</button>';
     } else if (isReadOnly) {
       var printBtn = (plan.TargetType === 'Mold' && plan.TargetID)
         ? '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\'); openPMPrintForm(\'' + plan.TargetID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร A4</button> '
@@ -11225,6 +11272,85 @@ async function approveVendorTPM(planId) {
   }
 }
 
+async function rejectVendorTPM(planId) {
+  var reason = prompt('\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E17\u0E35\u0E48\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E2B\u0E49\u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48 (Reject Reason):');
+  if (reason === null) return;
+  reason = (reason || '').trim();
+  if (!reason) {
+    alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E43\u0E19\u0E01\u0E32\u0E23\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E43\u0E2B\u0E49 Vendor \u0E17\u0E23\u0E32\u0E1A\u0E08\u0E38\u0E14\u0E17\u0E35\u0E48\u0E15\u0E49\u0E2D\u0E01\u0E41\u0E01\u0E49\u0E44\u0E02');
+    return;
+  }
+
+  showGlobalLoading(true);
+  try {
+    var sb = await getSupabase();
+    var pRes = await sb.from('tpm_plans').select('*').eq('ID', planId).single();
+    var currentNotes = (pRes.data && pRes.data.Notes) ? pRes.data.Notes : '';
+    currentNotes = currentNotes.replace(/\[REJECT_REASON:[^\]]+\]/g, '').trim();
+    var newNotes = (currentNotes ? currentNotes + '\n' : '') + '[REJECT_REASON:' + reason + ']';
+
+    var res = await sb.from('tpm_plans').update({
+      Status: 'Rejected',
+      Notes: newNotes
+    }).eq('ID', planId);
+
+    showGlobalLoading(false);
+    if (!res.error) {
+      showToast('\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E1A\u0E07\u0E32\u0E19 TPM \u0E43\u0E2B\u0E49 Vendor \u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22 (Rejected) \u274C', 'warning');
+      closeModal('tpm-complete-modal');
+      
+      var planObj = pRes.data || { ID: planId };
+      sendLineRejectNotification(planObj, reason);
+
+      await loadTPMPlans();
+    } else {
+      showToast('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + res.error.message, 'error');
+    }
+  } catch(err) {
+    showGlobalLoading(false);
+    showToast('\u0E40\u0E01\u0E34\u0E14\u0E02\u0E49\u0E2D\u0E1C\u0E34\u0E14\u0E1E\u0E25\u0E32\u0E14: ' + err.message, 'error');
+  }
+}
+
+function sendLineRejectNotification(plan, reason) {
+  var baseUrl = window.location.origin + window.location.pathname;
+  var shareUrl = baseUrl + '?vendor_tpm=' + encodeURIComponent(plan.ID);
+  var targetName = (plan.TargetType || 'Mold') + ': ' + (plan.TargetName || plan.TargetID || '-');
+
+  var lineText = '\u274C [\u0E41\u0E08\u0E49\u0E07\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E07\u0E32\u0E19 TPM \u0E43\u0E2B\u0E49\u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48]\n' +
+    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' +
+    '\uD83D\uDCCC \u0E0A\u0E34\u0E49\u0E19\u0E07\u0E32\u0E19: ' + targetName + '\n' +
+    '\u26A0\uFE0F \u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E17\u0E35\u0E48\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A: ' + reason + '\n' +
+    '\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n' +
+    '\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E1B\u0E34\u0E14\u0E25\u0E34\u0E49\u0E07\u0E01\u0E4C\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E41\u0E25\u0E30\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E43\u0E2B\u0E21\u0E48:\n' +
+    shareUrl;
+
+  getLineNotificationConfig().then(function(cfg){
+    if (cfg && cfg.webhookUrl) {
+      fetch(cfg.webhookUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'vendor_tpm_rejected',
+          planId: plan.ID,
+          targetType: plan.TargetType,
+          targetName: plan.TargetName,
+          reason: reason,
+          message: lineText,
+          shareUrl: shareUrl,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(function(){});
+    }
+  });
+
+  if (confirm('\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E23\u0E49\u0E2D\u0E22\u0E41\u0E25\u0E49\u0E27! \u0E15\u0E49\u0E2D\u0E01\u0E01\u0E32\u0E23\u0E41\u0E0A\u0E23\u0E4C\u0E41\u0E08\u0E49\u0E07\u0E40\u0E15\u0E37\u0E2d\u0E19\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E19\u0E35\u0E49\u0E44\u0E1B\u0E22\u0E31\u0E07 LINE \u0E2B\u0E23\u0E37\u0E2d\u0E44\u0E21\u0E48?')) {
+    var lineUrl = 'https://line.me/R/msg/text/?' + encodeURIComponent(lineText);
+    window.open(lineUrl, '_blank');
+  }
+}
+
 // ------------------------------------------------------------
 //  STANDALONE VENDOR PORTAL VIEW
 // ------------------------------------------------------------
@@ -11417,6 +11543,28 @@ function renderVendorInteractiveForm(plan, asset) {
   var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
   var vResp = plan.VendorResp || (asset ? asset.Vendor : '') || '';
 
+  var isRejected = (plan.Status === 'Rejected');
+  var rejectReasonMatch = (plan.Notes || '').match(/\[REJECT_REASON:([^\]]+)\]/);
+  var rejectReason = rejectReasonMatch ? rejectReasonMatch[1] : '';
+
+  var rejectBannerHtml = '';
+  if (isRejected) {
+    var safeReason = String(rejectReason || '\u0E44\u0E21\u0E48\u0E44\u0E14\u0E49\u0E23\u0E30\u0E1A\u0E38\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    rejectBannerHtml = 
+      '<div style="background:rgba(239,68,68,0.15);border:1.5px solid #ef4444;border-radius:14px;padding:14px 16px;margin-bottom:14px;color:#fca5a5;">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">' +
+          '<span style="font-size:20px;">\u274C</span>' +
+          '<strong style="font-size:14px;color:#f87171;">\u0E43\u0E1A\u0E07\u0E32\u0E19\u0E19\u0E35\u0E49\u0E16\u0E39\u0E01\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A\u0E43\u0E2B\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E41\u0E25\u0E30\u0E17\u0E33\u0E43\u0E2B\u0E21\u0E48 (Rejected)</strong>' +
+        '</div>' +
+        '<div style="font-size:13px;color:#fecaca;line-height:1.5;background:rgba(0,0,0,0.3);padding:10px 12px;border-radius:8px;border-left:3px solid #ef4444;margin-bottom:8px;">' +
+          '<strong>\u0E40\u0E2B\u0E15\u0E38\u0E1C\u0E25\u0E17\u0E35\u0E48\u0E15\u0E35\u0E01\u0E25\u0E31\u0E1A:</strong> ' + safeReason +
+        '</div>' +
+        '<div style="font-size:11.5px;color:#cbd5e1;">' +
+          '\u0E01\u0E23\u0E38\u0E13\u0E32\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04\u0E2B\u0E31\u0E27\u0E02\u0E49\u0E2D\u0E15\u0E32\u0E21\u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19 \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19 \u0E40\u0E0B\u0E47\u0E19\u0E0A\u0E37\u0E48\u0E2D \u0E41\u0E25\u0E30\u0E01\u0E14\u0E2A\u0E48\u0E07\u0E1C\u0E25\u0E07\u0E32\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07' +
+        '</div>' +
+      '</div>';
+  }
+
   // Prepare checkpoints list
   var items = [];
   if (plan.TargetType === 'Mold') {
@@ -11478,6 +11626,8 @@ function renderVendorInteractiveForm(plan, asset) {
             '<div style="font-size:12px;color:#94a3b8;">\u0E41\u0E1A\u0E1A\u0E1A\u0E31\u0E19\u0E17\u0E36\u0E01\u0E1C\u0E25\u0E07\u0E32\u0E19\u0E1A\u0E33\u0E23\u0E38\u0E07\u0E23\u0E31\u0E01\u0E29\u0E32 (Vendor Portal)</div>' +
           '</div>' +
         '</div>' +
+
+        rejectBannerHtml +
 
         // Target Asset Card
         '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
