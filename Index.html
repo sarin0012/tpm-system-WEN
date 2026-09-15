@@ -7652,12 +7652,23 @@ async function completeTPM(){
   showGlobalLoading(true);
   var finalImgIds = await uploadPendingPhotos('tpm-complete','TPM_Records');
 
+  var currentPlan = (STATE.tpmPlans || []).find(function(p){ return p.ID === planId; }) || {};
+  var oldSigM = (currentPlan.Notes || '').match(/\[VENDOR_SIG:([^\]]+)\]/);
+  var preservedSig = oldSigM ? ('\n[VENDOR_SIG:' + oldSigM[1] + ']') : '';
+  var cleanNotesVal = v('tpm-complete-notes')
+    .replace(/\[CO_INSPECTOR:[^\]]*\]/g, '')
+    .replace(/\[VENDOR_RESP:[^\]]*\]/g, '')
+    .replace(/\[VENDOR_SIG:[^\]]*\]/g, '')
+    .replace(/\[VENDOR_PHONE:[^\]]*\]/g, '')
+    .replace(/\[REJECT_REASON:[^\]]*\]/g, '')
+    .trim();
+
   var data = {
     ID: planId,
     ActualDate: actualDate,
     ActualBy: actualBy,
     CoInspector: coInspector,
-    Notes: v('tpm-complete-notes'),
+    Notes: cleanNotesVal + (coInspector ? '\n[CO_INSPECTOR:' + coInspector + ']' : '') + preservedSig,
     ChecklistResult: JSON.stringify(checks),
     AfterImageIds: JSON.stringify(finalImgIds),
     ImageIds: JSON.stringify(finalImgIds)
@@ -12359,7 +12370,13 @@ async function openPMPrintForm(moldId) {
           correctionNotes.push('\u2022 \u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 ' + globalRoundNum + ': \u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e07\u0e32\u0e19\u0e08\u0e23\u0e34\u0e07 ' + aStr + ' (\u0e17\u0e33\u0e01\u0e48\u0e2d\u0e19\u0e41\u0e1c\u0e19 ' + thMonths[pMo-1] + ')');
         }
         if (roundPlan.Notes) {
-          var cleanNotes = roundPlan.Notes.replace(/\[CO_INSPECTOR:.*?\]/g, '').replace(/\[VENDOR_RESP:.*?\]/g, '').trim();
+          var cleanNotes = roundPlan.Notes
+            .replace(/\[CO_INSPECTOR:[^\]]*\]/g, '')
+            .replace(/\[VENDOR_RESP:[^\]]*\]/g, '')
+            .replace(/\[VENDOR_SIG:[^\]]*\]/g, '')
+            .replace(/\[VENDOR_PHONE:[^\]]*\]/g, '')
+            .replace(/\[REJECT_REASON:[^\]]*\]/g, '')
+            .trim();
           if (cleanNotes && cleanNotes !== 'Normal PM' && cleanNotes !== 'Normal PM cycle check') {
             correctionNotes.push('\u2022 \u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e04\u0e23\u0e31\u0e49\u0e07\u0e17\u0e35\u0e48 ' + globalRoundNum + ': ' + cleanNotes);
           }
@@ -12432,15 +12449,37 @@ async function openPMPrintForm(moldId) {
       var isDone = p && p.Status === 'Done';
       var insp = isDone ? (p.ActualBy || '') : '';
       var coInsp = isDone ? (p.CoInspector || (p.Notes && (p.Notes.match(/\[CO_INSPECTOR:([^\]]+)\]/)||[])[1]) || '') : '';
+
+      // Extract vendor / co-inspector signature from Notes if available
+      var coInspSigHtml = '';
+      if (isDone && p && p.Notes) {
+        var sigM = p.Notes.match(/\[VENDOR_SIG:([^\]]+)\]/);
+        if (sigM && sigM[1]) {
+          coInspSigHtml = '<div style="margin-bottom:1px;"><img src="' + sigM[1] + '" style="max-height:28px;max-width:92%;object-fit:contain;display:inline-block;vertical-align:middle;" /></div>';
+        }
+      }
+
+      // If coInsp is present and insp is identical or contains coInsp, attribute insp to WEN / WP
+      if (coInsp && insp && (insp === coInsp || insp.indexOf(coInsp) !== -1)) {
+        insp = 'WEN / WP';
+      }
+
+      var coInspBody = '';
+      if (coInspSigHtml) {
+        coInspBody = coInspSigHtml + (coInsp ? '<div style="font-size:7pt;color:#333;line-height:1.1;">(' + coInsp + ')</div>' : '');
+      } else {
+        coInspBody = coInsp || '-';
+      }
+
       var dtStr = '';
       if (isDone && p.ActualDate) {
         var dParts = p.ActualDate.split('-');
         var dy = parseInt(dParts[2], 10), dm = parseInt(dParts[1], 10), dyr = parseInt(dParts[0], 10);
         dtStr = (dy < 10 ? '0' : '') + dy + '/' + (dm < 10 ? '0' : '') + dm + '/' + (dyr + 543);
       }
-      inspectorCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;">' + insp + '</td>';
-      coInspectorCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;">' + coInsp + '</td>';
-      inspectDateCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:22px;">' + dtStr + '</td>';
+      inspectorCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:24px;vertical-align:middle;">' + (insp || '-') + '</td>';
+      coInspectorCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:40px;vertical-align:middle;">' + coInspBody + '</td>';
+      inspectDateCells += '<td colspan="2" style="border:1px solid #333;text-align:center;font-size:8pt;padding:2px;height:22px;vertical-align:middle;">' + (dtStr || '-') + '</td>';
     }
 
     var pageIndicator = totalPages > 1 ? '<span style="font-size:9pt;font-weight:normal;color:#4b5563;margin-left:8px;">(\u0e2b\u0e19\u0e49\u0e34 ' + (pageIdx + 1) + '/' + totalPages + ')</span>' : '';
