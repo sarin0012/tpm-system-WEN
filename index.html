@@ -7156,8 +7156,14 @@ function openTPMCompleteModal(planId, forceEdit){
   v_set('tpm-complete-id',planId);
   v_set('tpm-actual-date', plan.ActualDate ? formatDMY(plan.ActualDate) : formatDMY(new Date()));
   v_set('tpm-actual-by',plan.ActualBy || '');
-  v_set('tpm-co-inspector',plan.CoInspector || '');
-  v_set('tpm-complete-notes',plan.Notes || '');
+  var coMatch = (plan.Notes || '').match(/\[CO_INSPECTOR:([^\]]+)\]/);
+  v_set('tpm-co-inspector', plan.CoInspector || (coMatch ? coMatch[1] : ''));
+  var cleanDisplayNotes = (plan.Notes || '')
+    .replace(/\[CO_INSPECTOR:[^\]]+\]/g, '')
+    .replace(/\[VENDOR_SIG:[^\]]+\]/g, '')
+    .replace(/\[VENDOR_PHONE:[^\]]+\]/g, '')
+    .trim();
+  v_set('tpm-complete-notes', cleanDisplayNotes);
 
   // Handle Lock Banner & Modal Title
   var titleEl = document.getElementById('tpm-complete-modal-title');
@@ -7397,9 +7403,10 @@ function openTPMCompleteModal(planId, forceEdit){
   var sigMatch = (plan.Notes || '').match(/\[VENDOR_SIG:([^\]]+)\]/);
   if (sigMatch && sigMatch[1]) {
     sigWrap.style.display = 'block';
+    var techNameStr = plan.ActualBy || (coMatch ? coMatch[1] : '') || '';
     sigWrap.innerHTML = 
       '<div style="margin-top:12px;padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">' +
-        '<div style="font-size:11.5px;color:var(--text-muted);font-weight:600;margin-bottom:6px;">✍️ ลายเซ็นช่างผู้ตรวจเช็ค (Vendor Signature):</div>' +
+        '<div style="font-size:11.5px;color:var(--text-muted);font-weight:600;margin-bottom:6px;">✍️ ลายเซ็นช่างผู้ตรวจเช็ค (Vendor Signature)' + (techNameStr ? ' - ' + techNameStr : '') + ':</div>' +
         '<div style="display:inline-block;background:#fff;padding:6px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">' +
           '<img src="' + sigMatch[1] + '" style="max-height:75px;display:block;" />' +
         '</div>' +
@@ -11300,7 +11307,11 @@ function renderVendorReadOnlyView(plan, asset) {
 
   var sigMatch = (plan.Notes || '').match(/\[VENDOR_SIG:([^\]]+)\]/);
   var sigImg = sigMatch ? sigMatch[1] : '';
-  var cleanNotes = (plan.Notes || '').replace(/\[VENDOR_SIG:[^\]]+\]/g, '').replace(/\[VENDOR_PHONE:[^\]]+\]/g, '').trim();
+  var cleanNotes = (plan.Notes || '')
+    .replace(/\[CO_INSPECTOR:[^\]]+\]/g, '')
+    .replace(/\[VENDOR_SIG:[^\]]+\]/g, '')
+    .replace(/\[VENDOR_PHONE:[^\]]+\]/g, '')
+    .trim();
 
   var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
   var actDate = plan.ActualDate ? formatDMY(plan.ActualDate) : '-';
@@ -11400,7 +11411,7 @@ function renderVendorReadOnlyView(plan, asset) {
 }
 
 function renderVendorInteractiveForm(plan, asset) {
-  _vendorPhotos = { before: [], after: [] };
+  _vendorPhotos = [];
   _vendorHasSigned = false;
 
   var pDate = plan.PlannedDate ? formatDMY(plan.PlannedDate) : '-';
@@ -11442,11 +11453,11 @@ function renderVendorInteractiveForm(plan, asset) {
           '<div style="font-size:11px;color:#94a3b8;">' + (item.en || '') + ' &bull; \u0E21\u0E32\u0E15\u0E23\u0E10\u0E32\u0E19: <span style="color:#38bdf8;">' + (item.std || '-') + '</span></div>' +
         '</div>' +
         '<div style="display:flex;gap:6px;flex-shrink:0;">' +
-          '<button type="button" class="v-chk-btn v-chk-ok" id="vchk-ok-' + item.id + '" onclick="setVendorCheck(' + item.id + ',\'OK\')" style="padding:6px 12px;border-radius:8px;border:1px solid #059669;background:#10b981;color:#fff;font-weight:700;font-size:12px;cursor:pointer;">\u2714 OK</button>' +
+          '<button type="button" class="v-chk-btn v-chk-ok" id="vchk-ok-' + item.id + '" onclick="setVendorCheck(' + item.id + ',\'OK\')" style="padding:6px 12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#94a3b8;font-weight:700;font-size:12px;cursor:pointer;">\u2714 OK</button>' +
           '<button type="button" class="v-chk-btn v-chk-ng" id="vchk-ng-' + item.id + '" onclick="setVendorCheck(' + item.id + ',\'NG\')" style="padding:6px 12px;border-radius:8px;border:1px solid #475569;background:#1e293b;color:#94a3b8;font-weight:700;font-size:12px;cursor:pointer;">\u2716 NG</button>' +
         '</div>' +
       '</div>' +
-      '<input type="hidden" id="vchk-val-' + item.id + '" value="OK" />' +
+      '<input type="hidden" id="vchk-val-' + item.id + '" value="" />' +
       '<div id="vchk-remark-wrap-' + item.id + '" style="display:none;margin-top:8px;">' +
         '<input type="text" id="vchk-remark-' + item.id + '" placeholder="\u0E23\u0E30\u0E1A\u0E38\u0E2A\u0E32\u0E40\u0E2B\u0E15\u0E38\u0E17\u0E35\u0E48\u0E1C\u0E34\u0E14\u0E1B\u0E01\u0E15\u0E34 (NG) \u0E2B\u0E23\u0E37\u0E2d\u0E27\u0E34\u0E18\u0E35\u0E41\u0E01\u0E49\u0E44\u0E02..." style="width:100%;box-sizing:border-box;background:#1e293b;border:1px solid #ef4444;color:#fff;padding:8px 10px;border-radius:6px;font-size:12px;" />' +
       '</div>' +
@@ -11482,7 +11493,7 @@ function renderVendorInteractiveForm(plan, asset) {
           '</div>' : '') +
         '</div>' +
 
-        // Vendor Technician Info
+        // Vendor Technician Info (No phone field)
         '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
           '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
             '<span>\uD83D\uDC64</span> <span>\u0E02\u0E49\u0E2D\u0E21\u0E39\u0E25\u0E1C\u0E39\u0E49\u0E1B\u0E0F\u0E34\u0E1A\u0E31\u0E15\u0E34\u0E07\u0E32\u0E19 (Technician Info)</span>' +
@@ -11497,54 +11508,36 @@ function renderVendorInteractiveForm(plan, asset) {
               '<input type="text" id="vendor-tech-name" placeholder="\u0E0A\u0E37\u0E48\u0E2d - \u0E19\u0E32\u0E21\u0E2A\u0E01\u0E38\u0E25 \u0E0A\u0E48\u0E32\u0E07" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
             '</div>' +
           '</div>' +
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-            '<div>' +
-              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E40\u0E1A\u0E2d\u0E23\u0E4C\u0E42\u0E17\u0E23\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2d:</label>' +
-              '<input type="tel" id="vendor-tech-phone" placeholder="08x-xxx-xxxx" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
-            '</div>' +
-            '<div>' +
-              '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07:</label>' +
-              '<input type="date" id="vendor-actual-date" value="' + todayYMD + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
-            '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07:</label>' +
+            '<input type="date" id="vendor-actual-date" value="' + todayYMD + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
           '</div>' +
         '</div>' +
 
-        // Checkpoints Section
+        // Checkpoints Section (Required selection)
         '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
             '<div style="font-size:13.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">' +
               '<span>\uD83D\uDCCB</span> <span>\u0E23\u0E32\u0E22\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 (Checklist)</span>' +
             '</div>' +
-            '<button type="button" onclick="setAllVendorChecks(\'OK\')" style="background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#34d399;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;">\u2714 OK \u0E17\u0E31\u0E49\u0E07\u0E2B\u0E21\u0E14</button>' +
+            '<span style="font-size:11.5px;color:#fbbf24;font-weight:600;">* \u0E42\u0E1B\u0E23\u0E14\u0E40\u0E25\u0E37\u0E2d\u0E01\u0E1C\u0E25\u0E15\u0E23\u0E27\u0E08\u0E17\u0E38\u0E01\u0E02\u0E49\u0E2D</span>' +
           '</div>' +
           checkItemsHtml +
         '</div>' +
 
-        // Photo Uploads (Before & After)
+        // Photo Uploads (Single Inspection Photos area)
         '<div style="background:#1e293b;border-radius:14px;padding:16px;border:1px solid #334155;margin-bottom:14px;">' +
-          '<div style="font-size:13.5px;font-weight:700;color:#fff;margin-bottom:12px;display:flex;align-items:center;gap:6px;">' +
-            '<span>\uD83D\uDCF7</span> <span>\u0E23\u0E39\u0E1B\u0E16\u0E48\u0E32\u0E22\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19 (Photos Before & After)</span>' +
-          '</div>' +
-          
-          // Photo Buttons
-          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
-            '<div>' +
-              '<input type="file" id="vendor-input-before" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleVendorPhotoUpload(this, \'before\')" />' +
-              '<button type="button" onclick="document.getElementById(\'vendor-input-before\').click()" style="width:100%;padding:10px;border-radius:10px;border:1px dashed #6366f1;background:rgba(99,102,241,0.1);color:#818cf8;font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
-                '<span style="font-size:20px;">\uD83D\uDCF8</span>' +
-                '<span>+ \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B\u0E01\u0E48\u0E2d\u0E19\u0E17\u0E33 (Before)</span>' +
-              '</button>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">' +
+            '<div style="font-size:13.5px;font-weight:700;color:#fff;display:flex;align-items:center;gap:6px;">' +
+              '<span>\uD83D\uDCF7</span> <span>\u0E23\u0E39\u0E1B\u0E16\u0E48\u0E32\u0E22\u0E15\u0E2D\u0E19\u0E15\u0E23\u0E27\u0E08 / \u0E1C\u0E25\u0E07\u0E32\u0E19\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19</span>' +
             '</div>' +
-            '<div>' +
-              '<input type="file" id="vendor-input-after" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleVendorPhotoUpload(this, \'after\')" />' +
-              '<button type="button" onclick="document.getElementById(\'vendor-input-after\').click()" style="width:100%;padding:10px;border-radius:10px;border:1px dashed #10b981;background:rgba(16,185,129,0.1);color:#34d399;font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;">' +
-                '<span style="font-size:20px;">\uD83D\uDCF8</span>' +
-                '<span>+ \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B\u0E2B\u0E25\u0E31\u0E07\u0E17\u0E33 (After)</span>' +
-              '</button>' +
-            '</div>' +
+            '<span style="font-size:11px;color:#94a3b8;">(\u0E41\u0E19\u0E1A\u0E44\u0E14\u0E49\u0E2B\u0E25\u0E32\u0E22\u0E23\u0E39\u0E1B)</span>' +
           '</div>' +
-
-          // Previews
+          '<input type="file" id="vendor-photo-input" accept="image/*" capture="environment" multiple style="display:none;" onchange="handleVendorPhotoUpload(this)" />' +
+          '<button type="button" onclick="document.getElementById(\'vendor-photo-input\').click()" style="width:100%;padding:12px;border-radius:10px;border:2px dashed #6366f1;background:rgba(99,102,241,0.1);color:#a5b4fc;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px;">' +
+            '<span style="font-size:18px;">\uD83D\uDCF8</span>' +
+            '<span>+ \u0E16\u0E48\u0E32\u0E22\u0E23\u0E39\u0E1B / \u0E41\u0E19\u0E1A\u0E23\u0E39\u0E1B\u0E16\u0E48\u0E32\u0E22\u0E2B\u0E19\u0E49\u0E32\u0E07\u0E32\u0E19\u0E15\u0E2D\u0E19\u0E15\u0E23\u0E27\u0E08</span>' +
+          '</button>' +
           '<div id="vendor-preview-grid" style="display:grid;grid-template-columns:repeat(auto-fill, minmax(95px, 1fr));gap:8px;"></div>' +
         '</div>' +
 
@@ -11658,12 +11651,13 @@ function clearVendorSigCanvas() {
   }
 }
 
-function handleVendorPhotoUpload(input, type) {
+function handleVendorPhotoUpload(input) {
   if (!input.files || !input.files.length) return;
   Array.from(input.files).forEach(function(file){
     compressImage(file, 900, 0.7).then(function(dataUrl){
       if (!dataUrl) return;
-      _vendorPhotos[type].push(dataUrl);
+      if (!Array.isArray(_vendorPhotos)) _vendorPhotos = [];
+      _vendorPhotos.push(dataUrl);
       renderVendorPhotoPreviews();
     });
   });
@@ -11674,24 +11668,19 @@ function renderVendorPhotoPreviews() {
   var grid = document.getElementById('vendor-preview-grid');
   if (!grid) return;
   var html = '';
-  ['before', 'after'].forEach(function(type){
-    (_vendorPhotos[type] || []).forEach(function(url, idx){
-      var tag = type === 'before' ? 'Before' : 'After';
-      var tagColor = type === 'before' ? '#6366f1' : '#10b981';
-      html += 
-        '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid #334155;background:#0f172a;aspect-ratio:4/3;">' +
-          '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" />' +
-          '<span style="position:absolute;top:3px;left:3px;background:' + tagColor + ';color:#fff;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:4px;">' + tag + '</span>' +
-          '<button type="button" onclick="rmVendorPhoto(\'' + type + '\',' + idx + ')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.85);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2715</button>' +
-        '</div>';
-    });
+  (_vendorPhotos || []).forEach(function(url, idx){
+    html += 
+      '<div style="position:relative;border-radius:8px;overflow:hidden;border:1px solid #334155;background:#0f172a;aspect-ratio:4/3;">' +
+        '<img src="' + url + '" style="width:100%;height:100%;object-fit:cover;" />' +
+        '<button type="button" onclick="rmVendorPhoto(' + idx + ')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.85);color:#fff;border:none;border-radius:50%;width:20px;height:20px;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;">\u2715</button>' +
+      '</div>';
   });
   grid.innerHTML = html;
 }
 
-function rmVendorPhoto(type, idx) {
-  if (_vendorPhotos[type]) {
-    _vendorPhotos[type].splice(idx, 1);
+function rmVendorPhoto(idx) {
+  if (Array.isArray(_vendorPhotos) && _vendorPhotos.length > idx) {
+    _vendorPhotos.splice(idx, 1);
     renderVendorPhotoPreviews();
   }
 }
@@ -11858,7 +11847,6 @@ async function sendLineAutoWebhook(plan, techName, company, okCount, ngCount, ph
 async function submitVendorTPM(planId) {
   var techName = (document.getElementById('vendor-tech-name') ? document.getElementById('vendor-tech-name').value : '').trim();
   var company = (document.getElementById('vendor-company') ? document.getElementById('vendor-company').value : '').trim();
-  var techPhone = (document.getElementById('vendor-tech-phone') ? document.getElementById('vendor-tech-phone').value : '').trim();
   var actDate = (document.getElementById('vendor-actual-date') ? document.getElementById('vendor-actual-date').value : '').trim();
   var notes = (document.getElementById('vendor-notes') ? document.getElementById('vendor-notes').value : '').trim();
 
@@ -11866,6 +11854,26 @@ async function submitVendorTPM(planId) {
     alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E30\u0E1A\u0E38\u0E0A\u0E37\u0E48\u0E2D\u0E0A\u0E48\u0E32\u0E07\u0E1C\u0E39\u0E49\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04');
     var el = document.getElementById('vendor-tech-name');
     if (el) el.focus();
+    return;
+  }
+
+  // Validate that all checkpoints have been checked (OK or NG)
+  var missingItem = null;
+  for (var i = 0; i < (_vendorCheckItems || []).length; i++) {
+    var it = _vendorCheckItems[i];
+    var vInp = document.getElementById('vchk-val-' + it.id);
+    var resVal = vInp ? vInp.value : '';
+    if (!resVal) {
+      missingItem = it;
+      break;
+    }
+  }
+  if (missingItem) {
+    alert('\u0E01\u0E23\u0E38\u0E13\u0E32\u0E40\u0E25\u0E37\u0E2d\u0E01\u0E1C\u0E25\u0E01\u0E32\u0E23\u0E15\u0E23\u0E27\u0E08\u0E40\u0E0A\u0E47\u0E04 (\u2714 OK \u0E2B\u0E23\u0E37\u0E2d \u2716 NG) \u0E43\u0E19\u0E02\u0E49\u0E2D ' + missingItem.id + '. ' + missingItem.th + ' \u0E43\u0E2B\u0E49\u0E04\u0E23\u0E1A\u0E17\u0E38\u0E01\u0E02\u0E49\u0E2D\u0E01\u0E48\u0E2d\u0E19\u0E2A\u0E48\u0E07\u0E07\u0E32\u0E19');
+    var targetEl = document.getElementById('vchk-ok-' + missingItem.id);
+    if (targetEl && targetEl.scrollIntoView) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
     return;
   }
 
@@ -11880,7 +11888,7 @@ async function submitVendorTPM(planId) {
   (_vendorCheckItems || []).forEach(function(it){
     var vInp = document.getElementById('vchk-val-' + it.id);
     var rInp = document.getElementById('vchk-remark-' + it.id);
-    var resVal = vInp ? vInp.value : 'OK';
+    var resVal = vInp ? vInp.value : '';
     var remVal = rInp ? rInp.value.trim() : '';
     if (resVal === 'OK') okCount++;
     else if (resVal === 'NG') ngCount++;
@@ -11894,7 +11902,7 @@ async function submitVendorTPM(planId) {
   });
 
   // Collect photos
-  var allPhotos = (_vendorPhotos.before || []).concat(_vendorPhotos.after || []);
+  var allPhotos = Array.isArray(_vendorPhotos) ? _vendorPhotos : [];
 
   // Signature data URL
   var sigDataUrl = _vendorCanvas.toDataURL('image/png');
@@ -11911,10 +11919,9 @@ async function submitVendorTPM(planId) {
       Status: 'Pending Review',
       ActualDate: actDate || new Date().toISOString().substring(0, 10),
       ActualBy: techName + (company ? ' (' + company + ')' : ''),
-      CoInspector: techName,
       ChecklistResult: JSON.stringify(results),
       Notes: (notes ? notes + '\n' : '') +
-             (techPhone ? '[VENDOR_PHONE:' + techPhone + ']\n' : '') +
+             '[CO_INSPECTOR:' + techName + ']\n' +
              '[VENDOR_SIG:' + sigDataUrl + ']',
       AfterImageIds: JSON.stringify(allPhotos)
     };
@@ -12056,6 +12063,17 @@ async function openPMPrintForm(moldId) {
         return k.toLowerCase() === ('vendor_' + moldVendorName).toLowerCase();
       });
       if (vKey) vSig = headerSigs[vKey];
+    }
+  }
+
+  // Fallback to Vendor Signature from TPM plans if not set in header stamps
+  if (!vSig) {
+    var planWithSig = moldPlans.find(function(p){ return p.Notes && p.Notes.indexOf('[VENDOR_SIG:') !== -1; });
+    if (planWithSig) {
+      var mSig = planWithSig.Notes.match(/\[VENDOR_SIG:([^\]]+)\]/);
+      if (mSig && mSig[1]) {
+        vSig = { type: 'draw', data: mSig[1] };
+      }
     }
   }
 
@@ -12250,7 +12268,7 @@ async function openPMPrintForm(moldId) {
       var p = roundPlans[rIdx];
       var isDone = p && p.Status === 'Done';
       var insp = isDone ? (p.ActualBy || '') : '';
-      var coInsp = isDone ? (p.CoInspector || '') : '';
+      var coInsp = isDone ? (p.CoInspector || (p.Notes && (p.Notes.match(/\[CO_INSPECTOR:([^\]]+)\]/)||[])[1]) || '') : '';
       var dtStr = '';
       if (isDone && p.ActualDate) {
         var dParts = p.ActualDate.split('-');
