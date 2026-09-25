@@ -2577,22 +2577,37 @@ body.role-engineer .role-admin-only { display: none !important; }
   </div>
 </div>
 
-<!-- TRIAL ISSUE MODAL (STEP 2: TRIAL RUN & VERIFICATION) -->
+<!-- TRIAL ISSUE MODAL (STEP 2: MULTI-ROUND TRIAL RUN & VERIFICATION) -->
 <div class="modal-overlay" id="issue-trial-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
-      <div class="modal-title">🧪 บันทึกผลการทดสอบชิ้นงาน (Trial &amp; Quality Check)</div>
+      <div class="modal-title" id="trial-modal-title">🧪 บันทึกผลการทดสอบชิ้นงาน (Trial &amp; Quality Check)</div>
       <button class="modal-close" onclick="closeModal('issue-trial-modal')">✕</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="trial-issue-id"/>
+      <input type="hidden" id="trial-round-number" value="1"/>
+      
       <div id="trial-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;font-size:13px;"></div>
       
       <!-- Previous Repair Summary Banner -->
       <div id="trial-repair-summary" style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-radius:var(--r-sm);padding:12px;margin-bottom:14px;font-size:12.5px;"></div>
 
+      <!-- PREVIOUS TRIAL ROUNDS HISTORY -->
+      <div id="trial-history-container" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+          <span>📜 ประวัติการ Trial ที่ผ่านมา</span>
+          <span id="trial-history-badge" class="badge" style="font-size:11px;background:rgba(59,130,246,0.12);color:var(--primary);border:1px solid rgba(59,130,246,0.3);">0 รอบ</span>
+        </div>
+        <div id="trial-history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+      <!-- NEW TRIAL ROUND INPUT FORM -->
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
-        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 ข้อมูลการทดลองฉีด &amp; ยืนยันคุณภาพ</div>
+        <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">
+          <span id="trial-current-round-label">➕ บันทึกผลการทดสอบรอบใหม่ (Trial รอบที่ 1)</span>
+          <span id="trial-round-indicator" class="badge" style="background:rgba(16,185,129,0.15);color:var(--success);border:1px solid rgba(16,185,129,0.3);font-size:11px;">รอบที่ 1</span>
+        </div>
         
         <div class="form-row col-2">
           <div class="form-group">
@@ -2601,7 +2616,7 @@ body.role-engineer .role-admin-only { display: none !important; }
               <option value="Passed">✅ ผ่านสมบูรณ์ (Passed) — ปิดงานสำเร็จ</option>
               <option value="Conditional">⚠️ ผ่านแบบมีเงื่อนไข (Conditional) — ปิดงาน</option>
               <option value="Adjusted">🔧 มีการปรับจูนเพิ่มเติมแล้วผ่าน (Adjusted &amp; Passed) — ปิดงาน</option>
-              <option value="Failed">❌ ไม่ผ่าน / ยังพบปัญหา (Failed) — ตีกลับให้ช่างซ่อมต่อ</option>
+              <option value="Failed">❌ ไม่ผ่าน / ยังพบปัญหา (Failed) — บันทึกรอบนี้ &amp; แก้ไขต่อ</option>
             </select>
           </div>
           <div class="form-group">
@@ -2627,8 +2642,8 @@ body.role-engineer .role-admin-only { display: none !important; }
         </div>
 
         <div class="form-group" style="margin-bottom:0;">
-          <label>📷 รูปถ่ายชิ้นงานตอน Trial (Trial Photos)</label>
-          <div class="photo-upload-area" onclick="triggerUpload('trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial / ผิวงาน (หลายรูปได้)</div></div>
+          <label id="trial-photos-label">📷 รูปถ่ายชิ้นงานตอน Trial ในรอบนี้ (Trial Photos)</label>
+          <div class="photo-upload-area" onclick="triggerUpload('trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial ในรอบนี้ (หลายรูปได้)</div></div>
           <input type="file" id="trial-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'trial-photos-preview','trial')"/>
           <div class="photo-preview-grid" id="trial-photos-preview"></div>
         </div>
@@ -3656,8 +3671,16 @@ async function _apiInternal(actionStr, payload = null) {
       case 'getIssueImages': {
         const { data, error } = await sb.from('issues').select('ID, AfterImageIds, BeforeImageIds, CorrectiveAction, RootCause').eq('ID', payload.id).single();
         if (error) return { success: false, error: error.message };
-        let trialImgs = '[]', trialResult = '', trialDate = '', trialShots = 0, trialNotes = '';
-        if (data && data.CorrectiveAction && data.CorrectiveAction.indexOf('[TRIAL:') !== -1) {
+        let trialImgs = '[]', trialResult = '', trialDate = '', trialShots = 0, trialNotes = '', trialBy = '', trialRounds = [];
+        if (data && data.CorrectiveAction) {
+          // Check for multi-round trial history: [TRIAL_ROUNDS: [...]]
+          const mRounds = data.CorrectiveAction.match(/\[TRIAL_ROUNDS:\s*(\[[\s\S]*?\])\s*\]/);
+          if (mRounds) {
+            try {
+              trialRounds = JSON.parse(mRounds[1]);
+            } catch(e) {}
+          }
+          // Legacy single trial: [TRIAL: {...}]
           const m = data.CorrectiveAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
           if (m) {
             try {
@@ -3666,8 +3689,30 @@ async function _apiInternal(actionStr, payload = null) {
               trialDate = t.trialDate || t.date || '';
               trialShots = t.shots || 0;
               trialNotes = t.notes || '';
+              trialBy = t.trialBy || '';
               trialImgs = Array.isArray(t.images) ? JSON.stringify(t.images) : (t.images || '[]');
+              if (!trialRounds.length) {
+                trialRounds = [{
+                  round: 1,
+                  result: trialResult,
+                  trialDate: trialDate,
+                  shots: trialShots,
+                  notes: trialNotes,
+                  trialBy: trialBy,
+                  images: tryParse(trialImgs)
+                }];
+              }
             } catch(e) {}
+          }
+          // Sync latest round values
+          if (trialRounds.length) {
+            const latest = trialRounds[trialRounds.length - 1];
+            trialResult = latest.result || trialResult;
+            trialDate = latest.trialDate || trialDate;
+            trialShots = latest.shots || trialShots;
+            trialNotes = latest.notes || trialNotes;
+            trialBy = latest.trialBy || trialBy;
+            trialImgs = Array.isArray(latest.images) ? JSON.stringify(latest.images) : (latest.images || '[]');
           }
         }
         if (!trialResult && data && data.RootCause && data.RootCause.indexOf('[TR:') !== -1) {
@@ -3681,52 +3726,16 @@ async function _apiInternal(actionStr, payload = null) {
             BeforeImageIds: beforeImgs,
             AfterImageIds: data ? (data.AfterImageIds || '[]') : '[]',
             TrialImageIds: trialImgs,
-            CorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
-            CleanCorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
+            TrialRounds: trialRounds,
+            CorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
+            CleanCorrectiveAction: data ? (data.CorrectiveAction || '').replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim() : '',
             TrialResult: trialResult,
             TrialDate: trialDate,
             TrialShots: trialShots,
-            TrialNotes: trialNotes
+            TrialNotes: trialNotes,
+            TrialBy: trialBy
           }
         };
-      }
-      case 'saveIssue': {
-        const item = Object.assign({}, payload.data);
-        if (item.TrialResult !== undefined || item.TrialDate !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
-          let cleanAction = (item.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
-          const trialImages = tryParse(item.TrialImageIds);
-          const trialObj = {
-            result: item.TrialResult || '',
-            trialDate: item.TrialDate || '',
-            shots: Number(item.TrialShots) || 0,
-            notes: item.TrialNotes || '',
-            images: trialImages
-          };
-          if (trialObj.result || trialObj.shots > 0 || trialObj.notes || (trialObj.images && trialObj.images.length > 0)) {
-            item.CorrectiveAction = cleanAction ? (cleanAction + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
-          } else {
-            item.CorrectiveAction = cleanAction;
-          }
-          delete item.TrialResult;
-          delete item.TrialDate;
-          delete item.TrialShots;
-          delete item.TrialNotes;
-          delete item.TrialImageIds;
-          delete item.CleanCorrectiveAction;
-        }
-        if (item.ID) {
-          const editId = item.ID;
-          delete item.ID;
-          const { error } = await sb.from('issues').update(item).eq('ID', editId);
-          if (error) return { success: false, error: error.message };
-          return { success: true, id: editId };
-        } else {
-          item.ID = _uid();
-          item.CreatedAt = new Date().toISOString();
-          const { error } = await sb.from('issues').insert(item);
-          if (error) return { success: false, error: error.message };
-          return { success: true, id: item.ID };
-        }
       }
       case 'updateIssueStatus': {
         const { error } = await sb.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
@@ -3751,7 +3760,36 @@ async function _apiInternal(actionStr, payload = null) {
         const trialResult = item.TrialResult || 'Passed';
         const isPassed = (trialResult !== 'Failed');
         const trialImages = tryParse(item.TrialImageIds);
-        const trialObj = {
+
+        const { data: curIssue } = await sb.from('issues').select('CorrectiveAction, RootCause').eq('ID', item.ID).single();
+        let rawAction = (curIssue && curIssue.CorrectiveAction) || '';
+
+        // Extract existing trial rounds
+        let existingRounds = [];
+        const mRounds = rawAction.match(/\[TRIAL_ROUNDS:\s*(\[[\s\S]*?\])\s*\]/);
+        if (mRounds) {
+          try { existingRounds = JSON.parse(mRounds[1]); } catch(e){}
+        } else {
+          const mSingle = rawAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
+          if (mSingle) {
+            try {
+              const oldT = JSON.parse(mSingle[1]);
+              existingRounds.push({
+                round: 1,
+                result: oldT.result || '',
+                trialDate: oldT.trialDate || oldT.date || '',
+                shots: Number(oldT.shots) || 0,
+                trialBy: oldT.trialBy || '',
+                notes: oldT.notes || '',
+                images: Array.isArray(oldT.images) ? oldT.images : tryParse(oldT.images)
+              });
+            } catch(e){}
+          }
+        }
+
+        const newRoundNum = existingRounds.length + 1;
+        const newRoundObj = {
+          round: newRoundNum,
           result: trialResult,
           trialDate: item.TrialDate || new Date().toISOString(),
           shots: Number(item.TrialShots) || 0,
@@ -3759,32 +3797,38 @@ async function _apiInternal(actionStr, payload = null) {
           notes: item.TrialNotes || '',
           images: trialImages
         };
-        
-        const { data: curIssue } = await sb.from('issues').select('CorrectiveAction, RootCause').eq('ID', item.ID).single();
-        let action = ((curIssue && curIssue.CorrectiveAction) || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
-        
+
+        existingRounds.push(newRoundObj);
+
+        // Strip previous tags from clean corrective action
+        let cleanAction = rawAction
+          .replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '')
+          .replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '')
+          .replace(/\[❌ Trial ไม่ผ่าน[\s\S]*?\]/g, '')
+          .trim();
+
+        const roundsTag = '[TRIAL_ROUNDS: ' + JSON.stringify(existingRounds) + ']';
+        const singleTag = '[TRIAL: ' + JSON.stringify(newRoundObj) + ']';
+        const packedAction = cleanAction ? (cleanAction + '\n\n' + roundsTag + '\n\n' + singleTag) : (roundsTag + '\n\n' + singleTag);
+
         if (isPassed) {
-          action = action ? (action + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
           const updateData = {
             Status: 'Closed',
             ClosedAt: item.ClosedAt || item.TrialDate || new Date().toISOString(),
             ClosedBy: item.ClosedBy || item.TrialBy,
-            CorrectiveAction: action
+            CorrectiveAction: packedAction
           };
           const { error } = await sb.from('issues').update(updateData).eq('ID', item.ID);
           if (error) return { success: false, error: error.message };
-          return { success: true, status: 'Closed' };
+          return { success: true, status: 'Closed', round: newRoundNum, totalRounds: existingRounds.length };
         } else {
-          const dtStr = (item.TrialDate ? item.TrialDate.slice(0, 16) : new Date().toISOString().slice(0, 16)).replace('T', ' ');
-          const failNote = '\n[❌ Trial ไม่ผ่าน (' + dtStr + ' โดย ' + (item.TrialBy || 'QC') + '): ' + (item.TrialNotes || 'พบข้อบกพร่อง') + (item.TrialShots ? ' (' + item.TrialShots + ' shots)' : '') + ']';
-          action = (action + failNote).trim() + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']';
           const updateData = {
             Status: 'In Progress',
-            CorrectiveAction: action
+            CorrectiveAction: packedAction
           };
           const { error } = await sb.from('issues').update(updateData).eq('ID', item.ID);
           if (error) return { success: false, error: error.message };
-          return { success: true, status: 'In Progress' };
+          return { success: true, status: 'In Progress', round: newRoundNum, totalRounds: existingRounds.length };
         }
       }
       case 'closeIssue': {
@@ -7950,35 +7994,44 @@ function filterIssues() {
       afterThumbs = '<span style="color:var(--text-muted);font-size:11px">⏳ รอซ่อม</span>';
     }
 
-    var trialImgs = tryParse(i.TrialImageIds);
+    var trialRounds = getIssueTrialRounds(i);
     var trialThumbs = '';
-    if (i._imagesLoaded) {
-      if (trialImgs.length) {
+    if (trialRounds.length > 0) {
+      var latestRound = trialRounds[trialRounds.length - 1];
+      var roundImgs = Array.isArray(latestRound.images) ? latestRound.images : tryParse(latestRound.images || []);
+      if (roundImgs.length) {
         trialThumbs = '<div style="display:flex;gap:4px;align-items:center">' + 
-          trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
-          (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
-          '</div>';
+          roundImgs.slice(0,2).map(function(u, imgIdx){
+            return '<img src="' + u + '" onclick="openLightbox(\'' + u.replace(/'/g,"\\'") + '\',\'Trial รอบที่ ' + (latestRound.round || trialRounds.length) + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial รอบที่ ' + (latestRound.round || trialRounds.length) + '"/>';
+          }).join('') + 
+          (roundImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;">+' + (roundImgs.length - 2) + '</span>' : '') + 
+          '</div>' + (trialRounds.length > 1 ? '<div style="font-size:10px;color:var(--text-muted);margin-top:2px;">(รอบ ' + (latestRound.round || trialRounds.length) + '/' + trialRounds.length + ')</div>' : '');
       } else if (i.Status === 'Pending Trial') {
-        trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial</span>';
+        trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial รอบ ' + (trialRounds.length + 1) + '</span>';
       } else {
-        trialThumbs = '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
+        trialThumbs = '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? 'ไม่มีรูป' : '-') + '</span>';
       }
+    } else if (i.Status === 'Pending Trial') {
+      trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial</span>';
     } else {
-      if (i.Status === 'Closed' || (trialImgs && trialImgs.length > 0)) {
-        trialThumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ Trial">📷 ดูรูป</button>';
-      } else if (i.Status === 'Pending Trial') {
-        trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial</span>';
-      } else {
-        trialThumbs = '<span style="color:var(--text-faint);font-size:11px">-</span>';
-      }
+      trialThumbs = '<span style="color:var(--text-faint);font-size:11px">-</span>';
     }
 
     var stClass = (i.Status || 'open').toLowerCase().replace(/\s+/g, '-');
     var stLabel = (i.Status || 'Open');
-    if (i.Status === 'Pending Trial') stLabel = '🧪 รอ Trial';
-    else if (i.Status === 'In Progress') stLabel = '⚙️ In Progress';
-    else if (i.Status === 'Open') stLabel = '🚨 Open';
-    else if (i.Status === 'Closed') stLabel = '✅ Closed';
+    if (i.Status === 'Pending Trial') {
+      stLabel = trialRounds.length > 0 ? ('🧪 รอ Trial รอบ ' + (trialRounds.length + 1)) : '🧪 รอ Trial';
+    } else if (i.Status === 'In Progress') {
+      if (trialRounds.length > 0 && trialRounds[trialRounds.length - 1].result === 'Failed') {
+        stLabel = '⚙️ In Progress (รอบ ' + trialRounds.length + ' ❌)';
+      } else {
+        stLabel = '⚙️ In Progress';
+      }
+    } else if (i.Status === 'Open') {
+      stLabel = '🚨 Open';
+    } else if (i.Status === 'Closed') {
+      stLabel = trialRounds.length > 1 ? ('✅ Closed (ผ่านรอบ ' + trialRounds.length + ')') : '✅ Closed';
+    }
 
     var actionButtons = '';
     if (can('issues', 'edit') && i.Status !== 'Closed') {
@@ -7986,7 +8039,12 @@ function filterIssues() {
         actionButtons = '<button class="btn btn-primary btn-sm" onclick="openTrialModal(\'' + i.ID + '\')" title="บันทึกผลการทดสอบ (Trial) เพื่อปิดงาน" style="font-weight:600;background:#0284c7;border-color:#0284c7;">🧪 บันทึกผล Trial</button> ' +
           '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลการซ่อม/เบิกอะไหล่">🔧</button> ';
       } else if (i.Status === 'In Progress') {
-        actionButtons = '<button class="btn btn-success btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลการซ่อม &amp; ส่งรอ Trial">🔧 บันทึกผลซ่อม</button> ';
+        if (trialRounds.length > 0 && trialRounds[trialRounds.length - 1].result === 'Failed') {
+          actionButtons = '<button class="btn btn-primary btn-sm" onclick="openTrialModal(\'' + i.ID + '\')" title="เพิ่มและบันทึกผล Trial รอบถัดไป" style="font-weight:600;background:#d97706;border-color:#d97706;">➕ Trial รอบ ' + (trialRounds.length + 1) + '</button> ' +
+            '<button class="btn btn-success btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลซ่อม &amp; ส่งรอ Trial">🔧 ซ่อมต่อ</button> ';
+        } else {
+          actionButtons = '<button class="btn btn-success btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลการซ่อม &amp; ส่งรอ Trial">🔧 บันทึกผลซ่อม</button> ';
+        }
       } else {
         actionButtons = '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️ เริ่มซ่อม</button> ' +
           '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลซ่อม">🔧</button> ';
@@ -8480,24 +8538,65 @@ async function openIssueDetailModal(id){
       '</div>'
     : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพหลังแก้ไข</div>';
 
-  var trialImgs = tryParse(iss.TrialImageIds);
-  var trialGallery = trialImgs.length
-    ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' +
-        trialImgs.map(function(url, idx){
-          return '<img src="' + url + '" onclick="openIssuePhotoLightbox(\'' + iss.ID + '\', \'trial\', ' + idx + ')" style="width:72px;height:72px;object-fit:cover;border-radius:6px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย (' + (idx+1) + '/' + trialImgs.length + ')" />';
-        }).join('') +
-      '</div>'
-    : '<div style="color:var(--text-faint);font-size:12px;margin-top:4px">ไม่มีรูปภาพชิ้นงานตอน Trial</div>';
-
   var stBadge = '<span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '" style="font-size:12px;padding:4px 10px;">' + (iss.Status||'Open') + '</span>';
   var sevBadge = '<span class="badge ' + (iss.Severity||'low').toLowerCase() + '" style="font-size:12px;padding:4px 10px;">' + (iss.Severity||'-') + '</span>';
 
-  var trialResultBadge = '';
-  if (iss.TrialResult === 'Passed') trialResultBadge = '<span class="badge success" style="font-size:12px;padding:3px 8px;">✅ ผ่านสมบูรณ์ (Passed)</span>';
-  else if (iss.TrialResult === 'Conditional') trialResultBadge = '<span class="badge warning" style="font-size:12px;padding:3px 8px;">⚠️ ผ่านแบบมีเงื่อนไข (Conditional)</span>';
-  else if (iss.TrialResult === 'Adjusted') trialResultBadge = '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-size:12px;padding:3px 8px;">🔧 ปรับจูนและผ่าน</span>';
-  else if (iss.TrialResult === 'Failed') trialResultBadge = '<span class="badge danger" style="font-size:12px;padding:3px 8px;">❌ ไม่ผ่าน / ต้องแก้ไขต่อ</span>';
-  else trialResultBadge = '<span style="color:var(--text-muted);font-size:12px;">-</span>';
+  // Multi-round trial rendering in Detail Modal
+  var trialRounds = getIssueTrialRounds(iss);
+  var trialSectionHtml = '';
+
+  if (trialRounds.length > 0) {
+    var roundsHtml = trialRounds.map(function(rd, rIdx) {
+      var rNum = rd.round || (rIdx + 1);
+      var rBadge = '';
+      if (rd.result === 'Passed') rBadge = '<span class="badge success" style="font-size:11px;">✅ ผ่านสมบูรณ์ (Passed)</span>';
+      else if (rd.result === 'Conditional') rBadge = '<span class="badge warning" style="font-size:11px;">⚠️ ผ่านแบบมีเงื่อนไข</span>';
+      else if (rd.result === 'Adjusted') rBadge = '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-size:11px;">🔧 ปรับจูนแล้วผ่าน</span>';
+      else rBadge = '<span class="badge danger" style="font-size:11px;">❌ ไม่ผ่าน (Failed)</span>';
+
+      var rImgs = Array.isArray(rd.images) ? rd.images : tryParse(rd.images || []);
+      var rGallery = rImgs.length ? 
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">' +
+          rImgs.map(function(u, imgIdx){
+            return '<img src="' + u + '" onclick="openLightbox(\'' + u.replace(/'/g,"\\'") + '\',\'Trial รอบที่ ' + rNum + ' (' + (imgIdx+1) + '/' + rImgs.length + ')\')" style="width:64px;height:64px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย" />';
+          }).join('') +
+        '</div>' : '<span style="color:var(--text-faint);font-size:11px;">ไม่มีรูปถ่ายในรอบนี้</span>';
+
+      var isPassed = (rd.result !== 'Failed');
+      var cardBorder = isPassed ? 'border:1px solid rgba(16,185,129,0.4);background:rgba(16,185,129,0.04);' : 'border:1px solid rgba(239,68,68,0.3);background:var(--surface2);';
+
+      return '<div style="' + cardBorder + 'border-radius:6px;padding:10px 14px;margin-bottom:10px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+          '<div><strong style="font-size:13px;">📌 Trial รอบที่ ' + rNum + '</strong> ' + rBadge + '</div>' +
+          '<div style="font-size:11.5px;color:var(--text-muted);">' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + '</div>' +
+        '</div>' +
+        '<div style="color:var(--text-muted);font-size:12px;margin-bottom:4px;">' +
+          '👤 ผู้ทดสอบ/QC: <strong>' + (rd.trialBy || '-') + '</strong> | 🎯 จำนวนฉีด: <strong>' + (rd.shots ? rd.shots + ' Shots' : '-') + '</strong>' +
+        '</div>' +
+        '<div style="background:var(--surface);padding:6px 10px;border-radius:4px;border:1px solid var(--border);font-size:12px;white-space:pre-wrap;margin-bottom:6px;">' +
+          '<strong>บันทึกข้อสังเกต / ผลตรวจ:</strong> ' + (rd.notes || '-') +
+        '</div>' +
+        '<div><strong style="font-size:11.5px;">📷 รูปถ่ายชิ้นงานรอบที่ ' + rNum + ':</strong> ' + rGallery + '</div>' +
+      '</div>';
+    }).join('');
+
+    trialSectionHtml = 
+      '<!-- TRIAL CARD -->' +
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;">' +
+          '<span>🧪 3. ข้อมูลการทดสอบแม่พิมพ์ / ชิ้นงานหลังซ่อม (Trial History ทั้งหมด ' + trialRounds.length + ' รอบ)</span>' +
+          '<span class="badge" style="font-size:11px;background:rgba(59,130,246,0.12);color:var(--primary);border:1px solid rgba(59,130,246,0.3);">' + trialRounds.length + ' รอบ</span>' +
+        '</div>' +
+        roundsHtml +
+      '</div>';
+  } else {
+    trialSectionHtml = 
+      '<!-- TRIAL CARD -->' +
+      '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">🧪 3. ข้อมูลการทดสอบแม่พิมพ์ / ชิ้นงานหลังซ่อม (Trial & Quality Check)</div>' +
+        '<div style="padding:16px 0;text-align:center;color:var(--text-muted);font-size:12.5px;">⏳ ยังไม่มีข้อมูลการทดสอบชิ้นงาน (รอการ Trial)</div>' +
+      '</div>';
+  }
 
   body.innerHTML = 
     '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
@@ -8535,25 +8634,15 @@ async function openIssueDetailModal(id){
       '</div>' +
     '</div>' +
 
-    '<!-- TRIAL CARD -->' +
-    '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:16px;">' +
-      '<div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:8px;">🧪 3. ข้อมูลการทดสอบแม่พิมพ์ / ชิ้นงานหลังซ่อม (Trial & Quality Check)</div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px;">' +
-        '<div style="font-size:12px;"><strong>ผลการทดสอบ:</strong> ' + trialResultBadge + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);"><strong>วันที่ทดสอบ:</strong> ' + (iss.TrialDate ? iss.TrialDate.replace('T', ' ') : '-') + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);"><strong>จำนวน Shot:</strong> ' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</div>' +
-      '</div>' +
-      '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;"><strong>บันทึกข้อสังเกต / พารามิเตอร์ตอน Trial:</strong></div>' +
-      '<div style="font-size:12px;background:var(--surface);padding:8px 10px;border-radius:4px;border:1px solid var(--border);min-height:36px;white-space:pre-wrap;">' + (iss.TrialNotes || '-') + '</div>' +
-      '<div style="margin-top:10px;"><strong style="font-size:12px;">📷 รูปภาพชิ้นงานตอน Trial (Trial Photos):</strong>' + trialGallery + '</div>' +
-    '</div>';
+    trialSectionHtml;
 
   if (footer) {
     var canEditIss = can('issues', 'edit');
     var actionBtn = '';
     if (canEditIss && iss.Status !== 'Closed') {
-      if (iss.Status === 'Pending Trial') {
-        actionBtn = '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openTrialModal(\'' + iss.ID + '\');" style="background:#0284c7;border-color:#0284c7;font-weight:600;">🧪 บันทึกผล Trial (ปิดงาน)</button> ';
+      if (iss.Status === 'Pending Trial' || (trialRounds.length > 0 && trialRounds[trialRounds.length - 1].result === 'Failed')) {
+        var nextRound = trialRounds.length + 1;
+        actionBtn = '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openTrialModal(\'' + iss.ID + '\');" style="background:#0284c7;border-color:#0284c7;font-weight:600;">🧪 บันทึกผล Trial (รอบที่ ' + nextRound + ')</button> ';
       } else {
         actionBtn = '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openRepairModal(\'' + iss.ID + '\');">🔧 บันทึกผลซ่อม (ส่งรอ Trial)</button> ';
       }
@@ -8563,7 +8652,79 @@ async function openIssueDetailModal(id){
       (canEditIss ? '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">✏️ แก้ไขข้อมูล (Before/After/Trial)</button> ' : '') +
       '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร</button> ' +
       actionBtn;
-  }' +
+  }
+
+  openModal('issue-detail-modal');
+}
+
+async function printIssueReport(id) {
+  await ensureIssueImages(id);
+  var iss = (STATE.issues || []).find(function(i) { return i.ID === id; });
+  if (!iss) {
+    showToast('ไม่พบข้อมูลปัญหา', 'error');
+    return;
+  }
+
+  var displayCode = getIssueDisplayCode(iss);
+  var beforeImgs = tryParse(iss.BeforeImageIds);
+  var afterImgs = tryParse(iss.AfterImageIds);
+  var trialRounds = getIssueTrialRounds(iss);
+
+  var beforeGallery = beforeImgs.length
+    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
+        beforeImgs.map(function(url) {
+          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
+        }).join('') +
+      '</div>'
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพประกอบ</span>';
+
+  var afterGallery = afterImgs.length
+    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
+        afterImgs.map(function(url) {
+          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
+        }).join('') +
+      '</div>'
+    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพหลังการแก้ไข</span>';
+
+  var trialRoundsPrintHtml = '';
+  if (trialRounds.length > 0) {
+    trialRoundsPrintHtml = trialRounds.map(function(rd, rIdx) {
+      var rNum = rd.round || (rIdx + 1);
+      var rBadge = rd.result === 'Passed' ? '<span class="badge" style="background:#dcfce7;color:#166534;">✅ ผ่านสมบูรณ์ (Passed)</span>' :
+                   rd.result === 'Conditional' ? '<span class="badge" style="background:#fef9c3;color:#854d0e;">⚠️ ผ่านแบบมีเงื่อนไข</span>' :
+                   rd.result === 'Adjusted' ? '<span class="badge" style="background:#eff6ff;color:#1e40af;">🔧 ปรับจูนแล้วผ่าน</span>' :
+                   '<span class="badge" style="background:#fee2e2;color:#991b1b;">❌ ไม่ผ่าน (Failed)</span>';
+      var rImgs = Array.isArray(rd.images) ? rd.images : tryParse(rd.images || []);
+      var rGallery = rImgs.length
+        ? '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;">' +
+            rImgs.map(function(url) {
+              return '<img src="' + url + '" style="width:140px;height:105px;object-fit:cover;border-radius:4px;border:1px solid #cbd5e1;" />';
+            }).join('') +
+          '</div>'
+        : '<span style="color:#666;font-style:italic;font-size:11px;">ไม่มีรูปภาพชิ้นงานรอบนี้</span>';
+
+      return '<div style="border:1px solid #cbd5e1;border-radius:4px;padding:8px 10px;margin-bottom:8px;background:#f8fafc;">' +
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
+          '<strong>รอบที่ ' + rNum + ': ' + rBadge + '</strong>' +
+          '<span style="font-size:11px;color:#555;">วันที่: ' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + '</span>' +
+        '</div>' +
+        '<div style="font-size:11.5px;color:#333;margin-bottom:4px;">' +
+          'ผู้ทดสอบ/QC: <strong>' + (rd.trialBy || '-') + '</strong> | จำนวนทดสอบ: <strong>' + (rd.shots ? rd.shots + ' Shots' : '-') + '</strong>' +
+        '</div>' +
+        '<div style="font-size:11.5px;margin-bottom:6px;">' +
+          '<strong>บันทึกข้อสังเกต / พารามิเตอร์:</strong> ' + (rd.notes || '-') +
+        '</div>' +
+        '<div><strong style="font-size:11px;">รูปชิ้นงานรอบที่ ' + rNum + ':</strong>' + rGallery + '</div>' +
+      '</div>';
+    }).join('');
+  } else {
+    trialRoundsPrintHtml = '<div style="padding:10px;color:#666;font-style:italic;">ยังไม่มีข้อมูลการทดสอบชิ้นงาน (Trial)</div>';
+  }
+
+  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ใบแจ้งปัญหาและรายงานผลการแก้ไข - #' + displayCode + '</title>' +
+    '<style>' +
+    '@media print { @page { size: A4 portrait; margin: 12mm 10mm; } body { font-size: 11px; } .no-print { display: none !important; } }' +
+    'body { font-family: "Sarabun", "Segoe UI", sans-serif; font-size: 11px; line-height: 1.4; color: #1e293b; margin: 0; padding: 15px; }' +
     'h2 { margin: 0 0 2px 0; font-size: 16px; text-align: center; color: #1e3a8a; }' +
     '.sub-title { text-align: center; font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; }' +
     'table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }' +
@@ -8608,24 +8769,24 @@ async function openIssueDetailModal(id){
       '<tr>' +
         '<td>' +
           '<div style="min-height:30px;white-space:pre-wrap;">' + (iss.Description||'-') + '</div>' +
-          '<div style="margin-top:6px;"><strong>รูปภาพตอนแจ้งปัญหา:</strong>' + beforeGallery + '</div>' +
+          '<div style="margin-top:8px;"><strong>รูปภาพตอนแจ้ง (Initial Photos):</strong>' + beforeGallery + '</div>' +
         '</td>' +
       '</tr>' +
     '</table>' +
 
-    '<div class="section-hdr">2. รายงานผลการแก้ไขและปิดงาน (Corrective Action & Resolution Report)</div>' +
+    '<div class="section-hdr">2. รายละเอียดการดำเนินการแก้ไข (Corrective Actions & Spare Parts)</div>' +
     '<table style="margin-top:0;">' +
       '<tr>' +
-        '<th style="width:25%;">ผู้ดำเนินการแก้ไข / ปิดงาน</th><td style="width:25%;">' + (iss.ClosedBy||'-') + '</td>' +
-        '<th style="width:25%;">วันที่ปิดงาน</th><td style="width:25%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
-      '</tr>' +
-      '<tr>' +
-        '<th>สาเหตุที่แท้จริง (Root Cause)</th>' +
+        '<th style="width:20%;">สาเหตุที่แท้จริง (Root Cause)</th>' +
         '<td colspan="3" style="white-space:pre-wrap;">' + (iss.RootCause||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
-        '<th>วิธีการแก้ไข (Corrective Action)</th>' +
+        '<th>การแก้ไข (Corrective Action)</th>' +
         '<td colspan="3" style="white-space:pre-wrap;">' + (iss.CleanCorrectiveAction||iss.CorrectiveAction||'-') + '</td>' +
+      '</tr>' +
+      '<tr>' +
+        '<th style="width:20%;">วันที่ซ่อมเสร็จ / ปิดงาน</th><td style="width:30%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
+        '<th style="width:20%;">ผู้ดำเนินการ / ผู้ซ่อม</th><td style="width:30%;">' + (iss.ClosedBy||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
         '<th>อะไหล่ที่เบิกใช้ (Parts Used)</th>' +
@@ -8638,25 +8799,10 @@ async function openIssueDetailModal(id){
       '</tr>' +
     '</table>' +
 
-    '<div class="section-hdr">3. ผลการทดสอบแม่พิมพ์/ชิ้นงานหลังซ่อม (Mold & Part Trial Report)</div>' +
-    '<table style="margin-top:0;">' +
-      '<tr>' +
-        '<th style="width:20%;">ผลการทดสอบ Trial</th><td style="width:30%;"><strong>' + trialResText + '</strong></td>' +
-        '<th style="width:20%;">วันที่ทดสอบ Trial</th><td style="width:30%;">' + (iss.TrialDate ? iss.TrialDate.replace('T', ' ') : '-') + '</td>' +
-      '</tr>' +
-      '<tr>' +
-        '<th>จำนวน Shot ที่ลองฉีด</th><td colspan="3">' + (iss.TrialShots ? iss.TrialShots + ' Shots' : '-') + '</td>' +
-      '</tr>' +
-      '<tr>' +
-        '<th>บันทึกข้อสังเกต / พารามิเตอร์</th>' +
-        '<td colspan="3" style="white-space:pre-wrap;">' + (iss.TrialNotes||'-') + '</td>' +
-      '</tr>' +
-      '<tr>' +
-        '<td colspan="4">' +
-          '<strong>รูปภาพชิ้นงานตอน Trial (Trial Photos):</strong>' + trialGallery +
-        '</td>' +
-      '</tr>' +
-    '</table>' +
+    '<div class="section-hdr">3. ประวัติและผลการทดสอบแม่พิมพ์/ชิ้นงานหลังซ่อม (Mold & Part Trial History)</div>' +
+    '<div style="margin-top:0;">' +
+      trialRoundsPrintHtml +
+    '</div>' +
 
     '<div class="sig-grid">' +
       '<div class="sig-box"><div><strong>ผู้แจ้งปัญหา<br>(Reporter)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
@@ -9005,6 +9151,53 @@ var addCloseIssuePart = addRepairIssuePart;
 var removeCloseIssuePart = removeRepairIssuePart;
 
 // =====================================================================
+//  HELPER: EXTRACT ALL TRIAL ROUNDS FROM ISSUE
+// =====================================================================
+function getIssueTrialRounds(iss) {
+  if (!iss) return [];
+  if (Array.isArray(iss.TrialRounds) && iss.TrialRounds.length) {
+    return iss.TrialRounds;
+  }
+  var rawAction = iss.CorrectiveAction || '';
+  // Check for multi-round tag
+  var mRounds = rawAction.match(/\[TRIAL_ROUNDS:\s*(\[[\s\S]*?\])\s*\]/);
+  if (mRounds) {
+    try {
+      var arr = JSON.parse(mRounds[1]);
+      if (Array.isArray(arr) && arr.length) return arr;
+    } catch(e) {}
+  }
+  // Check for legacy single trial tag
+  var mSingle = rawAction.match(/\[TRIAL:\s*(\{[\s\S]*?\})\s*\]/);
+  if (mSingle) {
+    try {
+      var t = JSON.parse(mSingle[1]);
+      return [{
+        round: 1,
+        result: t.result || iss.TrialResult || '',
+        trialDate: t.trialDate || t.date || iss.TrialDate || '',
+        shots: Number(t.shots || iss.TrialShots || 0),
+        trialBy: t.trialBy || iss.ClosedBy || '',
+        notes: t.notes || iss.TrialNotes || '',
+        images: Array.isArray(t.images) ? t.images : tryParse(t.images || iss.TrialImageIds)
+      }];
+    } catch(e) {}
+  }
+  if (iss.TrialResult || iss.TrialDate || iss.TrialNotes) {
+    return [{
+      round: 1,
+      result: iss.TrialResult || '',
+      trialDate: iss.TrialDate || '',
+      shots: Number(iss.TrialShots || 0),
+      trialBy: iss.ClosedBy || '',
+      notes: iss.TrialNotes || '',
+      images: tryParse(iss.TrialImageIds)
+    }];
+  }
+  return [];
+}
+
+// =====================================================================
 //  STEP 1: OPEN REPAIR MODAL (ช่างบันทึกผลซ่อม & ส่งรอ Trial)
 // =====================================================================
 async function openRepairModal(id) {
@@ -9020,7 +9213,11 @@ async function openRepairModal(id) {
 
   // Pre-fill Root Cause & Corrective Action
   v_set('repair-root-cause', iss.RootCause || '');
-  var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+  var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '')
+    .replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '')
+    .replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '')
+    .replace(/\[❌ Trial ไม่ผ่าน[\s\S]*?\]/g, '')
+    .trim();
   v_set('repair-corrective', cleanAction);
 
   // Pre-fill Repairer & Dates
@@ -9090,7 +9287,7 @@ async function openRepairModal(id) {
   if (infoEl) {
     infoEl.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<div><strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')</div>' +
-      '<span class="badge in-progress">สถานะปัจจุบัน: ' + (iss.Status || 'In Progress') + '</span>' +
+      '<span class="badge in-progress">สถานะ: ' + (iss.Status || 'In Progress') + '</span>' +
     '</div><div style="color:var(--text-muted);margin-top:4px;"><strong>อาการที่แจ้ง:</strong> ' + (iss.Description || '-') + '</div>';
   }
 
@@ -9170,7 +9367,7 @@ async function submitIssueRepair() {
 }
 
 // =====================================================================
-//  STEP 2: OPEN TRIAL MODAL (บันทึกผล Trial เพื่อปิดงาน / ตีกลับ)
+//  STEP 2: OPEN TRIAL MODAL (MULTI-ROUND TRIAL)
 // =====================================================================
 async function openTrialModal(id) {
   if (!can('issues', 'edit')) {
@@ -9183,27 +9380,72 @@ async function openTrialModal(id) {
 
   v_set('trial-issue-id', id);
 
-  // Pre-fill Trial Inputs
-  v_set('trial-result', iss.TrialResult || 'Passed');
+  var rounds = getIssueTrialRounds(iss);
+  var newRoundNum = rounds.length + 1;
+  v_set('trial-round-number', String(newRoundNum));
+
+  // Render History Container if previous rounds exist
+  var histContainer = document.getElementById('trial-history-container');
+  var histList = document.getElementById('trial-history-list');
+  var histBadge = document.getElementById('trial-history-badge');
+
+  if (rounds.length > 0 && histContainer && histList) {
+    histContainer.style.display = 'block';
+    if (histBadge) histBadge.textContent = rounds.length + ' รอบก่อนหน้า';
+
+    histList.innerHTML = rounds.map(function(rd, rIdx) {
+      var rNum = rd.round || (rIdx + 1);
+      var rResult = rd.result || 'Passed';
+      var rBadge = '';
+      if (rResult === 'Passed') rBadge = '<span class="badge success" style="font-size:11px;">✅ ผ่านสมบูรณ์ (Passed)</span>';
+      else if (rResult === 'Conditional') rBadge = '<span class="badge warning" style="font-size:11px;">⚠️ ผ่านแบบมีเงื่อนไข</span>';
+      else if (rResult === 'Adjusted') rBadge = '<span class="badge" style="background:#1e1b4b;color:#818cf8;border:1px solid #6366f1;font-size:11px;">🔧 ปรับจูนแล้วผ่าน</span>';
+      else rBadge = '<span class="badge danger" style="font-size:11px;">❌ ไม่ผ่าน (Failed)</span>';
+
+      var rImgs = Array.isArray(rd.images) ? rd.images : tryParse(rd.images || []);
+      var rGallery = rImgs.length ? 
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">' +
+          rImgs.map(function(u, imgIdx){
+            return '<img src="' + u + '" onclick="openLightbox(\'' + u.replace(/'/g,"\\'") + '\',\'Trial รอบที่ ' + rNum + ' (' + (imgIdx+1) + '/' + rImgs.length + ')\')" style="width:48px;height:48px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="คลิกดูภาพขยาย" />';
+          }).join('') +
+        '</div>' : '<span style="color:var(--text-faint);font-size:11px;">ไม่มีรูปถ่ายในรอบนี้</span>';
+
+      return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:12px;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+          '<strong>📌 Trial รอบที่ ' + rNum + '</strong> ' + rBadge +
+        '</div>' +
+        '<div style="color:var(--text-muted);font-size:11.5px;margin-bottom:4px;">' +
+          '📅 ' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + ' | 👤 ตรวจโดย: ' + (rd.trialBy || '-') + ' | 🎯 ' + (rd.shots ? rd.shots + ' Shots' : '-') +
+        '</div>' +
+        '<div style="background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);font-size:12px;white-space:pre-wrap;margin-bottom:4px;">' +
+          '<strong>ข้อสังเกต/ปัญหา:</strong> ' + (rd.notes || '-') +
+        '</div>' +
+        '<div><strong>📷 รูปชิ้นงานรอบที่ ' + rNum + ':</strong> ' + rGallery + '</div>' +
+      '</div>';
+    }).join('');
+  } else if (histContainer) {
+    histContainer.style.display = 'none';
+  }
+
+  // Update current round labels
+  var curLabel = document.getElementById('trial-current-round-label');
+  if (curLabel) curLabel.textContent = '➕ บันทึกผลการทดสอบรอบใหม่ (Trial รอบที่ ' + newRoundNum + ')';
+  var roundInd = document.getElementById('trial-round-indicator');
+  if (roundInd) roundInd.textContent = 'รอบที่ ' + newRoundNum;
+  var photosLabel = document.getElementById('trial-photos-label');
+  if (photosLabel) photosLabel.textContent = '📷 รูปถ่ายชิ้นงานตอน Trial ในรอบที่ ' + newRoundNum + ' (Trial Photos)';
+
+  // Reset Input fields for the new round
+  v_set('trial-result', 'Passed');
   v_set('trial-by', (STATE.currentUser ? STATE.currentUser.Name : ''));
   v_set('trial-date', new Date().toISOString().slice(0, 16));
-  v_set('trial-shots', iss.TrialShots || '');
-  v_set('trial-notes', iss.TrialNotes || '');
+  v_set('trial-shots', '');
+  v_set('trial-notes', '');
 
-  // Pre-fill Trial Photos
+  // Reset Photo Upload Area for this specific round
   var gridTrial = document.getElementById('trial-photos-preview');
   if (gridTrial) gridTrial.innerHTML = '';
-  var existingTrial = tryParse(iss.TrialImageIds);
-  STATE.pendingPhotos['trial'] = { files: [], existing: existingTrial.slice() };
-  if (gridTrial && existingTrial.length) {
-    existingTrial.forEach(function(url, idx) {
-      var item = document.createElement('div');
-      item.className = 'photo-preview-item';
-      item.id = 'pi-trial-ex-' + idx;
-      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'trial\',' + idx + ',\'trial-photos-preview\',true)">✕</button>';
-      gridTrial.appendChild(item);
-    });
-  }
+  STATE.pendingPhotos['trial'] = { files: [], existing: [] };
 
   // Info header
   var code = getIssueDisplayCode(iss);
@@ -9211,7 +9453,7 @@ async function openTrialModal(id) {
   if (infoEl) {
     infoEl.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<div><strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')</div>' +
-      '<span class="badge pending-trial">สถานะ: รอทดลองงาน (Pending Trial)</span>' +
+      '<span class="badge pending-trial">สถานะ: ' + (iss.Status || 'Pending Trial') + ' (กำลังจะ Trial รอบ ' + newRoundNum + ')</span>' +
     '</div>' +
     '<div style="color:var(--text-muted);margin-top:4px;"><strong>อาการปัญหาเดิม:</strong> ' + (iss.Description || '-') + '</div>';
   }
@@ -9219,7 +9461,11 @@ async function openTrialModal(id) {
   // Repair Summary Box
   var summaryEl = document.getElementById('trial-repair-summary');
   if (summaryEl) {
-    var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+    var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '')
+      .replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '')
+      .replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '')
+      .replace(/\[❌ Trial ไม่ผ่าน[\s\S]*?\]/g, '')
+      .trim();
     summaryEl.innerHTML = '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🛠️ สรุปงานซ่อมที่ผ่านมาโดยช่าง:</div>' +
       '<div><strong>Root Cause:</strong> ' + (iss.RootCause || '-') + '</div>' +
       '<div><strong>วิธีแก้ไข:</strong> ' + (cleanAction || '-') + '</div>' +
@@ -9232,23 +9478,24 @@ async function openTrialModal(id) {
 
 function onTrialResultSelectChange() {
   var res = v('trial-result');
+  var roundNum = v('trial-round-number') || '1';
   var btn = document.getElementById('btn-submit-trial');
   var hint = document.getElementById('trial-status-hint');
   if (!btn || !hint) return;
 
   if (res === 'Failed') {
     btn.className = 'btn btn-danger';
-    btn.innerHTML = '❌ บันทึกไม่ผ่าน &amp; ตีกลับ In Progress';
-    hint.innerHTML = '<span style="color:var(--danger);font-weight:600;">🔴 เลือก "ไม่ผ่าน" ระบบจะตีกลับสถานะเป็น <strong>"In Progress (กำลังซ่อม)"</strong> เพื่อให้ช่างนำกลับไปแก้ไขต่อ</span>';
+    btn.innerHTML = '❌ บันทึกผลรอบที่ ' + roundNum + ' (ไม่ผ่าน) &amp; ส่งแก้ไขต่อ';
+    hint.innerHTML = '<span style="color:var(--danger);font-weight:600;">🔴 เลือก "ไม่ผ่าน" ระบบจะบันทึกผลรอบที่ ' + roundNum + ' และปรับสถานะเป็น <strong>"In Progress (ส่งแก้ไขต่อ)"</strong> เพื่อขึ้นรอบถัดไป</span>';
   } else {
     btn.className = 'btn btn-success';
-    btn.innerHTML = '✅ บันทึกผลผ่าน &amp; ปิดงาน (Close Issue)';
-    hint.innerHTML = '<span style="color:var(--success);font-weight:600;">🟢 เลือกผลผ่าน จะทำการ <strong>ปิดงาน (Closed)</strong> โดยสมบูรณ์</span>';
+    btn.innerHTML = '✅ บันทึกผลรอบที่ ' + roundNum + ' (ผ่าน) &amp; ปิดงานสมบูรณ์';
+    hint.innerHTML = '<span style="color:var(--success);font-weight:600;">🟢 เลือกผลผ่าน จะทำการบันทึกรอบที่ ' + roundNum + ' และ <strong>ปิดงาน (Closed)</strong> โดยสมบูรณ์</span>';
   }
 }
 
 // =====================================================================
-//  SUBMIT TRIAL (ยืนยันผล Trial: ปิดงาน หรือ ตีกลับซ่อมต่อ)
+//  SUBMIT TRIAL (ยืนยันผล Trial รอบปัจจุบัน: ปิดงาน หรือ ตีกลับซ่อมต่อ)
 // =====================================================================
 async function submitIssueTrial() {
   if (!can('issues', 'edit')) {
@@ -9257,6 +9504,7 @@ async function submitIssueTrial() {
   }
   try {
     var id = v('trial-issue-id');
+    var roundNum = v('trial-round-number') || '1';
     var result = v('trial-result');
     var trialBy = v('trial-by');
     var trialDate = v('trial-date');
@@ -9268,12 +9516,12 @@ async function submitIssueTrial() {
       return;
     }
     if (result === 'Failed' && !trialNotes) {
-      showToast('กรณี Trial ไม่ผ่าน กรุณาระบุข้อบกพร่องที่พบในช่องบันทึกข้อสังเกต', 'error');
+      showToast('กรณี Trial ไม่ผ่าน กรุณาระบุข้อบกพร่องที่พบในรอบที่ ' + roundNum + ' ในช่องบันทึกข้อสังเกต', 'error');
       return;
     }
 
     if (result === 'Failed') {
-      if (!confirm('ยืนยันบันทึกผล Trial "ไม่ผ่าน" ?\nระบบจะตีกลับสถานะเป็น "In Progress (กำลังซ่อม)" เพื่อให้ช่างซ่อมต่อ')) return;
+      if (!confirm('ยืนยันบันทึกผล Trial รอบที่ ' + roundNum + ' เป็น "ไม่ผ่าน" ?\nระบบจะบันทึกประวัติรอบนี้ และสามารถกดเพิ่ม Trial รอบต่อไปได้')) return;
     }
 
     showGlobalLoading(true);
@@ -9296,9 +9544,9 @@ async function submitIssueTrial() {
 
     if (r && r.success) {
       if (r.status === 'In Progress') {
-        showToast('ผล Trial ไม่ผ่าน — ระบบตีกลับสถานะเป็น "In Progress" เพื่อให้ช่างซ่อมแซมต่อเรียบร้อย ⚠️', 'warning');
+        showToast('บันทึกผล Trial รอบที่ ' + (r.round || roundNum) + ' (ไม่ผ่าน) เรียบร้อย — ช่างสามารถแก้ไขและเพิ่มรอบ Trial ต่อไปได้ ⚠️', 'warning');
       } else {
-        showToast('ผลการทดสอบผ่านการตรวจสอบ — ปิดงานสำเร็จเรียบร้อย ✅', 'success');
+        showToast('ผลการทดสอบรอบที่ ' + (r.round || roundNum) + ' ผ่านการตรวจสอบ — ปิดงานสำเร็จเรียบร้อย ✅', 'success');
       }
       closeModal('issue-trial-modal');
       var resIss = await api('getIssues');
@@ -9320,7 +9568,7 @@ async function submitIssueTrial() {
 // =====================================================================
 async function openCloseIssueModal(id) {
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
-  if (iss && iss.Status === 'Pending Trial') {
+  if (iss && (iss.Status === 'Pending Trial' || iss.TrialResult === 'Failed')) {
     await openTrialModal(id);
   } else {
     await openRepairModal(id);
