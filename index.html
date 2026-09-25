@@ -3668,7 +3668,7 @@ async function _apiInternal(actionStr, payload = null) {
         });
         return { success: true, data: data || [] };
       }
-      case 'getIssueImages': {
+            case 'getIssueImages': {
         const { data, error } = await sb.from('issues').select('ID, AfterImageIds, BeforeImageIds, CorrectiveAction, RootCause').eq('ID', payload.id).single();
         if (error) return { success: false, error: error.message };
         let trialImgs = '[]', trialResult = '', trialDate = '', trialShots = 0, trialNotes = '', trialBy = '', trialRounds = [];
@@ -3736,6 +3736,121 @@ async function _apiInternal(actionStr, payload = null) {
             TrialBy: trialBy
           }
         };
+      }
+      case 'saveIssue': {
+        const item = Object.assign({}, payload.data);
+        
+        // Handle Trial fields if present
+        if (item.TrialResult !== undefined || item.TrialDate !== undefined || item.TrialNotes !== undefined || item.TrialShots !== undefined || item.TrialImageIds !== undefined) {
+          let cleanAction = (item.CorrectiveAction || '')
+            .replace(/\[TRIAL_ROUNDS:\s*\[[\s\S]*?\]\s*\]/g, '')
+            .replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '')
+            .replace(/\[❌ Trial ไม่ผ่าน[\s\S]*?\]/g, '')
+            .trim();
+
+          // Fetch existing rounds if any
+          let existingRounds = [];
+          if (item.ID) {
+            const { data: curIssue } = await sb.from('issues').select('CorrectiveAction, Status').eq('ID', item.ID).single();
+            if (curIssue && curIssue.CorrectiveAction) {
+              const mRounds = curIssue.CorrectiveAction.match(/\[TRIAL_ROUNDS:\s*(\[[\s\S]*?\])\s*\]/);
+              if (mRounds) {
+                try { existingRounds = JSON.parse(mRounds[1]); } catch(e){}
+              } else {
+                const mSingle = curIssue.CorrectiveAction.match(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/);
+                if (mSingle) {
+                  try {
+                    const oldT = JSON.parse(mSingle[1]);
+                    existingRounds.push({
+                      round: 1,
+                      result: oldT.result || '',
+                      trialDate: oldT.trialDate || oldT.date || '',
+                      shots: Number(oldT.shots) || 0,
+                      trialBy: oldT.trialBy || '',
+                      notes: oldT.notes || '',
+                      images: Array.isArray(oldT.images) ? oldT.images : tryParse(oldT.images)
+                    });
+                  } catch(e){}
+                }
+              }
+            }
+          }
+
+          const trialImages = tryParse(item.TrialImageIds);
+          const trialRes = item.TrialResult || '';
+
+          // If updating or setting a trial
+          if (trialRes || item.TrialNotes || item.TrialShots > 0 || trialImages.length > 0 || existingRounds.length > 0) {
+            if (existingRounds.length > 0) {
+              const latest = existingRounds[existingRounds.length - 1];
+              latest.result = trialRes;
+              latest.trialDate = item.TrialDate || latest.trialDate || new Date().toISOString();
+              latest.shots = Number(item.TrialShots) || 0;
+              latest.notes = item.TrialNotes || '';
+              if (trialImages.length) latest.images = trialImages;
+              if (item.ClosedBy) latest.trialBy = item.ClosedBy;
+            } else if (trialRes) {
+              existingRounds.push({
+                round: 1,
+                result: trialRes,
+                trialDate: item.TrialDate || new Date().toISOString(),
+                shots: Number(item.TrialShots) || 0,
+                trialBy: item.ClosedBy || '',
+                notes: item.TrialNotes || '',
+                images: trialImages
+              });
+            }
+
+            if (existingRounds.length > 0) {
+              const latestObj = existingRounds[existingRounds.length - 1];
+              const roundsTag = '[TRIAL_ROUNDS: ' + JSON.stringify(existingRounds) + ']';
+              const singleTag = '[TRIAL: ' + JSON.stringify(latestObj) + ']';
+              item.CorrectiveAction = cleanAction ? (cleanAction + '\n\n' + roundsTag + '\n\n' + singleTag) : (roundsTag + '\n\n' + singleTag);
+            } else {
+              item.CorrectiveAction = cleanAction;
+            }
+          } else {
+            // No trial result: remove trial tags
+            item.CorrectiveAction = cleanAction;
+          }
+
+          // Auto-adjust Status based on trial result
+          if (trialRes === 'Failed') {
+            item.Status = 'In Progress';
+            item.ClosedAt = null;
+          } else if (!trialRes) {
+            if (item.CorrectiveAction || item.RootCause || item.AfterImageIds) {
+              item.Status = 'Pending Trial';
+            } else {
+              item.Status = 'Open';
+            }
+            item.ClosedAt = null;
+          } else if (trialRes === 'Passed' || trialRes === 'Conditional' || trialRes === 'Adjusted') {
+            item.Status = 'Closed';
+            if (!item.ClosedAt) item.ClosedAt = item.TrialDate || new Date().toISOString();
+          }
+
+          delete item.TrialResult;
+          delete item.TrialDate;
+          delete item.TrialShots;
+          delete item.TrialNotes;
+          delete item.TrialImageIds;
+          delete item.CleanCorrectiveAction;
+        }
+
+        if (item.ID) {
+          const editId = item.ID;
+          delete item.ID;
+          const { error } = await sb.from('issues').update(item).eq('ID', editId);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: editId };
+        } else {
+          item.ID = _uid();
+          item.CreatedAt = new Date().toISOString();
+          const { error } = await sb.from('issues').insert(item);
+          if (error) return { success: false, error: error.message };
+          return { success: true, id: item.ID };
+        }
       }
       case 'updateIssueStatus': {
         const { error } = await sb.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
@@ -8467,6 +8582,22 @@ async function saveIssue(){
       data.TrialShots = Number(v('issue-edit-trial-shots')) || 0;
       data.TrialNotes = v('issue-edit-trial-notes');
       data.TrialImageIds = JSON.stringify(trialImgIds);
+
+      var editTrialResult = data.TrialResult;
+      if (editTrialResult === 'Failed') {
+        data.Status = 'In Progress';
+        data.ClosedAt = null;
+      } else if (!editTrialResult) {
+        if (data.CorrectiveAction || data.RootCause || afterImgIds.length > 0) {
+          data.Status = 'Pending Trial';
+        } else {
+          data.Status = 'Open';
+        }
+        data.ClosedAt = null;
+      } else if (editTrialResult === 'Passed' || editTrialResult === 'Conditional' || editTrialResult === 'Adjusted') {
+        data.Status = 'Closed';
+        if (!data.ClosedAt) data.ClosedAt = data.TrialDate || new Date().toISOString();
+      }
     }
 
     var r = await api('saveIssue', { data: data });
