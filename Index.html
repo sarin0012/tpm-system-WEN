@@ -85,6 +85,7 @@ tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:non
 .badge.active,.badge.done,.badge.closed{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.3);}
 .badge.planned{background:rgba(59,130,246,.2) !important;color:#38bdf8 !important;border:1px solid rgba(56,189,248,.4) !important;}
 .badge.in-progress{background:rgba(99,102,241,.15);color:#a5b4fc;border:1px solid rgba(99,102,241,.3);}
+.badge.pending-trial{background:rgba(14,165,233,.18);color:#38bdf8;border:1px solid rgba(14,165,233,.4);}
 .badge.overdue,.badge.critical,.badge.open{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3);}
 .badge.warning,.badge.pending,.badge.high{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
 .badge.medium{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
@@ -1842,7 +1843,7 @@ body.role-engineer .role-admin-only { display: none !important; }
   <div class="toolbar">
     <input id="issue-search-input" class="search-input" type="text" placeholder="🔍 ค้นหาปัญหา / Issue No. / Mold..." oninput="filterIssues()"/>
     <select id="issue-mold-filter" onchange="filterIssues()" style="width:180px;"><option value="">🧩 ทุก Mold / Machine</option></select>
-    <select id="issue-status-filter" onchange="filterIssues()" style="width:170px;"><option value="Active" selected>⚡ ค้างอยู่ (Open + In Progress)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open</option><option value="In Progress">🟡 In Progress</option><option value="Closed">🟢 Closed (จบแล้ว)</option></select>
+    <select id="issue-status-filter" onchange="filterIssues()" style="width:190px;"><option value="Active" selected>📌 งานค้าง (Open / ซ่อม / Trial)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open (รอรับเรื่อง)</option><option value="In Progress">🟡 In Progress (กำลังซ่อม)</option><option value="Pending Trial">🧪 Pending Trial (รอทดลองงาน)</option><option value="Closed">🟢 Closed (ปิดแล้ว)</option></select>
     <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">ทุก Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="issues:edit" onclick="openIssueModal()">+ แจ้งปัญหา</button>
@@ -2516,89 +2517,150 @@ body.role-engineer .role-admin-only { display: none !important; }
   </div>
 </div>
 
-<!-- CLOSE ISSUE -->
-<div class="modal-overlay" id="issue-close-modal">
-  <div class="modal modal-lg"><div class="modal-header"><div class="modal-title">✅ ปิดงาน / Close Issue</div><button class="modal-close" onclick="closeModal('issue-close-modal')">✕</button></div>
-  <div class="modal-body">
-    <input type="hidden" id="close-issue-id"/>
-    <div id="close-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
-    
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 1. ข้อมูลการแก้ไข (Repair Actions)</div>
-      <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง) *</label><textarea id="close-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
-      <div class="form-group"><label>Corrective Action (วิธีแก้ไข) *</label><textarea id="close-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
-      <div class="form-row col-2"><div class="form-group"><label>วันที่เสร็จ</label><input id="close-date" type="datetime-local"/></div><div class="form-group"><label>ผู้แก้ไข/ผู้ซ่อม</label><input id="close-by"/></div></div>
+<!-- REPAIR ISSUE MODAL (STEP 1: REPAIR & SEND TO TRIAL) -->
+<div class="modal-overlay" id="issue-repair-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">🔧 บันทึกการแก้ไข/ซ่อมแซม (Repair Action)</div>
+      <button class="modal-close" onclick="closeModal('issue-repair-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="repair-issue-id"/>
+      <div id="repair-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
       
-      <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
-        <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
-          <span>📦 อะไหล่ที่ใช้ซ่อม (Parts Used) &amp; ตัดสต็อก</span>
-          <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เลือกจาก Stock หรือพิมพ์เพิ่มเติม</span>
-        </label>
-        <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
-          <select id="close-part-select" onchange="onClosePartSelectChange()" style="flex:2;min-width:200px;">
-            <option value="">-- เลือกอะไหล่จากคลัง Stock --</option>
-          </select>
-          <div id="close-part-other-wrap" style="display:none;flex:2;min-width:180px;">
-            <input id="close-part-other-name" placeholder="ระบุชื่ออะไหล่นอกคลัง..." style="width:100%;" />
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 ข้อมูลการซ่อมแซม &amp; เบิกอะไหล่</div>
+        <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง) *</label><textarea id="repair-root-cause" placeholder="ระบุสาเหตุที่ตรวจพบ..."></textarea></div>
+        <div class="form-group"><label>Corrective Action (วิธีแก้ไข) *</label><textarea id="repair-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
+        <div class="form-row col-2"><div class="form-group"><label>วันที่ซ่อมเสร็จ</label><input id="repair-date" type="datetime-local"/></div><div class="form-group"><label>ผู้แก้ไข/ผู้ซ่อม</label><input id="repair-by"/></div></div>
+        
+        <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
+          <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
+            <span>📦 อะไหล่ที่ใช้ซ่อม (Parts Used) &amp; ตัดสต็อก</span>
+            <span style="font-size:11px;font-weight:400;color:var(--text-muted);">เลือกจาก Stock หรือพิมพ์เพิ่มเติม</span>
+          </label>
+          <div style="display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap;margin-bottom:8px;">
+            <select id="repair-part-select" onchange="onRepairPartSelectChange()" style="flex:2;min-width:200px;">
+              <option value="">-- เลือกอะไหล่จากคลัง Stock --</option>
+            </select>
+            <div id="repair-part-other-wrap" style="display:none;flex:2;min-width:180px;">
+              <input id="repair-part-other-name" placeholder="ระบุชื่ออะไหล่นอกคลัง..." style="width:100%;" />
+            </div>
+            <div style="display:flex;gap:4px;align-items:center;width:130px;">
+              <input id="repair-part-qty" type="number" min="1" value="1" placeholder="จำนวน" style="width:70px;" />
+              <span id="repair-part-unit" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">ชิ้น</span>
+            </div>
+            <button type="button" class="btn btn-primary" onclick="addRepairIssuePart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
           </div>
-          <div style="display:flex;gap:4px;align-items:center;width:130px;">
-            <input id="close-part-qty" type="number" min="1" value="1" placeholder="จำนวน" style="width:70px;" />
-            <span id="close-part-unit" style="font-size:12px;color:var(--text-muted);white-space:nowrap;">ชิ้น</span>
+          <div id="repair-part-warning" style="display:none;"></div>
+          <div id="repair-parts-list" style="margin-bottom:8px;"></div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่บันทึก (แก้ไขข้อความได้):</label>
+            <input id="repair-parts-used" placeholder="เช่น O-Ring 50mm (x2), ซีลยาง (x1)..." style="font-size:12px;background:var(--surface);" />
           </div>
-          <button type="button" class="btn btn-primary" onclick="addCloseIssuePart()" style="padding:7px 12px;font-size:12px;white-space:nowrap;">+ เพิ่มอะไหล่</button>
         </div>
-        <div id="close-part-warning" style="display:none;"></div>
-        <div id="close-parts-list" style="margin-bottom:8px;"></div>
-        <div>
-          <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:2px;">สรุปรายการอะไหล่ที่บันทึก (แก้ไขข้อความได้):</label>
-          <input id="close-parts-used" placeholder="เช่น O-Ring 50mm (x2), ซีลยาง (x1)..." style="font-size:12px;background:var(--surface);" />
-        </div>
-      </div>
 
-      <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพหลังแก้ไข (After Photos)</label>
-        <div class="photo-upload-area" onclick="triggerUpload('close-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปหลังซ่อม (หลายรูปได้)</div></div>
-        <input type="file" id="close-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-photos-preview','close')"/>
-        <div class="photo-preview-grid" id="close-photos-preview"></div>
+        <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพหลังแก้ไข (After Photos)</label>
+          <div class="photo-upload-area" onclick="triggerUpload('repair-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปหลังซ่อม (หลายรูปได้)</div></div>
+          <input type="file" id="repair-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'repair-photos-preview','repair')"/>
+          <div class="photo-preview-grid" id="repair-photos-preview"></div>
+        </div>
       </div>
     </div>
-
-    <!-- TRIAL SECTION IN CLOSE MODAL -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
-      <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 2. ข้อมูลการทดสอบหลังซ่อม (Trial & Quality Check)</div>
-      <div class="form-row col-3">
-        <div class="form-group">
-          <label>ผลการทดสอบ (Trial Result)</label>
-          <select id="close-trial-result">
-            <option value="Passed">✅ ผ่านสมบูรณ์ (Passed)</option>
-            <option value="Conditional">⚠️ ผ่านแบบมีเงื่อนไข (Conditional)</option>
-            <option value="Adjusted">🔧 มีการปรับจูนเพิ่มเติม (Adjusted & Passed)</option>
-            <option value="Failed">❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>วันที่ทดสอบ (Trial Date)</label>
-          <input id="close-trial-date" type="datetime-local"/>
-        </div>
-        <div class="form-group">
-          <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
-          <input id="close-trial-shots" type="number" min="0" placeholder="เช่น 20, 50..." />
-        </div>
-      </div>
-      <div class="form-group">
-        <label>บันทึกพารามิเตอร์ / ข้อสังเกตตอน Trial (Trial Notes)</label>
-        <textarea id="close-trial-notes" placeholder="บันทึกสภาพผิวชิ้นงาน, จุดที่ต้องระวัง, ข้อสังเกตสำหรับการซ่อมรอบต่อไป..." rows="2"></textarea>
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label>📷 รูปถ่ายชิ้นงานตอน Trial (Trial Photos)</label>
-        <div class="photo-upload-area" onclick="triggerUpload('close-trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial / ผิวงาน (หลายรูปได้)</div></div>
-        <input type="file" id="close-trial-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'close-trial-photos-preview','close-trial')"/>
-        <div class="photo-preview-grid" id="close-trial-photos-preview"></div>
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:var(--text-muted);">💡 บันทึกแล้วระบบจะตัดสต็อกอะไหล่ และเปลี่ยนสถานะเป็น <strong>"Pending Trial (รอทดลองงาน)"</strong></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeModal('issue-repair-modal')">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="submitIssueRepair()" style="font-weight:600;">🧪 บันทึกผลซ่อม &amp; ส่งรอ Trial</button>
       </div>
     </div>
+  </div>
+</div>
 
+<!-- TRIAL ISSUE MODAL (STEP 2: TRIAL RUN & VERIFICATION) -->
+<div class="modal-overlay" id="issue-trial-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">🧪 บันทึกผลการทดสอบชิ้นงาน (Trial &amp; Quality Check)</div>
+      <button class="modal-close" onclick="closeModal('issue-trial-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="trial-issue-id"/>
+      <div id="trial-issue-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;font-size:13px;"></div>
+      
+      <!-- Previous Repair Summary Banner -->
+      <div id="trial-repair-summary" style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.25);border-radius:var(--r-sm);padding:12px;margin-bottom:14px;font-size:12.5px;"></div>
+
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;margin-bottom:14px;">
+        <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:10px;">🧪 ข้อมูลการทดลองฉีด &amp; ยืนยันคุณภาพ</div>
+        
+        <div class="form-row col-2">
+          <div class="form-group">
+            <label>ผลการทดสอบ (Trial Result) *</label>
+            <select id="trial-result" onchange="onTrialResultSelectChange()" style="font-weight:600;font-size:13px;">
+              <option value="Passed">✅ ผ่านสมบูรณ์ (Passed) — ปิดงานสำเร็จ</option>
+              <option value="Conditional">⚠️ ผ่านแบบมีเงื่อนไข (Conditional) — ปิดงาน</option>
+              <option value="Adjusted">🔧 มีการปรับจูนเพิ่มเติมแล้วผ่าน (Adjusted &amp; Passed) — ปิดงาน</option>
+              <option value="Failed">❌ ไม่ผ่าน / ยังพบปัญหา (Failed) — ตีกลับให้ช่างซ่อมต่อ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>ผู้ทดสอบ / ผู้ตรวจ QC *</label>
+            <input id="trial-by" placeholder="ระบุชื่อผู้ทดลองฉีดหรือ QC..." />
+          </div>
+        </div>
+
+        <div class="form-row col-2">
+          <div class="form-group">
+            <label>วันที่และเวลาทดสอบ (Trial Date) *</label>
+            <input id="trial-date" type="datetime-local"/>
+          </div>
+          <div class="form-group">
+            <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
+            <input id="trial-shots" type="number" min="0" placeholder="เช่น 20, 50, 100 Shots..." />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>บันทึกพารามิเตอร์ / ข้อสังเกตตอน Trial (Trial Notes) *</label>
+          <textarea id="trial-notes" placeholder="ระบุสภาพผิวชิ้นงาน, ปัญหาที่พบ หรือเหตุผลที่ตีกลับ (กรณีไม่ผ่าน)..." rows="3"></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom:0;">
+          <label>📷 รูปถ่ายชิ้นงานตอน Trial (Trial Photos)</label>
+          <div class="photo-upload-area" onclick="triggerUpload('trial-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปชิ้นงานตอน Trial / ผิวงาน (หลายรูปได้)</div></div>
+          <input type="file" id="trial-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'trial-photos-preview','trial')"/>
+          <div class="photo-preview-grid" id="trial-photos-preview"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center;">
+      <div id="trial-status-hint" style="font-size:12px;color:var(--text-muted);">
+        🟢 เลือกผลผ่าน จะทำการ <strong>ปิดงาน (Closed)</strong> โดยสมบูรณ์
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline" onclick="closeModal('issue-trial-modal')">ยกเลิก</button>
+        <button class="btn btn-success" id="btn-submit-trial" onclick="submitIssueTrial()" style="font-weight:600;">✅ บันทึกผล Trial &amp; ปิดงาน</button>
+      </div>
+    </div>
   </div>
-  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('issue-close-modal')">ยกเลิก</button><button class="btn btn-success" onclick="closeIssue()">✅ บันทึกปิดงาน</button></div>
-  </div>
+</div>
+
+<!-- BACKWARD-COMPATIBLE WRAPPER FOR OLD issue-close-modal CALLS -->
+<div class="modal-overlay" id="issue-close-modal" style="display:none !important;">
+  <input type="hidden" id="close-issue-id"/>
+  <input type="hidden" id="close-root-cause"/>
+  <input type="hidden" id="close-corrective"/>
+  <input type="hidden" id="close-date"/>
+  <input type="hidden" id="close-by"/>
+  <input type="hidden" id="close-parts-used"/>
+  <input type="hidden" id="close-trial-result"/>
+  <input type="hidden" id="close-trial-date"/>
+  <input type="hidden" id="close-trial-shots"/>
+  <input type="hidden" id="close-trial-notes"/>
+  <div id="close-issue-info"></div>
+  <div id="close-photos-preview"></div>
+  <div id="close-trial-photos-preview"></div>
 </div>
 
 <!-- STOCK PART -->
@@ -3670,6 +3732,60 @@ async function _apiInternal(actionStr, payload = null) {
         const { error } = await sb.from('issues').update({ Status: payload.status }).eq('ID', payload.id);
         if (error) return { success: false, error: error.message };
         return { success: true };
+      }
+      case 'repairIssue': {
+        const item = Object.assign({}, payload.data);
+        const { error } = await sb.from('issues').update({
+          Status: 'Pending Trial',
+          RootCause: item.RootCause,
+          CorrectiveAction: item.CorrectiveAction,
+          PartsUsed: item.PartsUsed,
+          AfterImageIds: item.AfterImageIds,
+          ClosedBy: item.RepairedBy || item.ClosedBy
+        }).eq('ID', item.ID);
+        if (error) return { success: false, error: error.message };
+        return { success: true };
+      }
+      case 'submitTrial': {
+        const item = Object.assign({}, payload.data);
+        const trialResult = item.TrialResult || 'Passed';
+        const isPassed = (trialResult !== 'Failed');
+        const trialImages = tryParse(item.TrialImageIds);
+        const trialObj = {
+          result: trialResult,
+          trialDate: item.TrialDate || new Date().toISOString(),
+          shots: Number(item.TrialShots) || 0,
+          trialBy: item.TrialBy || '',
+          notes: item.TrialNotes || '',
+          images: trialImages
+        };
+        
+        const { data: curIssue } = await sb.from('issues').select('CorrectiveAction, RootCause').eq('ID', item.ID).single();
+        let action = ((curIssue && curIssue.CorrectiveAction) || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+        
+        if (isPassed) {
+          action = action ? (action + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']') : ('[TRIAL: ' + JSON.stringify(trialObj) + ']');
+          const updateData = {
+            Status: 'Closed',
+            ClosedAt: item.ClosedAt || item.TrialDate || new Date().toISOString(),
+            ClosedBy: item.ClosedBy || item.TrialBy,
+            CorrectiveAction: action
+          };
+          const { error } = await sb.from('issues').update(updateData).eq('ID', item.ID);
+          if (error) return { success: false, error: error.message };
+          return { success: true, status: 'Closed' };
+        } else {
+          const dtStr = (item.TrialDate ? item.TrialDate.slice(0, 16) : new Date().toISOString().slice(0, 16)).replace('T', ' ');
+          const failNote = '\n[❌ Trial ไม่ผ่าน (' + dtStr + ' โดย ' + (item.TrialBy || 'QC') + '): ' + (item.TrialNotes || 'พบข้อบกพร่อง') + (item.TrialShots ? ' (' + item.TrialShots + ' shots)' : '') + ']';
+          action = (action + failNote).trim() + '\n\n[TRIAL: ' + JSON.stringify(trialObj) + ']';
+          const updateData = {
+            Status: 'In Progress',
+            CorrectiveAction: action
+          };
+          const { error } = await sb.from('issues').update(updateData).eq('ID', item.ID);
+          if (error) return { success: false, error: error.message };
+          return { success: true, status: 'In Progress' };
+        }
       }
       case 'closeIssue': {
         const item = Object.assign({}, payload.data);
@@ -5169,7 +5285,7 @@ function getTPMStatusBadge(p) {
 
 function updateBadges() {
   try {
-    const open = (STATE.issues || []).filter(i=>i.Status==='Open'||i.Status==='In Progress').length;
+    const open = (STATE.issues || []).filter(i=>i.Status==='Open'||i.Status==='In Progress'||i.Status==='Pending Trial').length;
     const bi = document.getElementById('badge-issues');
     if (bi) { bi.style.display = open>0?'':'none'; bi.textContent = open; }
     
@@ -7821,7 +7937,7 @@ function filterIssues() {
     
     var afterImgs = tryParse(i.AfterImageIds);
     var afterThumbs = '';
-    if (i.Status === 'Closed') {
+    if (i.Status === 'Closed' || i.Status === 'Pending Trial' || (afterImgs && afterImgs.length > 0)) {
       if (i._imagesLoaded) {
         afterThumbs = afterImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
           afterImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'after\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูปหลังซ่อม (' + (idx+1) + '/' + afterImgs.length + ')"/>'; }).join('') + 
@@ -7837,14 +7953,44 @@ function filterIssues() {
     var trialImgs = tryParse(i.TrialImageIds);
     var trialThumbs = '';
     if (i._imagesLoaded) {
-      trialThumbs = trialImgs.length ? '<div style="display:flex;gap:4px;align-items:center">' + 
-        trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
-        (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
-        '</div>' : '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
+      if (trialImgs.length) {
+        trialThumbs = '<div style="display:flex;gap:4px;align-items:center">' + 
+          trialImgs.slice(0,2).map(function(id, idx){ return '<img src="' + id + '" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',' + idx + ')" style="width:36px;height:36px;object-fit:cover;border-radius:4px;cursor:zoom-in;border:1px solid var(--border);" title="ดูรูป Trial (' + (idx+1) + '/' + trialImgs.length + ')"/>'; }).join('') + 
+          (trialImgs.length > 2 ? '<span class="badge" style="font-size:10px;background:var(--surface2);border:1px solid var(--border);cursor:pointer;padding:2px 6px;" onclick="openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',2)" title="คลิกดูรูปทั้งหมด (+' + (trialImgs.length - 2) + ')">+' + (trialImgs.length - 2) + '</span>' : '') + 
+          '</div>';
+      } else if (i.Status === 'Pending Trial') {
+        trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial</span>';
+      } else {
+        trialThumbs = '<span style="color:var(--text-faint);font-size:11px">' + (i.Status === 'Closed' ? (i.TrialResult ? 'ไม่มีรูป' : '-') : '-') + '</span>';
+      }
     } else {
-      trialThumbs = (i.Status === 'Closed')
-        ? '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ Trial">📷 ดูรูป</button>'
-        : '<span style="color:var(--text-faint);font-size:11px">-</span>';
+      if (i.Status === 'Closed' || (trialImgs && trialImgs.length > 0)) {
+        trialThumbs = '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation(); openIssuePhotoLightbox(\'' + i.ID + '\',\'trial\',0)" style="font-size:11px;padding:2px 8px;border:1px solid var(--border);border-radius:4px;color:var(--text-muted);" title="คลิกเพื่อดูรูปภาพ Trial">📷 ดูรูป</button>';
+      } else if (i.Status === 'Pending Trial') {
+        trialThumbs = '<span class="badge pending-trial" style="font-size:10.5px;cursor:pointer;" onclick="openTrialModal(\'' + i.ID + '\')" title="คลิกเพื่อบันทึกผล Trial">🧪 รอ Trial</span>';
+      } else {
+        trialThumbs = '<span style="color:var(--text-faint);font-size:11px">-</span>';
+      }
+    }
+
+    var stClass = (i.Status || 'open').toLowerCase().replace(/\s+/g, '-');
+    var stLabel = (i.Status || 'Open');
+    if (i.Status === 'Pending Trial') stLabel = '🧪 รอ Trial';
+    else if (i.Status === 'In Progress') stLabel = '⚙️ In Progress';
+    else if (i.Status === 'Open') stLabel = '🚨 Open';
+    else if (i.Status === 'Closed') stLabel = '✅ Closed';
+
+    var actionButtons = '';
+    if (can('issues', 'edit') && i.Status !== 'Closed') {
+      if (i.Status === 'Pending Trial') {
+        actionButtons = '<button class="btn btn-primary btn-sm" onclick="openTrialModal(\'' + i.ID + '\')" title="บันทึกผลการทดสอบ (Trial) เพื่อปิดงาน" style="font-weight:600;background:#0284c7;border-color:#0284c7;">🧪 บันทึกผล Trial</button> ' +
+          '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลการซ่อม/เบิกอะไหล่">🔧</button> ';
+      } else if (i.Status === 'In Progress') {
+        actionButtons = '<button class="btn btn-success btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลการซ่อม &amp; ส่งรอ Trial">🔧 บันทึกผลซ่อม</button> ';
+      } else {
+        actionButtons = '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️ เริ่มซ่อม</button> ' +
+          '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลซ่อม">🔧</button> ';
+      }
     }
 
     return '<tr class="m-card-row iss-card">' +
@@ -7858,7 +8004,7 @@ function filterIssues() {
       '<td>' + (i.IssueType || '-') + '</td>' +
       '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
       '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
-      '<td><span class="badge ' + (i.Status || 'open').toLowerCase().replace(' ', '-') + '">' + (i.Status || 'Open') + '</span></td>' +
+      '<td><span class="badge ' + stClass + '">' + stLabel + '</span></td>' +
       '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
       '<td>' + beforeThumbs + '</td>' +
       '<td>' + afterThumbs + '</td>' +
@@ -7867,7 +8013,7 @@ function filterIssues() {
         '<button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด/ประวัติ">🔍</button> ' +
         (can('issues', 'edit') ? '<button class="btn btn-ghost btn-sm" onclick="openIssueModal(\'' + i.ID + '\')" title="แก้ไขข้อมูลปัญหา/ซ่อม/Trial">✏️</button> ' : '') +
         '<button class="btn btn-ghost btn-sm" onclick="printIssueReport(\'' + i.ID + '\')" title="พิมพ์เอกสาร">🖨️</button> ' +
-        (can('issues', 'edit') && i.Status !== 'Closed' ? '<button class="btn btn-success btn-sm" onclick="openCloseIssueModal(\'' + i.ID + '\')" title="ปิดงาน">✅ ปิดงาน</button> ' + (i.Status !== 'In Progress' ? '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️</button> ' : '') : '') +
+        actionButtons +
         (can('issues', 'delete') ? '<button class="btn btn-ghost btn-sm" onclick="delIssue(\'' + i.ID + '\')" title="ลบ">🗑️</button>' : '') +
       '</td>' +
     '</tr>';
@@ -8404,64 +8550,20 @@ async function openIssueDetailModal(id){
 
   if (footer) {
     var canEditIss = can('issues', 'edit');
+    var actionBtn = '';
+    if (canEditIss && iss.Status !== 'Closed') {
+      if (iss.Status === 'Pending Trial') {
+        actionBtn = '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openTrialModal(\'' + iss.ID + '\');" style="background:#0284c7;border-color:#0284c7;font-weight:600;">🧪 บันทึกผล Trial (ปิดงาน)</button> ';
+      } else {
+        actionBtn = '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openRepairModal(\'' + iss.ID + '\');">🔧 บันทึกผลซ่อม (ส่งรอ Trial)</button> ';
+      }
+    }
     footer.innerHTML = 
       '<button class="btn btn-outline" onclick="closeModal(\'issue-detail-modal\')">ปิด</button> ' +
       (canEditIss ? '<button class="btn btn-primary" onclick="closeModal(\'issue-detail-modal\'); openIssueModal(\'' + iss.ID + '\');">✏️ แก้ไขข้อมูล (Before/After/Trial)</button> ' : '') +
       '<button class="btn btn-outline" onclick="printIssueReport(\'' + iss.ID + '\');" style="color:var(--primary);border-color:var(--primary);font-weight:600;">🖨️ พิมพ์เอกสาร</button> ' +
-      (canEditIss && iss.Status !== 'Closed' ? '<button class="btn btn-success" onclick="closeModal(\'issue-detail-modal\'); openCloseIssueModal(\'' + iss.ID + '\');">✅ ปิดงานนี้</button>' : '');
-  }
-
-  openModal('issue-detail-modal');
-}
-
-async function printIssueReport(id) {
-  await ensureIssueImages(id);
-  var iss = (STATE.issues || []).find(function(i) { return i.ID === id; });
-  if (!iss) {
-    showToast('ไม่พบข้อมูลปัญหา', 'error');
-    return;
-  }
-
-  var displayCode = getIssueDisplayCode(iss);
-  var beforeImgs = tryParse(iss.BeforeImageIds);
-  var afterImgs = tryParse(iss.AfterImageIds);
-  var trialImgs = tryParse(iss.TrialImageIds);
-
-  var beforeGallery = beforeImgs.length
-    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
-        beforeImgs.map(function(url) {
-          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
-        }).join('') +
-      '</div>'
-    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพประกอบ</span>';
-
-  var afterGallery = afterImgs.length
-    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
-        afterImgs.map(function(url) {
-          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
-        }).join('') +
-      '</div>'
-    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพหลังการแก้ไข</span>';
-
-  var trialGallery = trialImgs.length
-    ? '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px;">' +
-        trialImgs.map(function(url) {
-          return '<img src="' + url + '" style="width:160px;height:120px;object-fit:cover;border-radius:4px;border:1px solid #ccc;" />';
-        }).join('') +
-      '</div>'
-    : '<span style="color:#666;font-style:italic;">ไม่มีรูปภาพชิ้นงานตอน Trial</span>';
-
-  var trialResText = iss.TrialResult === 'Passed' ? '✅ ผ่านสมบูรณ์ (Passed)' :
-                     iss.TrialResult === 'Conditional' ? '⚠️ ผ่านแบบมีเงื่อนไข (Conditional)' :
-                     iss.TrialResult === 'Adjusted' ? '🔧 มีการปรับจูนเพิ่มเติม (Adjusted & Passed)' :
-                     iss.TrialResult === 'Failed' ? '❌ ไม่ผ่าน / ต้องแก้ไขต่อ (Failed)' : (iss.TrialResult || '-');
-
-  var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ใบแจ้งปัญหาและรายงานผลการแก้ไข - #' + displayCode + '</title>' +
-    '<style>' +
-    '@page { size: A4 portrait; margin: 10mm 12mm; }' +
-    'body { font-family: "Sarabun", "Segoe UI", sans-serif; color: #111; margin: 0; padding: 12px; font-size: 12px; line-height: 1.35; }' +
-    '.no-print { display: flex; gap: 10px; justify-content: center; margin-bottom: 16px; }' +
-    '@media print { .no-print { display: none !important; } body { padding: 0; } }' +
+      actionBtn;
+  }' +
     'h2 { margin: 0 0 2px 0; font-size: 16px; text-align: center; color: #1e3a8a; }' +
     '.sub-title { text-align: center; font-size: 11px; color: #555; margin-bottom: 12px; font-weight: bold; }' +
     'table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }' +
@@ -8772,61 +8874,81 @@ function onClosePartSelectChange() {
   updateStockPartWarningNotice('close-part-warning', sel.value);
 }
 
-function renderCloseIssuePartsList(existingHistory) {
-  var container = document.getElementById('close-parts-list');
-  var summaryInput = document.getElementById('close-parts-used');
+// =====================================================================
+//  PARTS USED MANAGEMENT IN REPAIR MODAL
+// =====================================================================
+function renderRepairIssuePartsList(existingHistory) {
+  var container = document.getElementById('repair-parts-list') || document.getElementById('close-parts-list');
+  var summaryInput = document.getElementById('repair-parts-used') || document.getElementById('close-parts-used');
   if (!container) return;
-  var parts = STATE.closeIssueParts || [];
-  var hist = (existingHistory !== undefined) ? existingHistory : (STATE.existingClosePartsHistory || '');
+  var parts = STATE.repairIssueParts || STATE.closeIssueParts || [];
+  var hist = (existingHistory !== undefined) ? existingHistory : (STATE.existingRepairPartsHistory || '');
   var html = '';
 
   if (hist) {
-    html += '<div style="font-size:12px;color:var(--primary);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);padding:6px 10px;border-radius:4px;margin-bottom:8px;">🕒 <strong>ประวัติอะไหล่เดิมที่เคยบันทึกไว้:</strong> ' + hist + '</div>';
+    html += '<div style="font-size:12px;color:var(--primary);background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.3);padding:6px 10px;border-radius:4px;margin-bottom:8px;">📋 <strong>ประวัติเดิม:</strong> ' + hist + '</div>';
   }
 
   if (!parts.length) {
-    if (!hist) {
-      html += '<div style="font-size:12px;color:var(--text-faint);font-style:italic;">ยังไม่ได้เลือกอะไหล่ (ถ้าไม่มีการใช้อะไหล่ สามารถพิมพ์ระบุเองด้านล่าง หรือปล่อยว่างได้)</div>';
-    }
     container.innerHTML = html;
-    if (summaryInput && (existingHistory !== undefined)) {
-      summaryInput.value = hist || '';
-    }
     return;
   }
 
-  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;">' +
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">' +
     parts.map(function(p, idx) {
-      var badgeStyle = p.isStock ? 'background:rgba(99,102,241,0.15);border:1px solid #6366f1;color:#818cf8;' : 'background:rgba(245,158,11,0.15);border:1px solid #f59e0b;color:#f59e0b;';
+      var badgeStyle = p.isStock
+        ? 'background:rgba(16,185,129,0.12);color:var(--success);border:1px solid rgba(16,185,129,0.3);'
+        : 'background:rgba(100,116,139,0.12);color:var(--text);border:1px solid rgba(100,116,139,0.3);';
       var tag = p.isStock ? '📦 ' : '✏️ ';
       return '<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:4px;font-size:12px;' + badgeStyle + '">' +
         '<strong>' + tag + p.partName + '</strong> (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + ')' +
-        '<button type="button" onclick="removeCloseIssuePart(' + idx + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="ลบรายการ">✕</button>' +
+        '<button type="button" onclick="removeRepairIssuePart(' + idx + ')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:13px;padding:0 2px;line-height:1;" title="ลบรายการ">✕</button>' +
       '</div>';
     }).join('') +
   '</div>';
   container.innerHTML = html;
 
-  var newPartsText = parts.map(function(p) {
-    return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + (p.isStock ? '' : ' - Other') + ')';
-  }).join(', ');
-
   if (summaryInput) {
+    var partsSummary = parts.map(function(p) {
+      return p.partName + ' (x' + p.qty + ' ' + (p.unit || 'ชิ้น') + ')';
+    }).join(', ');
     if (hist) {
-      summaryInput.value = hist + (newPartsText ? (', ' + newPartsText) : '');
+      summaryInput.value = hist + (partsSummary ? ' | ใช้เพิ่ม: ' + partsSummary : '');
     } else {
-      summaryInput.value = newPartsText;
+      summaryInput.value = partsSummary;
     }
   }
 }
 
-function addCloseIssuePart() {
-  var sel = document.getElementById('close-part-select');
-  var qtyInput = document.getElementById('close-part-qty');
-  var otherNameInput = document.getElementById('close-part-other-name');
+function onRepairPartSelectChange() {
+  var sel = document.getElementById('repair-part-select') || document.getElementById('close-part-select');
+  var otherWrap = document.getElementById('repair-part-other-wrap') || document.getElementById('close-part-other-wrap');
+  var unitSpan = document.getElementById('repair-part-unit') || document.getElementById('close-part-unit');
+  var warnDiv = document.getElementById('repair-part-warning') || document.getElementById('close-part-warning');
+  if (!sel) return;
+
+  if (sel.value === '__OTHER__') {
+    if (otherWrap) otherWrap.style.display = 'block';
+    if (unitSpan) unitSpan.textContent = 'ชิ้น';
+    if (warnDiv) warnDiv.style.display = 'none';
+  } else {
+    if (otherWrap) otherWrap.style.display = 'none';
+    var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
+    if (unitSpan) unitSpan.textContent = (p && p.Unit) ? p.Unit : 'ชิ้น';
+    updateStockPartWarningNotice(warnDiv ? warnDiv.id : 'close-part-warning', sel.value);
+  }
+}
+
+function addRepairIssuePart() {
+  var sel = document.getElementById('repair-part-select') || document.getElementById('close-part-select');
+  var qtyInput = document.getElementById('repair-part-qty') || document.getElementById('close-part-qty');
+  var otherNameInput = document.getElementById('repair-part-other-name') || document.getElementById('close-part-other-name');
   if (!sel) return;
   var qty = parseInt(qtyInput ? qtyInput.value : '1', 10);
   if (isNaN(qty) || qty <= 0) qty = 1;
+
+  STATE.repairIssueParts = STATE.repairIssueParts || [];
+  STATE.closeIssueParts = STATE.repairIssueParts;
 
   if (sel.value === '__OTHER__') {
     var otherName = (otherNameInput ? otherNameInput.value : '').trim();
@@ -8834,8 +8956,7 @@ function addCloseIssuePart() {
       showToast('กรุณาระบุชื่ออะไหล่นอกคลัง', 'error');
       return;
     }
-    STATE.closeIssueParts = STATE.closeIssueParts || [];
-    STATE.closeIssueParts.push({
+    STATE.repairIssueParts.push({
       partId: null,
       partName: otherName,
       partNo: '',
@@ -8847,12 +8968,11 @@ function addCloseIssuePart() {
   } else if (sel.value) {
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
     if (!p) return;
-    STATE.closeIssueParts = STATE.closeIssueParts || [];
-    var exist = STATE.closeIssueParts.find(function(x) { return x.partId === p.ID; });
+    var exist = STATE.repairIssueParts.find(function(x) { return x.partId === p.ID; });
     if (exist) {
       exist.qty += qty;
     } else {
-      STATE.closeIssueParts.push({
+      STATE.repairIssueParts.push({
         partId: p.ID,
         partName: p.PartName,
         partNo: p.PartNo || '',
@@ -8866,54 +8986,61 @@ function addCloseIssuePart() {
     return;
   }
   if (qtyInput) qtyInput.value = '1';
-  renderCloseIssuePartsList();
+  renderRepairIssuePartsList();
 }
 
-function removeCloseIssuePart(idx) {
-  if (STATE.closeIssueParts && STATE.closeIssueParts[idx] !== undefined) {
-    STATE.closeIssueParts.splice(idx, 1);
-    renderCloseIssuePartsList();
+function removeRepairIssuePart(idx) {
+  STATE.repairIssueParts = STATE.repairIssueParts || STATE.closeIssueParts || [];
+  if (STATE.repairIssueParts[idx] !== undefined) {
+    STATE.repairIssueParts.splice(idx, 1);
+    STATE.closeIssueParts = STATE.repairIssueParts;
+    renderRepairIssuePartsList();
   }
 }
 
-async function openCloseIssueModal(id){
+// Aliases for backward compatibility
+var renderCloseIssuePartsList = renderRepairIssuePartsList;
+var onClosePartSelectChange = onRepairPartSelectChange;
+var addCloseIssuePart = addRepairIssuePart;
+var removeCloseIssuePart = removeRepairIssuePart;
+
+// =====================================================================
+//  STEP 1: OPEN REPAIR MODAL (ช่างบันทึกผลซ่อม & ส่งรอ Trial)
+// =====================================================================
+async function openRepairModal(id) {
   if (!can('issues', 'edit')) {
-    showToast('คุณไม่มีสิทธิ์ปิดงานหรือเบิกอะไหล่ (สิทธิ์สำหรับดูข้อมูลและพิมพ์รายงานเท่านั้น)', 'warning');
+    showToast('คุณไม่มีสิทธิ์แก้ไขข้อมูลหรือบันทึกงานซ่อม', 'warning');
     return;
   }
   await ensureIssueImages(id);
   var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
   if(!iss) return;
-  v_set('close-issue-id', id);
+
+  v_set('repair-issue-id', id);
 
   // Pre-fill Root Cause & Corrective Action
-  v_set('close-root-cause', iss.RootCause || '');
+  v_set('repair-root-cause', iss.RootCause || '');
   var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
-  v_set('close-corrective', cleanAction);
+  v_set('repair-corrective', cleanAction);
 
   // Pre-fill Repairer & Dates
-  v_set('close-by', iss.ClosedBy || (STATE.currentUser ? STATE.currentUser.Name : ''));
-  v_set('close-date', iss.ClosedAt ? iss.ClosedAt.slice(0,16) : new Date().toISOString().slice(0,16));
+  v_set('repair-by', iss.ClosedBy || (STATE.currentUser ? STATE.currentUser.Name : ''));
+  v_set('repair-date', new Date().toISOString().slice(0, 16));
 
   // Pre-fill Parts
-  v_set('close-part-other-name', '');
-  v_set('close-part-qty', '1');
-  var otherWrap = document.getElementById('close-part-other-wrap');
-  if(otherWrap) otherWrap.style.display = 'none';
+  v_set('repair-part-other-name', '');
+  v_set('repair-part-qty', '1');
+  var otherWrap = document.getElementById('repair-part-other-wrap');
+  if (otherWrap) otherWrap.style.display = 'none';
 
-  STATE.closeIssueParts = [];
-  STATE.existingClosePartsHistory = iss.PartsUsed || '';
-  v_set('close-parts-used', iss.PartsUsed || '');
-  renderCloseIssuePartsList(iss.PartsUsed || '');
+  STATE.repairIssueParts = [];
+  STATE.closeIssueParts = STATE.repairIssueParts;
+  STATE.existingRepairPartsHistory = iss.PartsUsed || '';
+  v_set('repair-parts-used', iss.PartsUsed || '');
+  renderRepairIssuePartsList(iss.PartsUsed || '');
 
-  // Pre-fill Trial Data
-  v_set('close-trial-result', iss.TrialResult || 'Passed');
-  v_set('close-trial-date', iss.TrialDate ? iss.TrialDate.slice(0,16) : (iss.ClosedAt ? iss.ClosedAt.slice(0,16) : new Date().toISOString().slice(0,16)));
-  v_set('close-trial-shots', iss.TrialShots || '');
-  v_set('close-trial-notes', iss.TrialNotes || '');
-
-  // Populate close-part-select with Stock Parts
-  var sel = document.getElementById('close-part-select');
+  // Populate Stock Parts
+  var sel = document.getElementById('repair-part-select');
   if (sel) {
     var stockList = (STATE.stockParts || []).filter(function(p){
       return p.ID && !p.ID.startsWith('__SYS_') && p.Category !== '__CONFIG__' && p.PartName !== '__SYSTEM_CONFIG_HEADER_SIGS__' && p.PartName !== '__SYSTEM_CONFIG_USERS__';
@@ -8940,82 +9067,73 @@ async function openCloseIssueModal(id){
     html += '<option value="__OTHER__">➕ อื่นๆ / Other (ไม่อยู่ใน Stock)</option>';
     html += '</optgroup>';
     sel.innerHTML = html;
-    updateStockPartWarningNotice('close-part-warning', sel.value);
+    updateStockPartWarningNotice('repair-part-warning', sel.value);
   }
 
   // Pre-fill After Photos
-  var gridClose = document.getElementById('close-photos-preview');
-  if (gridClose) gridClose.innerHTML = '';
+  var gridRepair = document.getElementById('repair-photos-preview');
+  if (gridRepair) gridRepair.innerHTML = '';
   var existingAfter = tryParse(iss.AfterImageIds);
-  STATE.pendingPhotos['close'] = { files: [], existing: existingAfter.slice() };
-  if (gridClose && existingAfter.length) {
+  STATE.pendingPhotos['repair'] = { files: [], existing: existingAfter.slice() };
+  if (gridRepair && existingAfter.length) {
     existingAfter.forEach(function(url, idx) {
       var item = document.createElement('div');
       item.className = 'photo-preview-item';
-      item.id = 'pi-close-ex-' + idx;
-      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'close\',' + idx + ',\'close-photos-preview\',true)">✕</button>';
-      gridClose.appendChild(item);
-    });
-  }
-
-  // Pre-fill Trial Photos
-  var gridTrial = document.getElementById('close-trial-photos-preview');
-  if (gridTrial) gridTrial.innerHTML = '';
-  var existingTrial = tryParse(iss.TrialImageIds);
-  STATE.pendingPhotos['close-trial'] = { files: [], existing: existingTrial.slice() };
-  if (gridTrial && existingTrial.length) {
-    existingTrial.forEach(function(url, idx) {
-      var item = document.createElement('div');
-      item.className = 'photo-preview-item';
-      item.id = 'pi-close-trial-ex-' + idx;
-      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'close-trial\',' + idx + ',\'close-trial-photos-preview\',true)">✕</button>';
-      gridTrial.appendChild(item);
+      item.id = 'pi-repair-ex-' + idx;
+      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'repair\',' + idx + ',\'repair-photos-preview\',true)">✕</button>';
+      gridRepair.appendChild(item);
     });
   }
 
   var code = getIssueDisplayCode(iss);
-  document.getElementById('close-issue-info').innerHTML = '<strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')<br><span style="color:var(--text-muted)">' + (iss.Description || '') + '</span>';
-  openModal('issue-close-modal');
+  var infoEl = document.getElementById('repair-issue-info');
+  if (infoEl) {
+    infoEl.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')</div>' +
+      '<span class="badge in-progress">สถานะปัจจุบัน: ' + (iss.Status || 'In Progress') + '</span>' +
+    '</div><div style="color:var(--text-muted);margin-top:4px;"><strong>อาการที่แจ้ง:</strong> ' + (iss.Description || '-') + '</div>';
+  }
+
+  openModal('issue-repair-modal');
 }
 
-async function closeIssue(){
+// =====================================================================
+//  SUBMIT REPAIR (บันทึกผลซ่อม, ตัดสต็อก, เปลี่ยนเป็น 'Pending Trial')
+// =====================================================================
+async function submitIssueRepair() {
   if (!can('issues', 'edit')) {
-    showToast('คุณไม่มีสิทธิ์ปิดงานหรือเบิกอะไหล่', 'error');
+    showToast('คุณไม่มีสิทธิ์บันทึกงานซ่อม', 'error');
     return;
   }
   try {
-    var id = v('close-issue-id');
-    var rootCause = v('close-root-cause');
-    var corrective = v('close-corrective');
-    var closedBy = v('close-by');
-    var partsUsed = v('close-parts-used');
+    var id = v('repair-issue-id');
+    var rootCause = v('repair-root-cause');
+    var corrective = v('repair-corrective');
+    var repairedBy = v('repair-by');
+    var partsUsed = v('repair-parts-used');
 
-    if(!rootCause || !corrective){
-      showToast('กรุณาระบุ Root Cause และวิธีแก้ไข', 'error');
+    if (!rootCause || !corrective) {
+      showToast('กรุณาระบุ Root Cause และวิธีแก้ไขให้ครบถ้วน', 'error');
       return;
     }
+
     showGlobalLoading(true);
-    var imgIds = await uploadPendingPhotos('close', 'Issues/After');
-    var trialImgIds = await uploadPendingPhotos('close-trial', 'Issues/Trial');
+    var imgIds = await uploadPendingPhotos('repair', 'Issues/After');
 
     var data = {
       ID: id,
       RootCause: rootCause,
       CorrectiveAction: corrective,
-      ClosedAt: v('close-date'),
-      ClosedBy: closedBy,
       PartsUsed: partsUsed,
-      AfterImageIds: JSON.stringify(imgIds),
-      TrialResult: v('close-trial-result'),
-      TrialDate: v('close-trial-date') || v('close-date'),
-      TrialShots: Number(v('close-trial-shots')) || 0,
-      TrialNotes: v('close-trial-notes'),
-      TrialImageIds: JSON.stringify(trialImgIds)
+      RepairedBy: repairedBy,
+      ClosedBy: repairedBy,
+      AfterImageIds: JSON.stringify(imgIds)
     };
-    var r = await api('closeIssue', { data: data });
+
+    var r = await api('repairIssue', { data: data });
 
     // Auto-deduct stock for each stock part used
-    var partsToDeduct = (STATE.closeIssueParts || []).filter(function(p) { return p.isStock && p.partId && p.qty > 0; });
+    var partsToDeduct = (STATE.repairIssueParts || []).filter(function(p) { return p.isStock && p.partId && p.qty > 0; });
     if (partsToDeduct.length) {
       await Promise.all(partsToDeduct.map(function(p) {
         return api('stockTransaction', {
@@ -9023,32 +9141,194 @@ async function closeIssue(){
             partId: p.partId,
             type: 'OUT',
             quantity: p.qty,
-            reason: 'ซ่อมและปิดงานปัญหา: ' + id,
-            by: closedBy || 'ผู้ปิดงาน'
+            reason: 'ซ่อมและส่งรอ Trial: ' + id,
+            by: repairedBy || 'ผู้ซ่อม'
           }
         });
       }));
     }
 
     showGlobalLoading(false);
-    if(r && r.success){
-      showToast('ปิดงานสำเร็จ และตัดสต็อกอะไหล่เรียบร้อย ✅', 'success');
-      closeModal('issue-close-modal');
+    if (r && r.success) {
+      showToast('บันทึกผลการซ่อมเรียบร้อย และเปลี่ยนสถานะเป็น "รอทดลองงาน (Pending Trial)" 🧪', 'success');
+      closeModal('issue-repair-modal');
       var resIss = await api('getIssues');
       var resStock = await api('getStockParts');
-      if(resIss && resIss.success) STATE.issues = resIss.data;
-      if(resStock && resStock.success) STATE.stockParts = resStock.data;
+      if (resIss && resIss.success) STATE.issues = resIss.data;
+      if (resStock && resStock.success) STATE.stockParts = resStock.data;
       renderIssues();
       renderStock();
       updateBadges();
     } else {
-      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถปิดงานได้'), 'error');
+      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
     }
-  } catch(err) {
+  } catch (err) {
     showGlobalLoading(false);
-    console.error('closeIssue error:', err);
+    console.error('submitIssueRepair error:', err);
     showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
   }
+}
+
+// =====================================================================
+//  STEP 2: OPEN TRIAL MODAL (บันทึกผล Trial เพื่อปิดงาน / ตีกลับ)
+// =====================================================================
+async function openTrialModal(id) {
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์บันทึกผลการทดสอบ', 'warning');
+    return;
+  }
+  await ensureIssueImages(id);
+  var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
+  if(!iss) return;
+
+  v_set('trial-issue-id', id);
+
+  // Pre-fill Trial Inputs
+  v_set('trial-result', iss.TrialResult || 'Passed');
+  v_set('trial-by', (STATE.currentUser ? STATE.currentUser.Name : ''));
+  v_set('trial-date', new Date().toISOString().slice(0, 16));
+  v_set('trial-shots', iss.TrialShots || '');
+  v_set('trial-notes', iss.TrialNotes || '');
+
+  // Pre-fill Trial Photos
+  var gridTrial = document.getElementById('trial-photos-preview');
+  if (gridTrial) gridTrial.innerHTML = '';
+  var existingTrial = tryParse(iss.TrialImageIds);
+  STATE.pendingPhotos['trial'] = { files: [], existing: existingTrial.slice() };
+  if (gridTrial && existingTrial.length) {
+    existingTrial.forEach(function(url, idx) {
+      var item = document.createElement('div');
+      item.className = 'photo-preview-item';
+      item.id = 'pi-trial-ex-' + idx;
+      item.innerHTML = '<img src="' + url + '" onclick="openLightbox(\'' + url.replace(/'/g,"\\'") + '\',\'\')" /><button class="photo-remove" onclick="event.stopPropagation();rmPhoto(\'trial\',' + idx + ',\'trial-photos-preview\',true)">✕</button>';
+      gridTrial.appendChild(item);
+    });
+  }
+
+  // Info header
+  var code = getIssueDisplayCode(iss);
+  var infoEl = document.getElementById('trial-issue-info');
+  if (infoEl) {
+    infoEl.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><strong>#' + code + ' — ' + (iss.TargetName || '-') + '</strong> (' + (iss.IssueType || '-') + ')</div>' +
+      '<span class="badge pending-trial">สถานะ: รอทดลองงาน (Pending Trial)</span>' +
+    '</div>' +
+    '<div style="color:var(--text-muted);margin-top:4px;"><strong>อาการปัญหาเดิม:</strong> ' + (iss.Description || '-') + '</div>';
+  }
+
+  // Repair Summary Box
+  var summaryEl = document.getElementById('trial-repair-summary');
+  if (summaryEl) {
+    var cleanAction = (iss.CleanCorrectiveAction !== undefined) ? iss.CleanCorrectiveAction : (iss.CorrectiveAction || '').replace(/\[TRIAL:\s*\{[\s\S]*?\}\s*\]/g, '').trim();
+    summaryEl.innerHTML = '<div style="font-weight:700;color:var(--primary);margin-bottom:6px;">🛠️ สรุปงานซ่อมที่ผ่านมาโดยช่าง:</div>' +
+      '<div><strong>Root Cause:</strong> ' + (iss.RootCause || '-') + '</div>' +
+      '<div><strong>วิธีแก้ไข:</strong> ' + (cleanAction || '-') + '</div>' +
+      '<div style="color:var(--text-muted);margin-top:4px;font-size:11.5px;">ผู้ซ่อม: ' + (iss.ClosedBy || '-') + ' | อะไหล่ที่ใช้: ' + (iss.PartsUsed || 'ไม่มีการใช้อะไหล่') + '</div>';
+  }
+
+  onTrialResultSelectChange();
+  openModal('issue-trial-modal');
+}
+
+function onTrialResultSelectChange() {
+  var res = v('trial-result');
+  var btn = document.getElementById('btn-submit-trial');
+  var hint = document.getElementById('trial-status-hint');
+  if (!btn || !hint) return;
+
+  if (res === 'Failed') {
+    btn.className = 'btn btn-danger';
+    btn.innerHTML = '❌ บันทึกไม่ผ่าน &amp; ตีกลับ In Progress';
+    hint.innerHTML = '<span style="color:var(--danger);font-weight:600;">🔴 เลือก "ไม่ผ่าน" ระบบจะตีกลับสถานะเป็น <strong>"In Progress (กำลังซ่อม)"</strong> เพื่อให้ช่างนำกลับไปแก้ไขต่อ</span>';
+  } else {
+    btn.className = 'btn btn-success';
+    btn.innerHTML = '✅ บันทึกผลผ่าน &amp; ปิดงาน (Close Issue)';
+    hint.innerHTML = '<span style="color:var(--success);font-weight:600;">🟢 เลือกผลผ่าน จะทำการ <strong>ปิดงาน (Closed)</strong> โดยสมบูรณ์</span>';
+  }
+}
+
+// =====================================================================
+//  SUBMIT TRIAL (ยืนยันผล Trial: ปิดงาน หรือ ตีกลับซ่อมต่อ)
+// =====================================================================
+async function submitIssueTrial() {
+  if (!can('issues', 'edit')) {
+    showToast('คุณไม่มีสิทธิ์บันทึกผลการทดสอบ', 'error');
+    return;
+  }
+  try {
+    var id = v('trial-issue-id');
+    var result = v('trial-result');
+    var trialBy = v('trial-by');
+    var trialDate = v('trial-date');
+    var trialShots = v('trial-shots');
+    var trialNotes = v('trial-notes');
+
+    if (!trialBy) {
+      showToast('กรุณาระบุชื่อผู้ทดสอบ / QC', 'error');
+      return;
+    }
+    if (result === 'Failed' && !trialNotes) {
+      showToast('กรณี Trial ไม่ผ่าน กรุณาระบุข้อบกพร่องที่พบในช่องบันทึกข้อสังเกต', 'error');
+      return;
+    }
+
+    if (result === 'Failed') {
+      if (!confirm('ยืนยันบันทึกผล Trial "ไม่ผ่าน" ?\nระบบจะตีกลับสถานะเป็น "In Progress (กำลังซ่อม)" เพื่อให้ช่างซ่อมต่อ')) return;
+    }
+
+    showGlobalLoading(true);
+    var trialImgIds = await uploadPendingPhotos('trial', 'Issues/Trial');
+
+    var data = {
+      ID: id,
+      TrialResult: result,
+      TrialDate: trialDate,
+      TrialShots: Number(trialShots) || 0,
+      TrialNotes: trialNotes,
+      TrialBy: trialBy,
+      ClosedBy: trialBy,
+      ClosedAt: trialDate,
+      TrialImageIds: JSON.stringify(trialImgIds)
+    };
+
+    var r = await api('submitTrial', { data: data });
+    showGlobalLoading(false);
+
+    if (r && r.success) {
+      if (r.status === 'In Progress') {
+        showToast('ผล Trial ไม่ผ่าน — ระบบตีกลับสถานะเป็น "In Progress" เพื่อให้ช่างซ่อมแซมต่อเรียบร้อย ⚠️', 'warning');
+      } else {
+        showToast('ผลการทดสอบผ่านการตรวจสอบ — ปิดงานสำเร็จเรียบร้อย ✅', 'success');
+      }
+      closeModal('issue-trial-modal');
+      var resIss = await api('getIssues');
+      if (resIss && resIss.success) STATE.issues = resIss.data;
+      renderIssues();
+      updateBadges();
+    } else {
+      showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกผล Trial ได้'), 'error');
+    }
+  } catch (err) {
+    showGlobalLoading(false);
+    console.error('submitIssueTrial error:', err);
+    showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+  }
+}
+
+// =====================================================================
+//  SMART ROUTER FOR LEGACY openCloseIssueModal CALLS
+// =====================================================================
+async function openCloseIssueModal(id) {
+  var iss = (STATE.issues || []).find(function(i){ return i.ID === id; });
+  if (iss && iss.Status === 'Pending Trial') {
+    await openTrialModal(id);
+  } else {
+    await openRepairModal(id);
+  }
+}
+
+async function closeIssue() {
+  await submitIssueRepair();
 }
 
 async function updIssueStatus(id, status){
