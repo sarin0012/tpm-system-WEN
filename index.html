@@ -6358,7 +6358,7 @@ function openMoldTPMDetailModal(moldId) {
         
         var actionBtn = !isDone
           ? '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="margin-right:4px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="ส่งลิงก์ให้ Vendor">🔗 Vendor</button><button class="btn btn-success btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ บันทึกผล</button>'
-          : '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="margin-right:4px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="ส่งลิงก์ให้ Vendor">🔗 Vendor</button><button class="btn btn-outline btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');" title="ดู/แก้ไขผลตรวจ">🔍 ดูผล</button> <button class="btn btn-ghost btn-sm" onclick="resetTPMPlan(\'' + p.ID + '\')" title="รีเซ็ต">🔄</button>';
+          : '<button class="btn btn-outline btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');" title="ดู/แก้ไขผลตรวจ">🔍 ดูผล</button> <button class="btn btn-ghost btn-sm" onclick="resetTPMPlan(\'' + p.ID + '\')" title="รีเซ็ต">🔄</button>';
         
         return '<tr>' +
           '<td style="text-align:center;font-weight:600;">รอบที่ ' + (idx + 1) + '</td>' +
@@ -6983,8 +6983,7 @@ function renderTPMList(container){
           ? ((can('tpm', 'edit') ? '<button class="btn btn-success btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')">✅ บันทึกผล</button>' : '<span style="color:var(--text-muted);font-size:12px">⏳ รอตรวจ PM</span>') + vendorShareBtn)
           : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
              ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
-             (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : '') +
-             vendorShareBtn)));
+             (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''))));
     return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
@@ -7638,13 +7637,13 @@ function openTPMCompleteModal(planId, forceEdit){
 
   var planInfoEl = document.getElementById('tpm-plan-info');
   if (planInfoEl) {
-    var vShareBtnTop = '<button type="button" class="btn btn-outline btn-sm" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.45);font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;font-size:12px;background:rgba(99,102,241,0.08);" title="สร้างลิงก์/QR Code ให้ Vendor ทำการตรวจเช็ค">' +
+    var vShareBtnTop = !isDone ? ('<button type="button" class="btn btn-outline btn-sm" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.45);font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;font-size:12px;background:rgba(99,102,241,0.08);" title="สร้างลิงก์/QR Code ให้ Vendor ทำการตรวจเช็ค">' +
       '<span>🔗</span> <span>ส่งลิงก์ให้ Vendor</span>' +
-    '</button>';
+    '</button>') : '';
     planInfoEl.innerHTML = 
       '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
         '<div><strong>' + plan.TargetType + ': ' + plan.TargetName + '</strong> &nbsp;|&nbsp; กำหนด: ' + (plan.PlannedDate || '-') + ' &nbsp;|&nbsp; <span class="badge ' + (plan.Status || 'planned').toLowerCase() + '">' + plan.Status + '</span></div>' +
-        '<div>' + vShareBtnTop + '</div>' +
+        (vShareBtnTop ? '<div>' + vShareBtnTop + '</div>' : '') +
       '</div>';
   }
   
@@ -7837,13 +7836,11 @@ function openTPMCompleteModal(planId, forceEdit){
         : '';
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
-        vendorShareBtnFooter +
         printBtn +
         '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกเพื่อแก้ไข (เฉพาะ Admin)</button>';
     } else if (isDone && STATE._tpmEditUnlocked) {
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="lockTPMViewMode(\'' + plan.ID + '\')">ยกเลิก</button> ' +
-        vendorShareBtnFooter +
         '<button type="button" class="btn btn-primary" onclick="completeTPM()">💾 บันทึกการแก้ไข</button>';
     } else {
       footer.innerHTML = 
@@ -14198,9 +14195,9 @@ function renderAsset360Profile(target) {
                     '</td>' +
                     '<td style="padding:8px 8px;text-align:center;">' + badgeHtml + '</td>' +
                     '<td style="padding:8px 8px;text-align:right;white-space:nowrap;">' +
-                      '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;margin-right:6px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="สร้างลิงก์สำหรับส่งให้ช่างผู้รับเหมา / Vendor">' +
+                      (pStatus !== 'Done' ? ('<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;margin-right:6px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="สร้างลิงก์สำหรับส่งให้ช่างผู้รับเหมา / Vendor">' +
                         '🔗 ลิงก์ Vendor' +
-                      '</button>' +
+                      '</button>') : '') +
                       '<button class="btn btn-ghost btn-sm" onclick="openTPMCompleteModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;color:' + (pStatus==='Done'?'#34d399':'#38bdf8') + ';">' + (pStatus==='Done'?'ดูผล':'บันทึก') + '</button>' +
                     '</td>' +
                   '</tr>';
