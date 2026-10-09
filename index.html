@@ -79,6 +79,12 @@ table{width:100%;border-collapse:collapse;}
 thead th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--text-muted);border-bottom:1px solid var(--border);white-space:nowrap;text-transform:uppercase;letter-spacing:.05em;}
 tbody td{padding:12px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
 tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:none;}
+/* TABLE COLUMN SORTING */
+.sortable-th{cursor:pointer;user-select:none;white-space:nowrap;transition:background-color .15s ease,color .15s ease;}
+.sortable-th:hover{background-color:var(--surface2) !important;color:var(--text) !important;}
+.sortable-th.active-sort{background-color:rgba(99,102,241,.12) !important;color:var(--primary) !important;border-bottom:2px solid var(--primary) !important;}
+.sortable-th .sort-icon{display:inline-block;margin-left:5px;font-size:11px;color:var(--text-muted);vertical-align:middle;transition:color .15s ease;}
+.sortable-th.active-sort .sort-icon{color:var(--primary);font-weight:bold;}
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
@@ -1845,12 +1851,36 @@ body.role-engineer .role-admin-only { display: none !important; }
     <select id="issue-mold-filter" onchange="filterIssues()" style="width:180px;"><option value="">🧩 ทุก Mold / Machine</option></select>
     <select id="issue-status-filter" onchange="filterIssues()" style="width:190px;"><option value="Active" selected>📌 งานค้าง (Open / ซ่อม / Trial)</option><option value="">📋 ทุกสถานะ (All)</option><option value="Open">🔴 Open (รอรับเรื่อง)</option><option value="In Progress">🟡 In Progress (กำลังซ่อม)</option><option value="Pending Trial">🧪 Pending Trial (รอทดลองงาน)</option><option value="Closed">🟢 Closed (ปิดแล้ว)</option></select>
     <select id="issue-severity-filter" onchange="filterIssues()" style="width:130px;"><option value="">ทุก Severity</option><option value="Critical">Critical</option><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select>
+    <select id="issue-sort-select" onchange="onIssueSortDropdownChange(this.value)" style="width:185px;">
+      <option value="occurredAt:desc">📅 วันที่เกิด (ล่าสุดก่อน)</option>
+      <option value="occurredAt:asc">📅 วันที่เกิด (เก่าสุดก่อน)</option>
+      <option value="severity:desc">🚨 ความรุนแรง (Critical ก่อน)</option>
+      <option value="severity:asc">🚨 ความรุนแรง (Low ก่อน)</option>
+      <option value="status:desc">📌 สถานะ (งานค้างก่อน)</option>
+      <option value="status:asc">📌 สถานะ (ปิดแล้วก่อน)</option>
+      <option value="issueNo:desc">🔢 Issue No. (ล่าสุดก่อน)</option>
+      <option value="issueNo:asc">🔢 Issue No. (แรกสุดก่อน)</option>
+      <option value="targetName:asc">🧩 Mold/Machine (A-Z / ก-ฮ)</option>
+      <option value="targetName:desc">🧩 Mold/Machine (Z-A / ฮ-ก)</option>
+    </select>
     <div style="flex:1"></div>
     <button class="btn btn-primary" data-perm="issues:edit" onclick="openIssueModal()">+ แจ้งปัญหา</button>
   </div>
   <div class="card">
     <div class="table-wrapper"><table id="issues-table">
-    <thead><tr><th>Issue No.</th><th>Mold/Machine</th><th>ประเภท</th><th>รายละเอียด</th><th>Severity</th><th>Status</th><th>วันที่เกิด</th><th>📷 รูปก่อนซ่อม</th><th>🔧 รูปหลังซ่อม</th><th>🧪 รูป Trial</th><th>Actions</th></tr></thead>
+    <thead><tr>
+      <th class="sortable-th" onclick="sortIssuesBy('issueNo')" title="คลิกเพื่อสลับ ล่าสุด/แรกสุด">Issue No. <span class="sort-icon" data-col="issueNo">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('targetName')" title="คลิกเพื่อสลับ A-Z / Z-A">Mold/Machine <span class="sort-icon" data-col="targetName">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('issueType')" title="คลิกเพื่อสลับประเภท">ประเภท <span class="sort-icon" data-col="issueType">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('description')" title="คลิกเพื่อเรียงลำดับ">รายละเอียด <span class="sort-icon" data-col="description">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('severity')" title="คลิกเพื่อสลับ Critical / Low">Severity <span class="sort-icon" data-col="severity">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('status')" title="คลิกเพื่อสลับ งานค้าง / ปิดแล้ว">Status <span class="sort-icon" data-col="status">⇅</span></th>
+      <th class="sortable-th active-sort" onclick="sortIssuesBy('occurredAt')" title="คลิกเพื่อสลับ ล่าสุด/เก่าสุด">วันที่เกิด <span class="sort-icon" data-col="occurredAt">▼</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('beforeImg')" title="คลิกเพื่อเรียงตามมี/ไม่มีรูปภาพ">📷 รูปก่อนซ่อม <span class="sort-icon" data-col="beforeImg">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('afterImg')" title="คลิกเพื่อเรียงตามมี/ไม่มีรูปภาพ">🔧 รูปหลังซ่อม <span class="sort-icon" data-col="afterImg">⇅</span></th>
+      <th class="sortable-th" onclick="sortIssuesBy('trialImg')" title="คลิกเพื่อเรียงตามมี/ไม่มีรูปภาพ">🧪 รูป Trial <span class="sort-icon" data-col="trialImg">⇅</span></th>
+      <th>Actions</th>
+    </tr></thead>
     <tbody id="issues-tbody"></tbody>
   </table></div></div>
 </div>
@@ -8046,6 +8076,63 @@ function preloadVisibleIssueImages() {
   next();
 }
 
+function sortIssuesBy(col) {
+  if (!STATE.issueSort) {
+    STATE.issueSort = { col: 'occurredAt', dir: 'desc' };
+  }
+  if (STATE.issueSort.col === col) {
+    STATE.issueSort.dir = (STATE.issueSort.dir === 'desc') ? 'asc' : 'desc';
+  } else {
+    STATE.issueSort.col = col;
+    if (col === 'targetName' || col === 'issueType' || col === 'description') {
+      STATE.issueSort.dir = 'asc';
+    } else {
+      STATE.issueSort.dir = 'desc';
+    }
+  }
+  updateIssueSortUI();
+  filterIssues();
+}
+
+function onIssueSortDropdownChange(val) {
+  if (!val) return;
+  var parts = val.split(':');
+  var col = parts[0];
+  var dir = parts[1] || 'desc';
+  STATE.issueSort = { col: col, dir: dir };
+  updateIssueSortUI();
+  filterIssues();
+}
+
+function updateIssueSortUI() {
+  if (!STATE.issueSort) {
+    STATE.issueSort = { col: 'occurredAt', dir: 'desc' };
+  }
+  var col = STATE.issueSort.col;
+  var dir = STATE.issueSort.dir;
+  var arrow = (dir === 'asc') ? '▲' : '▼';
+
+  var icons = document.querySelectorAll('#issues-table thead .sort-icon');
+  icons.forEach(function(el) {
+    var c = el.getAttribute('data-col');
+    var th = el.closest('th');
+    if (c === col) {
+      el.textContent = arrow;
+      if (th) th.classList.add('active-sort');
+    } else {
+      el.textContent = '⇅';
+      if (th) th.classList.remove('active-sort');
+    }
+  });
+
+  var sel = document.getElementById('issue-sort-select');
+  if (sel) {
+    var optVal = col + ':' + dir;
+    var hasOpt = Array.from(sel.options).some(function(o){ return o.value === optVal; });
+    if (hasOpt) sel.value = optVal;
+  }
+}
+
 function filterIssues() {
   var q = ((document.getElementById('issue-search-input') || {}).value || '').toLowerCase();
   var mold = (document.getElementById('issue-mold-filter') || {}).value || '';
@@ -8081,7 +8168,77 @@ function filterIssues() {
     return;
   }
 
-  tb.innerHTML = filtered.slice().reverse().map(function(i) {
+  // Column Sorting Logic
+  if (!STATE.issueSort) {
+    STATE.issueSort = { col: 'occurredAt', dir: 'desc' };
+  }
+  var sortCol = STATE.issueSort.col || 'occurredAt';
+  var sortDir = STATE.issueSort.dir || 'desc';
+  var dirMult = (sortDir === 'asc') ? 1 : -1;
+
+  var severityWeights = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
+  var statusWeights = { 'open': 4, 'in progress': 3, 'pending trial': 2, 'closed': 1 };
+
+  filtered.sort(function(a, b) {
+    if (sortCol === 'occurredAt') {
+      var dateA = new Date(a.OccurredAt || a.CreatedAt || 0).getTime() || 0;
+      var dateB = new Date(b.OccurredAt || b.CreatedAt || 0).getTime() || 0;
+      if (dateA !== dateB) return (dateA - dateB) * dirMult;
+      return (b.ID || '').localeCompare(a.ID || '') * dirMult;
+    } else if (sortCol === 'issueNo') {
+      var codeA = getIssueDisplayCode(a);
+      var codeB = getIssueDisplayCode(b);
+      var numA = parseInt((codeA.match(/\d+/) || [0])[0], 10);
+      var numB = parseInt((codeB.match(/\d+/) || [0])[0], 10);
+      if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+        return (numA - numB) * dirMult;
+      }
+      var da = new Date(a.CreatedAt || a.OccurredAt || 0).getTime() || 0;
+      var db = new Date(b.CreatedAt || b.OccurredAt || 0).getTime() || 0;
+      return (da - db) * dirMult;
+    } else if (sortCol === 'severity') {
+      var wA = severityWeights[(a.Severity || '').toLowerCase()] || 0;
+      var wB = severityWeights[(b.Severity || '').toLowerCase()] || 0;
+      if (wA !== wB) return (wA - wB) * dirMult;
+      return ((new Date(b.OccurredAt || 0).getTime() || 0) - (new Date(a.OccurredAt || 0).getTime() || 0));
+    } else if (sortCol === 'status') {
+      var sA = statusWeights[(a.Status || 'open').toLowerCase()] || 0;
+      var sB = statusWeights[(b.Status || 'open').toLowerCase()] || 0;
+      if (sA !== sB) return (sA - sB) * dirMult;
+      return ((new Date(b.OccurredAt || 0).getTime() || 0) - (new Date(a.OccurredAt || 0).getTime() || 0));
+    } else if (sortCol === 'targetName') {
+      var tA = (a.TargetName || '').trim();
+      var tB = (b.TargetName || '').trim();
+      return tA.localeCompare(tB, 'th', { sensitivity: 'base', numeric: true }) * dirMult;
+    } else if (sortCol === 'issueType') {
+      var itA = (a.IssueType || '').trim();
+      var itB = (b.IssueType || '').trim();
+      return itA.localeCompare(itB, 'th', { sensitivity: 'base' }) * dirMult;
+    } else if (sortCol === 'description') {
+      var dscA = (a.Description || '').trim();
+      var dscB = (b.Description || '').trim();
+      return dscA.localeCompare(dscB, 'th', { sensitivity: 'base' }) * dirMult;
+    } else if (sortCol === 'beforeImg') {
+      var imgA = tryParse(a.BeforeImageIds).length;
+      var imgB = tryParse(b.BeforeImageIds).length;
+      return (imgA - imgB) * dirMult;
+    } else if (sortCol === 'afterImg') {
+      var imgA2 = tryParse(a.AfterImageIds).length;
+      var imgB2 = tryParse(b.AfterImageIds).length;
+      return (imgA2 - imgB2) * dirMult;
+    } else if (sortCol === 'trialImg') {
+      var rA = getIssueTrialRounds(a);
+      var rB = getIssueTrialRounds(b);
+      var imgA3 = rA.reduce(function(acc, rd){ return acc + (Array.isArray(rd.images) ? rd.images.length : tryParse(rd.images || []).length); }, 0);
+      var imgB3 = rB.reduce(function(acc, rd){ return acc + (Array.isArray(rd.images) ? rd.images.length : tryParse(rd.images || []).length); }, 0);
+      return (imgA3 - imgB3) * dirMult;
+    }
+    return 0;
+  });
+
+  updateIssueSortUI();
+
+  tb.innerHTML = filtered.map(function(i) {
     var displayCode = getIssueDisplayCode(i);
     var beforeImgs = tryParse(i.BeforeImageIds);
     var beforeThumbs = '';
