@@ -85,7 +85,29 @@ tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:non
 .sortable-th.active-sort{background-color:rgba(99,102,241,.12) !important;color:var(--primary) !important;border-bottom:2px solid var(--primary) !important;}
 .sortable-th .sort-icon{display:inline-block;margin-left:5px;font-size:11px;color:var(--text-muted);vertical-align:middle;transition:color .15s ease;}
 .sortable-th.active-sort .sort-icon{color:var(--primary);font-weight:bold;}
-/* TABLE COLUMN RESIZER */
+/* TABLE COLUMN RESIZER & FIXED LAYOUT */
+#issues-table {
+  table-layout: fixed !important;
+  width: max-content !important;
+  min-width: 100% !important;
+}
+#issues-table th {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  vertical-align: middle;
+}
+#issues-table td {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  vertical-align: middle;
+  max-width: 0;
+}
+#issues-table td:last-child {
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
 th.resizable-th {
   position: relative !important;
   padding-right: 18px !important;
@@ -95,10 +117,10 @@ th.resizable-th {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 10px;
+  width: 12px;
   cursor: col-resize !important;
   user-select: none !important;
-  z-index: 5;
+  z-index: 10;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,7 +128,7 @@ th.resizable-th {
 .col-resizer::after {
   content: '';
   width: 2px;
-  height: 55%;
+  height: 60%;
   background-color: var(--border2);
   border-radius: 2px;
   transition: all .15s ease;
@@ -122,10 +144,6 @@ body.col-resizing-active,
 body.col-resizing-active * {
   cursor: col-resize !important;
   user-select: none !important;
-}
-#issues-table th,
-#issues-table td {
-  white-space: nowrap !important;
 }
 
 /* BADGES */
@@ -3222,6 +3240,11 @@ const STATE = {
   checklistTemplates:[], pendingPhotos:{}
 };
 window.STATE = STATE;
+
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
 
 const TH_MONTHS = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
 const EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -8153,13 +8176,38 @@ function initTableColumnResizers(tableId, storageKey) {
     if (raw) savedWidths = JSON.parse(raw);
   } catch(e) {}
 
+  var defaultWidths = {
+    'issueNo': 115,
+    'targetName': 150,
+    'issueType': 110,
+    'description': 280,
+    'severity': 95,
+    'status': 130,
+    'occurredAt': 105,
+    'beforeImg': 110,
+    'afterImg': 110,
+    'trialImg': 115,
+    'col_10': 180
+  };
+
+  var minColWidth = 35;
+
   ths.forEach(function(th, idx) {
     th.classList.add('resizable-th');
 
-    var sortIcon = th.querySelector('.sort-icon'); var colKey = th.getAttribute('data-col') || (sortIcon ? sortIcon.getAttribute('data-col') : null) || ('col_' + idx); if (!th.getAttribute('data-col')) th.setAttribute('data-col', colKey);
-    if (savedWidths[colKey] && savedWidths[colKey] >= 45) {
-      th.style.width = savedWidths[colKey] + 'px';
-      th.style.minWidth = savedWidths[colKey] + 'px';
+    var sortIcon = th.querySelector('.sort-icon');
+    var colKey = th.getAttribute('data-col') || (sortIcon ? sortIcon.getAttribute('data-col') : null) || ('col_' + idx);
+    if (!th.getAttribute('data-col')) th.setAttribute('data-col', colKey);
+
+    var targetW = (savedWidths[colKey] && savedWidths[colKey] >= minColWidth)
+      ? savedWidths[colKey]
+      : (defaultWidths[colKey] || null);
+
+    if (targetW) {
+      th.style.width = targetW + 'px';
+      th.style.minWidth = minColWidth + 'px';
+    } else {
+      th.style.minWidth = minColWidth + 'px';
     }
 
     // Do not add resizer to the last column (Actions)
@@ -8169,10 +8217,10 @@ function initTableColumnResizers(tableId, storageKey) {
 
     var resizer = document.createElement('div');
     resizer.className = 'col-resizer';
-    resizer.title = 'คลิกลากเพื่อปรับขนาดความกว้าง / ดับเบิลคลิกเพื่อปรับพอดีข้อความ';
+    resizer.title = 'คลิกลากเพื่อปรับขนาดความกว้างได้อย่างอิสระ / ดับเบิลคลิกเพื่อรีเซ็ตขนาด';
     th.appendChild(resizer);
 
-    var startX, startWidth, minWidth = 45;
+    var startX, startWidth;
 
     resizer.addEventListener('click', function(e) {
       e.stopPropagation();
@@ -8181,14 +8229,10 @@ function initTableColumnResizers(tableId, storageKey) {
     resizer.addEventListener('dblclick', function(e) {
       e.stopPropagation();
       e.preventDefault();
-      th.style.width = 'auto';
-      th.style.minWidth = 'auto';
-      setTimeout(function() {
-        var autoW = Math.max(minWidth, th.offsetWidth);
-        th.style.width = autoW + 'px';
-        th.style.minWidth = autoW + 'px';
-        saveColWidth(colKey, autoW);
-      }, 60);
+      var resetW = defaultWidths[colKey] || 120;
+      th.style.width = resetW + 'px';
+      th.style.minWidth = minColWidth + 'px';
+      saveColWidth(colKey, resetW);
     });
 
     resizer.addEventListener('mousedown', function(e) {
@@ -8202,9 +8246,9 @@ function initTableColumnResizers(tableId, storageKey) {
       function onMouseMove(moveEvent) {
         moveEvent.preventDefault();
         var diff = moveEvent.pageX - startX;
-        var newWidth = Math.max(minWidth, startWidth + diff);
+        var newWidth = Math.max(minColWidth, startWidth + diff);
         th.style.width = newWidth + 'px';
-        th.style.minWidth = newWidth + 'px';
+        th.style.minWidth = minColWidth + 'px';
       }
 
       function onMouseUp() {
@@ -8230,9 +8274,9 @@ function initTableColumnResizers(tableId, storageKey) {
       function onTouchMove(touchEvent) {
         if (!touchEvent.touches || !touchEvent.touches[0]) return;
         var diff = touchEvent.touches[0].pageX - startX;
-        var newWidth = Math.max(minWidth, startWidth + diff);
+        var newWidth = Math.max(minColWidth, startWidth + diff);
         th.style.width = newWidth + 'px';
-        th.style.minWidth = newWidth + 'px';
+        th.style.minWidth = minColWidth + 'px';
       }
 
       function onTouchEnd() {
@@ -8513,12 +8557,12 @@ function filterIssues() {
           '#' + displayCode +
         '</span>' +
       '</td>' +
-      '<td><strong>' + (i.TargetName || '-') + '</strong></td>' +
-      '<td>' + (i.IssueType || '-') + '</td>' +
-      '<td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
-      '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
-      '<td><span class="badge ' + stClass + '">' + stLabel + '</span></td>' +
-      '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
+      '<td title="' + escapeHtml(i.TargetName || '-') + '"><strong>' + (i.TargetName || '-') + '</strong></td>' +
+      '<td title="' + escapeHtml(i.IssueType || '-') + '">' + (i.IssueType || '-') + '</td>' +
+      '<td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(i.Description || '') + '">' + (i.Description || '-') + '</td>' +
+      '<td title="' + (i.Severity || '-') + '"><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
+      '<td title="' + escapeHtml(stLabel) + '"><span class="badge ' + stClass + '">' + stLabel + '</span></td>' +
+      '<td title="' + ((i.OccurredAt || '').substring(0, 10) || '-') + '">' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
       '<td>' + beforeThumbs + '</td>' +
       '<td>' + afterThumbs + '</td>' +
       '<td>' + trialThumbs + '</td>' +
@@ -10644,6 +10688,7 @@ async function doTransaction(){
 // ============================================
 function esc(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escHtml(s){return esc(s);}
+function escapeHtml(s){return esc(s);}
 function filterTable(input,tableId){var q=input.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){tr.style.display=tr.textContent.toLowerCase().indexOf(q)>=0?'':'none';});}
 function filterTableByCol(sel,tableId,colIdx){var q=sel.value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(tr){var cell=tr.cells[colIdx];tr.style.display=(!q||(cell&&cell.textContent.toLowerCase().indexOf(q)>=0))?'':'none';});}
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
