@@ -3221,6 +3221,7 @@ const STATE = {
   molds:[], machines:[], tpmPlans:[], issues:[], stockParts:[],
   checklistTemplates:[], pendingPhotos:{}
 };
+window.STATE = STATE;
 
 const TH_MONTHS = ['\u0e21.\u0e04.','\u0e01.\u0e1e.','\u0e21\u0e35.\u0e04.','\u0e40\u0e21.\u0e22.','\u0e1e.\u0e04.','\u0e21\u0e34.\u0e22.','\u0e01.\u0e04.','\u0e2a.\u0e04.','\u0e01.\u0e22.','\u0e15.\u0e04.','\u0e1e.\u0e22.','\u0e18.\u0e04.'];
 const EN_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -6356,8 +6357,8 @@ function openMoldTPMDetailModal(moldId) {
           : '';
         
         var actionBtn = !isDone
-          ? '<button class="btn btn-success btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ บันทึกผล</button>'
-          : '<button class="btn btn-outline btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');" title="ดู/แก้ไขผลตรวจ">🔍 ดูผล</button> <button class="btn btn-ghost btn-sm" onclick="resetTPMPlan(\'' + p.ID + '\')" title="รีเซ็ต">🔄</button>';
+          ? '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="margin-right:4px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="ส่งลิงก์ให้ Vendor">🔗 Vendor</button><button class="btn btn-success btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');">✅ บันทึกผล</button>'
+          : '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="margin-right:4px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="ส่งลิงก์ให้ Vendor">🔗 Vendor</button><button class="btn btn-outline btn-sm" onclick="closeModal(\'mold-tpm-detail-modal\'); openTPMCompleteModal(\'' + p.ID + '\');" title="ดู/แก้ไขผลตรวจ">🔍 ดูผล</button> <button class="btn btn-ghost btn-sm" onclick="resetTPMPlan(\'' + p.ID + '\')" title="รีเซ็ต">🔄</button>';
         
         return '<tr>' +
           '<td style="text-align:center;font-weight:600;">รอบที่ ' + (idx + 1) + '</td>' +
@@ -10344,7 +10345,7 @@ function openStockPartModal(data){
   document.getElementById('stock-link-id').innerHTML='<option value="">-- เลือก --</option>';
   document.getElementById('stock-photos-preview').innerHTML='';
   STATE.pendingPhotos['stock-part']={files:[], existing:[]};
-  document.getElementById('stock-modal-title').textContent=data?'✏️ แก้ไขอะไหล่':'+ เพิ่มอะไหล่';
+  document.getElementById('stock-modal-title').textContent = (data && data.ID) ? '✏️ แก้ไขอะไหล่' : '+ เพิ่มอะไหล่';
 
   var canMold = can('molds', 'view');
   var canMachine = can('machines', 'view');
@@ -10369,8 +10370,8 @@ function openStockPartModal(data){
   populateStockVendorSelect(data ? (data.Category || data.Vendor || '') : '');
 
   if(data){
-    v_set('stock-id',data.ID);
-    v_set('stock-name',data.PartName);
+    v_set('stock-id', data.ID || '');
+    v_set('stock-name', data.PartName || '');
     v_set('stock-partno',data.PartNo||'');
     setStockVendorValue(data.Category||data.Vendor||'');
     v_set('stock-unit',data.Unit||'');
@@ -10400,6 +10401,18 @@ function openStockPartModal(data){
     }
   }
   openModal('stock-part-modal');
+}
+
+function openStockPartById(partId) {
+  var p = (STATE.stockParts || []).find(function(x){ return x.ID === partId; });
+  if (p) openStockPartModal(p);
+}
+
+function quickAddStockPartForAsset(assetId, assetType) {
+  openStockPartModal({
+    LinkedType: assetType,
+    LinkedID: assetId
+  });
 }
 
 async function saveStockPart(){
@@ -13951,9 +13964,15 @@ function renderAsset360Profile(target) {
 
   // Gather Linked Stock Parts
   var parts = (STATE.stockParts || []).filter(function(s) {
-    return (s.TargetID && s.TargetID === item.ID) ||
-           (s.TargetType === found.type && s.TargetID === item.ID) ||
-           (s.Notes && item.Name && s.Notes.toLowerCase().includes(item.Name.toLowerCase()));
+    if (!s || !s.ID || s.ID.startsWith('__SYS_') || s.Category === '__CONFIG__') return false;
+    var lid = s.LinkedID || s.TargetID || '';
+    var ltype = s.LinkedType || s.TargetType || '';
+    if (lid && (lid === item.ID || String(lid) === String(item.ID))) return true;
+    if (lid && item.Name && String(lid).toLowerCase() === item.Name.toLowerCase()) return true;
+    if (s.LinkedTo && item.Name && String(s.LinkedTo).toLowerCase() === item.Name.toLowerCase()) return true;
+    if (ltype && ltype === found.type && s.Notes && item.Name && s.Notes.toLowerCase().includes(item.Name.toLowerCase())) return true;
+    if (s.Notes && item.Name && s.Notes.toLowerCase().includes(item.Name.toLowerCase())) return true;
+    return false;
   });
 
   // Photos
@@ -14178,7 +14197,10 @@ function renderAsset360Profile(target) {
                       subDateHtml +
                     '</td>' +
                     '<td style="padding:8px 8px;text-align:center;">' + badgeHtml + '</td>' +
-                    '<td style="padding:8px 8px;text-align:right;">' +
+                    '<td style="padding:8px 8px;text-align:right;white-space:nowrap;">' +
+                      '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openVendorShareModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;margin-right:6px;color:#818cf8;border-color:rgba(129,140,248,0.45);background:rgba(99,102,241,0.08);" title="สร้างลิงก์สำหรับส่งให้ช่างผู้รับเหมา / Vendor">' +
+                        '🔗 ลิงก์ Vendor' +
+                      '</button>' +
                       '<button class="btn btn-ghost btn-sm" onclick="openTPMCompleteModal(\'' + p.ID + '\')" style="padding:2px 8px;font-size:11px;color:' + (pStatus==='Done'?'#34d399':'#38bdf8') + ';">' + (pStatus==='Done'?'ดูผล':'บันทึก') + '</button>' +
                     '</td>' +
                   '</tr>';
@@ -14243,7 +14265,10 @@ function renderAsset360Profile(target) {
           '<div class="card-title" style="font-size:14px;display:flex;align-items:center;gap:6px;">' +
             '<span>📦</span> <span>อะไหล่สำรองที่เกี่ยวข้อง (Spare Parts)</span>' +
           '</div>' +
-          '<button class="btn btn-outline btn-sm" onclick="nav(\'stock\')" style="padding:2px 8px;font-size:11px;color:#34d399;border-color:rgba(52,211,153,0.4);">ไปหน้าสต็อก</button>' +
+          '<div style="display:flex;gap:6px;">' +
+            (can('stock', 'edit') ? '<button class="btn btn-primary btn-sm" onclick="quickAddStockPartForAsset(\'' + item.ID + '\',\'' + found.type + '\')" style="padding:2px 8px;font-size:11px;background:#10b981;border-color:#10b981;font-weight:600;" title="เพิ่มรายการอะไหล่และผูกกับอุปกรณ์นี้">+ ผูกอะไหล่</button>' : '') +
+            '<button class="btn btn-outline btn-sm" onclick="nav(\'stock\')" style="padding:2px 8px;font-size:11px;color:#34d399;border-color:rgba(52,211,153,0.4);">ไปหน้าสต็อก</button>' +
+          '</div>' +
         '</div>' +
         '<div class="qr-parts-summary-bar">' +
           'รายการอะไหล่ที่ผูกกับอุปกรณ์นี้: <strong style="color:#6ee7b7;">' + parts.length + ' รายการ</strong>' +
@@ -14252,21 +14277,33 @@ function renderAsset360Profile(target) {
           (parts.length ? 
             '<div style="display:flex;flex-direction:column;gap:8px;">' +
               parts.map(function(pt) {
-                var qty = Number(pt.Quantity || pt.Qty || 0);
-                var min = Number(pt.MinStock || pt.MinQty || 0);
+                var qty = Number(pt.CurrentStock ?? pt.Qty ?? pt.Quantity ?? 0);
+                var min = Number(pt.MinStock ?? pt.MinQty ?? 0);
                 var isLow = min > 0 && qty <= min;
-                return '<div style="background:' + (isLow ? 'rgba(239,68,68,0.08)' : 'rgba(15,23,42,0.65)') + ';border:1px solid ' + (isLow ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.22)') + ';border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;">' +
-                  '<div>' +
-                    '<div style="font-weight:700;font-size:12px;color:var(--text);">' + pt.PartName + '</div>' +
-                    '<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">' + (pt.PartNo || '-') + '</div>' +
+                var ptImgs = tryParse(pt.ImageIds);
+                var thumb = (ptImgs && ptImgs.length)
+                  ? '<img src="' + ptImgs[0] + '" onclick="event.stopPropagation();openLightbox(\'' + ptImgs[0].replace(/'/g,"\\'") + '\',\'' + (pt.PartName||'').replace(/'/g,"\\'") + '\')" style="width:36px;height:36px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:zoom-in;flex-shrink:0;" />'
+                  : '<div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">📦</div>';
+
+                return '<div style="background:' + (isLow ? 'rgba(239,68,68,0.08)' : 'rgba(15,23,42,0.65)') + ';border:1px solid ' + (isLow ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.22)') + ';border-radius:8px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+                  '<div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1;">' +
+                    thumb +
+                    '<div style="min-width:0;">' +
+                      '<div style="font-weight:700;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + pt.PartName + '</div>' +
+                      '<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">' + (pt.PartNo || '-') + (pt.Location ? ' • 📍 ' + pt.Location : '') + '</div>' +
+                    '</div>' +
                   '</div>' +
-                  '<div style="text-align:right;">' +
+                  '<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;">' +
                     '<div style="font-size:14px;font-weight:800;color:' + (isLow ? '#ef4444' : '#10b981') + ';">' + qty.toLocaleString() + ' <span style="font-size:10px;font-weight:400;color:var(--text-muted);">' + (pt.Unit||'ชิ้น') + '</span></div>' +
-                    (isLow ? '<span class="badge danger" style="font-size:9px;padding:1px 5px;">⚠️ ต่ำกว่า Min</span>' : '<span style="font-size:10px;color:var(--text-faint);">Min: ' + min + '</span>') +
+                    (isLow ? '<span class="badge danger" style="font-size:9px;padding:1px 5px;margin-top:2px;">⚠️ ต่ำกว่า Min</span>' : '<span style="font-size:10px;color:var(--text-faint);margin-top:2px;">Min: ' + min + '</span>') +
+                    '<div style="display:flex;gap:4px;margin-top:4px;">' +
+                      '<button type="button" class="btn btn-outline btn-sm" onclick="event.stopPropagation();openStockTxModal(\'' + pt.ID + '\')" style="padding:1px 6px;font-size:10.5px;color:#34d399;border-color:rgba(52,211,153,0.35);" title="บันทึกรับเข้า/เบิกใช้">🔄 เบิก/รับ</button>' +
+                      (can('stock', 'edit') ? '<button type="button" class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openStockPartById(\'' + pt.ID + '\')" style="padding:1px 5px;font-size:10.5px;color:#f59e0b;" title="แก้ไขข้อมูลอะไหล่">✏️</button>' : '') +
+                    '</div>' +
                   '</div>' +
                 '</div>';
               }).join('') +
-            '</div>' : '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">ยังไม่มีอะไหล่ผูกกับอุปกรณ์นี้โดยตรง (สามารถเพิ่มได้ที่เมนู Stock Part)</div>') +
+            '</div>' : '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:12px;">ยังไม่มีอะไหล่ผูกกับอุปกรณ์นี้โดยตรง (สามารถกดปุ่ม "+ ผูกอะไหล่" เพื่อเพิ่มได้ทันที)</div>') +
         '</div>' +
       '</div>' +
     '</div>';
