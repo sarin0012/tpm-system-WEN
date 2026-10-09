@@ -2299,13 +2299,14 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="modal-footer" id="tpm-complete-footer">
       <button class="btn btn-outline" onclick="closeModal('tpm-complete-modal')">ยกเลิก</button>
+      <button type="button" class="btn btn-outline" id="tpm-complete-vendor-share-btn" onclick="openVendorShareFromCompleteModal()" style="color:#818cf8;border-color:rgba(129,140,248,0.45);font-weight:600;display:inline-flex;align-items:center;gap:6px;"><span>🔗</span> <span>ส่งลิงก์ให้ Vendor</span></button>
       <button class="btn btn-success" id="tpm-complete-submit-btn" onclick="completeTPM()">✅ บันทึกผล</button>
     </div>
   </div>
 </div>
 
 <!-- VENDOR SHARE LINK MODAL -->
-<div class="modal-overlay" id="vendor-share-modal">
+<div class="modal-overlay" id="vendor-share-modal" style="z-index:2600;">
   <div class="modal" style="max-width:520px;">
     <div class="modal-header">
       <div class="modal-title" style="display:flex;align-items:center;gap:8px;">
@@ -7636,7 +7637,14 @@ function openTPMCompleteModal(planId, forceEdit){
 
   var planInfoEl = document.getElementById('tpm-plan-info');
   if (planInfoEl) {
-    planInfoEl.innerHTML = '<strong>' + plan.TargetType + ': ' + plan.TargetName + '</strong> &nbsp;|&nbsp; กำหนด: ' + (plan.PlannedDate || '-') + ' &nbsp;|&nbsp; <span class="badge ' + (plan.Status || 'planned').toLowerCase() + '">' + plan.Status + '</span>';
+    var vShareBtnTop = '<button type="button" class="btn btn-outline btn-sm" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.45);font-weight:600;display:inline-flex;align-items:center;gap:5px;padding:3px 10px;font-size:12px;background:rgba(99,102,241,0.08);" title="สร้างลิงก์/QR Code ให้ Vendor ทำการตรวจเช็ค">' +
+      '<span>🔗</span> <span>ส่งลิงก์ให้ Vendor</span>' +
+    '</button>';
+    planInfoEl.innerHTML = 
+      '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">' +
+        '<div><strong>' + plan.TargetType + ': ' + plan.TargetName + '</strong> &nbsp;|&nbsp; กำหนด: ' + (plan.PlannedDate || '-') + ' &nbsp;|&nbsp; <span class="badge ' + (plan.Status || 'planned').toLowerCase() + '">' + plan.Status + '</span></div>' +
+        '<div>' + vShareBtnTop + '</div>' +
+      '</div>';
   }
   
   var tmpl=STATE.checklistTemplates.find(function(t){return t.id===plan.ChecklistTemplate;})||STATE.checklistTemplates[0];
@@ -7805,16 +7813,21 @@ function openTPMCompleteModal(planId, forceEdit){
   // Handle Footer Buttons
   var footer = document.getElementById('tpm-complete-footer');
   if (footer) {
+    var vendorShareBtnFooter = '<button type="button" class="btn btn-outline" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.45);font-weight:600;display:inline-flex;align-items:center;gap:6px;" title="สร้างลิงก์/QR Code ให้ Vendor กรอกผลการตรวจ">' +
+      '<span>🔗</span> <span>ส่งลิงก์ให้ Vendor</span>' +
+    '</button> ';
+
     if (isPendingReview && !STATE._tpmEditUnlocked) {
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
+        vendorShareBtnFooter +
         '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกแก้ไข (Admin)</button> ' +
         '<button type="button" class="btn btn-danger" onclick="rejectVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">❌ ตีกลับให้ทำใหม่ (Reject)</button> ' +
         '<button type="button" class="btn btn-success" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;box-shadow:0 0 12px rgba(16,185,129,0.35);">✅ อนุมัติและปิดงาน</button>';
     } else if (isRejected && !STATE._tpmEditUnlocked) {
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
-        '<button type="button" class="btn btn-outline" onclick="openVendorShareModal(\'' + plan.ID + '\')" style="color:#818cf8;border-color:rgba(129,140,248,0.35);font-weight:600;">🔗 ลิงก์ Vendor</button> ' +
+        vendorShareBtnFooter +
         '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกแก้ไข (Admin)</button> ' +
         '<button type="button" class="btn btn-success" onclick="approveVendorTPM(\'' + plan.ID + '\')" style="font-weight:700;">✅ อนุมัติและปิดงาน</button>';
     } else if (isReadOnly) {
@@ -7823,20 +7836,28 @@ function openTPMCompleteModal(planId, forceEdit){
         : '';
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ปิด</button> ' +
+        vendorShareBtnFooter +
         printBtn +
         '<button type="button" class="btn btn-warning" onclick="requestUnlockTPM(\'' + plan.ID + '\')" style="font-weight:600;">✏️ ปลดล็อกเพื่อแก้ไข (เฉพาะ Admin)</button>';
     } else if (isDone && STATE._tpmEditUnlocked) {
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="lockTPMViewMode(\'' + plan.ID + '\')">ยกเลิก</button> ' +
+        vendorShareBtnFooter +
         '<button type="button" class="btn btn-primary" onclick="completeTPM()">💾 บันทึกการแก้ไข</button>';
     } else {
       footer.innerHTML = 
         '<button type="button" class="btn btn-outline" onclick="closeModal(\'tpm-complete-modal\')">ยกเลิก</button> ' +
+        vendorShareBtnFooter +
         '<button type="button" class="btn btn-success" id="tpm-complete-submit-btn" onclick="completeTPM()">✅ บันทึกผล</button>';
     }
   }
 
   openModal('tpm-complete-modal');
+}
+
+function openVendorShareFromCompleteModal() {
+  var id = v('tpm-complete-id');
+  if (id) openVendorShareModal(id);
 }
 
 function requestUnlockTPM(planId) {
