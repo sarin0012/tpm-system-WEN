@@ -85,6 +85,48 @@ tbody tr:hover{background:var(--glass);}tbody tr:last-child td{border-bottom:non
 .sortable-th.active-sort{background-color:rgba(99,102,241,.12) !important;color:var(--primary) !important;border-bottom:2px solid var(--primary) !important;}
 .sortable-th .sort-icon{display:inline-block;margin-left:5px;font-size:11px;color:var(--text-muted);vertical-align:middle;transition:color .15s ease;}
 .sortable-th.active-sort .sort-icon{color:var(--primary);font-weight:bold;}
+/* TABLE COLUMN RESIZER */
+th.resizable-th {
+  position: relative !important;
+  padding-right: 18px !important;
+}
+.col-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize !important;
+  user-select: none !important;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.col-resizer::after {
+  content: '';
+  width: 2px;
+  height: 55%;
+  background-color: var(--border2);
+  border-radius: 2px;
+  transition: all .15s ease;
+}
+.col-resizer:hover::after,
+.col-resizer.is-resizing::after {
+  background-color: var(--primary) !important;
+  height: 100% !important;
+  width: 3px !important;
+  box-shadow: 0 0 8px var(--primary);
+}
+body.col-resizing-active,
+body.col-resizing-active * {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+#issues-table th,
+#issues-table td {
+  white-space: nowrap !important;
+}
 
 /* BADGES */
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:11px;font-weight:600;}
@@ -8050,6 +8092,7 @@ function renderIssues(){
   }
 
   filterIssues();
+  initTableColumnResizers('issues-table');
   preloadVisibleIssueImages();
 }
 
@@ -8074,6 +8117,127 @@ function preloadVisibleIssueImages() {
     });
   }
   next();
+}
+
+function initTableColumnResizers(tableId, storageKey) {
+  var table = document.getElementById(tableId);
+  if (!table) return;
+  var thead = table.querySelector('thead');
+  if (!thead) return;
+  var ths = thead.querySelectorAll('th');
+  if (!ths.length) return;
+
+  storageKey = storageKey || ('table_col_widths_' + tableId);
+  var savedWidths = {};
+  try {
+    var raw = localStorage.getItem(storageKey);
+    if (raw) savedWidths = JSON.parse(raw);
+  } catch(e) {}
+
+  ths.forEach(function(th, idx) {
+    th.classList.add('resizable-th');
+
+    var sortIcon = th.querySelector('.sort-icon'); var colKey = th.getAttribute('data-col') || (sortIcon ? sortIcon.getAttribute('data-col') : null) || ('col_' + idx); if (!th.getAttribute('data-col')) th.setAttribute('data-col', colKey);
+    if (savedWidths[colKey] && savedWidths[colKey] >= 45) {
+      th.style.width = savedWidths[colKey] + 'px';
+      th.style.minWidth = savedWidths[colKey] + 'px';
+    }
+
+    // Do not add resizer to the last column (Actions)
+    if (idx === ths.length - 1) return;
+
+    if (th.querySelector('.col-resizer')) return;
+
+    var resizer = document.createElement('div');
+    resizer.className = 'col-resizer';
+    resizer.title = 'คลิกลากเพื่อปรับขนาดความกว้าง / ดับเบิลคลิกเพื่อปรับพอดีข้อความ';
+    th.appendChild(resizer);
+
+    var startX, startWidth, minWidth = 45;
+
+    resizer.addEventListener('click', function(e) {
+      e.stopPropagation();
+    });
+
+    resizer.addEventListener('dblclick', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      th.style.width = 'auto';
+      th.style.minWidth = 'auto';
+      setTimeout(function() {
+        var autoW = Math.max(minWidth, th.offsetWidth);
+        th.style.width = autoW + 'px';
+        th.style.minWidth = autoW + 'px';
+        saveColWidth(colKey, autoW);
+      }, 60);
+    });
+
+    resizer.addEventListener('mousedown', function(e) {
+      e.stopPropagation();
+      e.preventDefault();
+      startX = e.pageX;
+      startWidth = th.offsetWidth;
+      resizer.classList.add('is-resizing');
+      document.body.classList.add('col-resizing-active');
+
+      function onMouseMove(moveEvent) {
+        moveEvent.preventDefault();
+        var diff = moveEvent.pageX - startX;
+        var newWidth = Math.max(minWidth, startWidth + diff);
+        th.style.width = newWidth + 'px';
+        th.style.minWidth = newWidth + 'px';
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        resizer.classList.remove('is-resizing');
+        document.body.classList.remove('col-resizing-active');
+        saveColWidth(colKey, th.offsetWidth);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
+
+    resizer.addEventListener('touchstart', function(e) {
+      if (!e.touches || !e.touches[0]) return;
+      e.stopPropagation();
+      startX = e.touches[0].pageX;
+      startWidth = th.offsetWidth;
+      resizer.classList.add('is-resizing');
+      document.body.classList.add('col-resizing-active');
+
+      function onTouchMove(touchEvent) {
+        if (!touchEvent.touches || !touchEvent.touches[0]) return;
+        var diff = touchEvent.touches[0].pageX - startX;
+        var newWidth = Math.max(minWidth, startWidth + diff);
+        th.style.width = newWidth + 'px';
+        th.style.minWidth = newWidth + 'px';
+      }
+
+      function onTouchEnd() {
+        document.removeEventListener('touchmove', onTouchMove);
+        document.removeEventListener('touchend', onTouchEnd);
+        resizer.classList.remove('is-resizing');
+        document.body.classList.remove('col-resizing-active');
+        saveColWidth(colKey, th.offsetWidth);
+      }
+
+      document.addEventListener('touchmove', onTouchMove);
+      document.addEventListener('touchend', onTouchEnd);
+    }, { passive: true });
+  });
+
+  function saveColWidth(k, w) {
+    try {
+      var cur = {};
+      var raw = localStorage.getItem(storageKey);
+      if (raw) cur = JSON.parse(raw);
+      cur[k] = Math.round(w);
+      localStorage.setItem(storageKey, JSON.stringify(cur));
+    } catch(e) {}
+  }
 }
 
 function sortIssuesBy(col) {
@@ -8332,7 +8496,7 @@ function filterIssues() {
       '</td>' +
       '<td><strong>' + (i.TargetName || '-') + '</strong></td>' +
       '<td>' + (i.IssueType || '-') + '</td>' +
-      '<td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
+      '<td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + (i.Description || '') + '">' + (i.Description || '-') + '</td>' +
       '<td><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
       '<td><span class="badge ' + stClass + '">' + stLabel + '</span></td>' +
       '<td>' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
