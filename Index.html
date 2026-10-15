@@ -8959,6 +8959,15 @@ async function saveIssue(){
       data.CorrectiveAction = v('issue-edit-corrective');
       data.ClosedAt = v('issue-edit-closed-date') || (existingIssue ? existingIssue.ClosedAt : undefined);
       data.ClosedBy = v('issue-edit-closed-by') || (existingIssue ? existingIssue.ClosedBy : undefined);
+
+      // Auto-capture any stock part still selected in the dropdown that user forgot to click "+ เพิ่มอะไหล่"
+      var issuePartSel = document.getElementById('issue-edit-part-select');
+      if (issuePartSel && issuePartSel.value) {
+        if (issuePartSel.value !== '__OTHER__' || (v('issue-edit-part-other-name') || '').trim()) {
+          addIssueEditPart();
+        }
+      }
+
       data.PartsUsed = v('issue-edit-parts-used');
       data.AfterImageIds = JSON.stringify(afterImgIds);
       data.TrialResult = v('issue-edit-trial-result');
@@ -8988,23 +8997,42 @@ async function saveIssue(){
 
     // Auto-deduct stock for each stock part used in issue edit/create
     var partsToDeduct = (STATE.issueEditParts || []).filter(function(p) { return p.isStock && p.partId && p.qty > 0; });
+    var stockDeductResults = [];
     if (partsToDeduct.length) {
-      await Promise.all(partsToDeduct.map(function(p) {
+      stockDeductResults = await Promise.all(partsToDeduct.map(function(p) {
         return api('stockTransaction', {
           data: {
             partId: p.partId,
             type: 'OUT',
             quantity: p.qty,
             reason: 'ซ่อมปัญหา: ' + (editId || data.TargetName || 'Issue'),
-            by: v('issue-edit-closed-by') || v('issue-reporter') || 'ผู้แจ้ง/ผู้ซ่อม'
+            by: v('issue-edit-closed-by') || v('issue-reporter') || (STATE.currentUser ? STATE.currentUser.Name : 'ผู้ซ่อม')
           }
         });
       }));
     }
 
+    var deductSuccessNames = [];
+    var deductErrorNames = [];
+    partsToDeduct.forEach(function(p, idx) {
+      var res = stockDeductResults[idx];
+      if (res && res.success) {
+        deductSuccessNames.push(p.partName + ' (-' + p.qty + ' ' + (p.unit || 'ชิ้น') + (res.newBalance !== undefined ? ', คงเหลือ ' + res.newBalance : '') + ')');
+      } else {
+        deductErrorNames.push(p.partName + ' (' + ((res && res.error) || 'ตัดสต็อกไม่สำเร็จ') + ')');
+      }
+    });
+
     showGlobalLoading(false);
     if (r && r.success) {
-      showToast(partsToDeduct.length ? 'บันทึกข้อมูลและตัดสต็อกอะไหล่เรียบร้อย ✅' : (editId ? 'แก้ไขข้อมูลปัญหาสำเร็จ ✅' : 'บันทึกปัญหาสำเร็จ ✅'), 'success');
+      var toastMsg = editId ? 'แก้ไขข้อมูลปัญหาสำเร็จ ✅' : 'บันทึกปัญหาสำเร็จ ✅';
+      if (deductSuccessNames.length) {
+        toastMsg += ' | 📦 ตัดสต็อก: ' + deductSuccessNames.join(', ');
+      }
+      if (deductErrorNames.length) {
+        toastMsg += ' | ⚠️ ไม่สามารถตัดสต็อก: ' + deductErrorNames.join(', ');
+      }
+      showToast(toastMsg, deductErrorNames.length ? 'warning' : 'success');
       closeModal('issue-modal');
       var resIss = await api('getIssues');
       var resStock = await api('getStockParts');
@@ -9487,6 +9515,9 @@ function addIssueEditPart() {
       isStock: false
     });
     if (otherNameInput) otherNameInput.value = '';
+    sel.value = '';
+    var otherWrap = document.getElementById('issue-edit-part-other-wrap');
+    if (otherWrap) otherWrap.style.display = 'none';
   } else if (sel.value) {
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
     if (!p) return;
@@ -9504,6 +9535,8 @@ function addIssueEditPart() {
         isStock: true
       });
     }
+    sel.value = '';
+    updateStockPartWarningNotice('issue-edit-part-warning', '');
   } else {
     showToast('กรุณาเลือกอะไหล่', 'warning');
     return;
@@ -9626,6 +9659,9 @@ function addRepairIssuePart() {
       isStock: false
     });
     if (otherNameInput) otherNameInput.value = '';
+    sel.value = '';
+    var otherWrap = document.getElementById('repair-part-other-wrap') || document.getElementById('close-part-other-wrap');
+    if (otherWrap) otherWrap.style.display = 'none';
   } else if (sel.value) {
     var p = (STATE.stockParts || []).find(function(x) { return x.ID === sel.value; });
     if (!p) return;
@@ -9642,6 +9678,8 @@ function addRepairIssuePart() {
         isStock: true
       });
     }
+    sel.value = '';
+    updateStockPartWarningNotice('repair-part-warning', '');
   } else {
     showToast('กรุณาเลือกอะไหล่', 'warning');
     return;
@@ -9822,12 +9860,21 @@ async function submitIssueRepair() {
     var rootCause = v('repair-root-cause');
     var corrective = v('repair-corrective');
     var repairedBy = v('repair-by');
-    var partsUsed = v('repair-parts-used');
 
     if (!rootCause || !corrective) {
       showToast('กรุณาระบุ Root Cause และวิธีแก้ไขให้ครบถ้วน', 'error');
       return;
     }
+
+    // Auto-capture any part still selected in the dropdown that user forgot to click "+ เพิ่มอะไหล่"
+    var repairSel = document.getElementById('repair-part-select') || document.getElementById('close-part-select');
+    if (repairSel && repairSel.value) {
+      if (repairSel.value !== '__OTHER__' || (v('repair-part-other-name') || v('close-part-other-name') || '').trim()) {
+        addRepairIssuePart();
+      }
+    }
+
+    var partsUsed = v('repair-parts-used');
 
     showGlobalLoading(true);
     var imgIds = await uploadPendingPhotos('repair', 'Issues/After');
@@ -9845,24 +9892,45 @@ async function submitIssueRepair() {
     var r = await api('repairIssue', { data: data });
 
     // Auto-deduct stock for each stock part used
+    var issObj = (STATE.issues || []).find(function(x) { return x.ID === id; });
+    var issDisplayCode = issObj ? getIssueDisplayCode(issObj) : id;
     var partsToDeduct = (STATE.repairIssueParts || []).filter(function(p) { return p.isStock && p.partId && p.qty > 0; });
+    var stockDeductResults = [];
     if (partsToDeduct.length) {
-      await Promise.all(partsToDeduct.map(function(p) {
+      stockDeductResults = await Promise.all(partsToDeduct.map(function(p) {
         return api('stockTransaction', {
           data: {
             partId: p.partId,
             type: 'OUT',
             quantity: p.qty,
-            reason: 'ซ่อมและส่งรอ Trial: ' + id,
-            by: repairedBy || 'ผู้ซ่อม'
+            reason: 'ซ่อมและส่งรอ Trial: #' + issDisplayCode,
+            by: repairedBy || (STATE.currentUser ? STATE.currentUser.Name : 'ผู้ซ่อม')
           }
         });
       }));
     }
 
+    var deductSuccessNames = [];
+    var deductErrorNames = [];
+    partsToDeduct.forEach(function(p, idx) {
+      var res = stockDeductResults[idx];
+      if (res && res.success) {
+        deductSuccessNames.push(p.partName + ' (-' + p.qty + ' ' + (p.unit || 'ชิ้น') + (res.newBalance !== undefined ? ', คงเหลือ ' + res.newBalance : '') + ')');
+      } else {
+        deductErrorNames.push(p.partName + ' (' + ((res && res.error) || 'ตัดสต็อกไม่สำเร็จ') + ')');
+      }
+    });
+
     showGlobalLoading(false);
     if (r && r.success) {
-      showToast('บันทึกผลการซ่อมเรียบร้อย และเปลี่ยนสถานะเป็น "รอทดลองงาน (Pending Trial)" 🧪', 'success');
+      var toastMsg = 'บันทึกผลการซ่อมเรียบร้อย และเปลี่ยนสถานะเป็น "รอทดลองงาน (Pending Trial)" 🧪';
+      if (deductSuccessNames.length) {
+        toastMsg += ' | 📦 ตัดสต็อก: ' + deductSuccessNames.join(', ');
+      }
+      if (deductErrorNames.length) {
+        toastMsg += ' | ⚠️ ไม่สามารถตัดสต็อก: ' + deductErrorNames.join(', ');
+      }
+      showToast(toastMsg, deductErrorNames.length ? 'warning' : 'success');
       closeModal('issue-repair-modal');
       var resIss = await api('getIssues');
       var resStock = await api('getStockParts');
@@ -9871,6 +9939,7 @@ async function submitIssueRepair() {
       renderIssues();
       renderStock();
       updateBadges();
+      if (STATE._currentQRAsset) renderAsset360Profile(STATE._currentQRAsset.ID);
     } else {
       showToast('ผิดพลาด: ' + ((r && r.error) || 'ไม่สามารถบันทึกได้'), 'error');
     }
