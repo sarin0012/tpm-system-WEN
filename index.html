@@ -1959,7 +1959,7 @@ body.role-engineer .role-admin-only { display: none !important; }
   </div>
   <div class="card">
     <div class="table-wrapper"><table id="stock-table">
-    <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
+    <thead><tr><th>📷 รูป</th><th>Part Name</th><th>Linked To</th><th>Part No.</th><th>Vendor</th><th>Unit</th><th>💰 ราคา/หน่วย</th><th>Min</th><th>Current Stock</th><th>Location</th><th>Actions</th></tr></thead>
     <tbody id="stock-tbody"></tbody>
   </table></div></div>
 </div>
@@ -2786,7 +2786,12 @@ body.role-engineer .role-admin-only { display: none !important; }
         </div>
         <input type="hidden" id="stock-vendor"/>
       </div>
-      <div class="form-group"><label>Unit (หน่วยนับ)</label><input id="stock-unit" placeholder="ชิ้น / ตัว / ชุด..."/></div>
+      <div class="form-group">
+        <div class="form-row col-2" style="margin-bottom:0">
+          <div class="form-group" style="margin-bottom:0"><label>Unit (หน่วยนับ)</label><input id="stock-unit" placeholder="ชิ้น / ตัว / ชุด..."/></div>
+          <div class="form-group" style="margin-bottom:0"><label>💰 ราคา/หน่วย (บาท)</label><input id="stock-price" type="number" step="0.01" min="0" placeholder="เช่น 450"/></div>
+        </div>
+      </div>
     </div>
     <div class="form-row col-4">
       <div class="form-group"><label>Min Stock</label><input id="stock-min" type="number" value="0"/></div>
@@ -3636,12 +3641,23 @@ async function _apiInternal(actionStr, payload = null) {
               loc = loc.replace(/\[NOTE:\s*[\s\S]*?\]/g, '').trim();
             }
           }
+
+          let price = 0;
+          if (loc.indexOf('[PRICE:') !== -1) {
+            const mPrice = loc.match(/\[PRICE:\s*([\d\.]+)\s*\]/);
+            if (mPrice) {
+              price = Number(mPrice[1]) || 0;
+              loc = loc.replace(/\[PRICE:\s*[\d\.]+\s*\]/g, '').trim();
+            }
+          }
+
           return Object.assign({}, p, {
             CurrentStock: p.Qty,
             MinStock: p.MinQty,
             Vendor: p.Category,
             Location: loc,
             Notes: note,
+            Price: price,
             LeadTime: leadTime || (onOrder ? (Number(onOrder.leadTime) || 0) : 0),
             OnOrder: onOrder,
             OnOrderQty: onOrder ? (Number(onOrder.qty) || 0) : 0,
@@ -3653,12 +3669,14 @@ async function _apiInternal(actionStr, payload = null) {
       }
       case 'saveStockPart': {
         const d = payload.data || {};
-        let cleanLocation = (d.Location || '').replace(/\[NOTE:\s*[\s\S]*?\]/g, '').replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').replace(/\[LEADTIME:\s*\d+\s*\]/g, '').trim();
+        let cleanLocation = (d.Location || '').replace(/\[NOTE:\s*[\s\S]*?\]/g, '').replace(/\[ORDER:\s*\{[\s\S]*?\}\s*\]/g, '').replace(/\[LEADTIME:\s*\d+\s*\]/g, '').replace(/\[PRICE:\s*[\d\.]+\s*\]/g, '').trim();
         let noteText = (d.Notes || '').trim();
         let leadTime = Number(d.LeadTime) || 0;
+        let price = Number(d.Price) || 0;
         let onOrder = d.OnOrder || null;
 
         let extraTags = '';
+        if (price > 0) extraTags += ' [PRICE: ' + price + ']';
         if (leadTime > 0) extraTags += ' [LEADTIME: ' + leadTime + ']';
         if (onOrder && onOrder.qty > 0) extraTags += ' [ORDER: ' + JSON.stringify(onOrder) + ']';
         if (noteText) extraTags += ' [NOTE: ' + noteText + ']';
@@ -9368,8 +9386,9 @@ async function printIssueReport(id) {
 
 function formatStockOptionText(p) {
   var cur = Number(p.CurrentStock ?? p.Qty ?? 0);
+  var priceTxt = (p.Price > 0) ? (' | ฿' + Number(p.Price).toLocaleString('th-TH')) : '';
   var onOrderTxt = p.OnOrderQty > 0 ? (' | 🚚 สั่งแล้ว ' + p.OnOrderQty + (p.ExpectedDate ? ' ถึง ~' + p.ExpectedDate.substring(5) : '')) : '';
-  return p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + onOrderTxt + ']';
+  return p.PartName + (p.PartNo ? ' (' + p.PartNo + ')' : '') + ' [คงเหลือ: ' + cur + ' ' + (p.Unit || '') + priceTxt + onOrderTxt + ']';
 }
 
 function updateStockPartWarningNotice(containerId, partId) {
@@ -10308,6 +10327,7 @@ function filterStock(){
       '<td>'+(p.PartNo||'-')+'</td>'+
       '<td>'+(p.Vendor||p.Category||'-')+'</td>'+
       '<td>'+(p.Unit||'-')+'</td>'+
+      '<td>'+(p.Price > 0 ? ('<span style="font-weight:600;color:var(--text);">฿' + Number(p.Price).toLocaleString('th-TH', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + '</span>') : '<span style="color:var(--text-faint);">-</span>')+'</td>'+
       '<td>'+min+'</td>'+
       '<td>'+
         '<div style="font-weight:600;color:'+(cur<=min?'var(--danger)':'var(--text)')+'">'+cur+'</div>'+
@@ -10449,7 +10469,7 @@ function openStockPartModal(data){
     showToast('คุณไม่มีสิทธิ์เพิ่มหรือแก้ไขอะไหล่', 'warning');
     return;
   }
-  ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-location','stock-notes','stock-leadtime'].forEach(function(i){v_set(i,'');});
+  ['stock-id','stock-name','stock-partno','stock-vendor','stock-vendor-custom','stock-unit','stock-price','stock-location','stock-notes','stock-leadtime'].forEach(function(i){v_set(i,'');});
   v_set('stock-min','0');v_set('stock-current','0');
   v_set('stock-link-type','');v_set('stock-link-id','');
   document.getElementById('stock-link-id').innerHTML='<option value="">-- เลือก --</option>';
@@ -10485,6 +10505,7 @@ function openStockPartModal(data){
     v_set('stock-partno',data.PartNo||'');
     setStockVendorValue(data.Category||data.Vendor||'');
     v_set('stock-unit',data.Unit||'');
+    v_set('stock-price', (data.Price !== undefined && data.Price !== null && data.Price !== 0) ? data.Price : '');
     v_set('stock-min',data.MinQty??data.MinStock??0);
     v_set('stock-current',data.Qty??data.CurrentStock??0);
     v_set('stock-leadtime',data.LeadTime||'');
@@ -10542,6 +10563,7 @@ async function saveStockPart(){
       Category: v('stock-vendor'),
       Vendor: v('stock-vendor'),
       Unit: v('stock-unit'),
+      Price: Number(v('stock-price')) || 0,
       MinQty: Number(v('stock-min')) || 0,
       MinStock: Number(v('stock-min')) || 0,
       Qty: Number(v('stock-current')) || 0,
@@ -11525,8 +11547,8 @@ function exportCSV(type){
     data=(STATE.issues||[]).map(function(i){return [i.ID,i.TargetType,i.TargetName,i.IssueType,i.Severity,i.Status,i.OccurredAt,i.ReportedBy,i.Description,i.ClosedAt,i.ClosedBy];});
     filename='issues.csv';
   } else if(type==='stock'){
-    headers=['ID','PartName','PartNo','Vendor','Qty','MinQty','Unit','Location','LinkedType','LinkedID'];
-    data=(STATE.stockParts||[]).map(function(s){return [s.ID,s.PartName,s.PartNo,s.Vendor||s.Category,s.Qty||s.CurrentStock,s.MinQty||s.MinStock,s.Unit,s.Location,s.LinkedType,s.LinkedID];});
+    headers=['ID','PartName','PartNo','Vendor','Qty','MinQty','Unit','Price','Location','LinkedType','LinkedID'];
+    data=(STATE.stockParts||[]).map(function(s){return [s.ID,s.PartName,s.PartNo,s.Vendor||s.Category,s.Qty||s.CurrentStock,s.MinQty||s.MinStock,s.Unit,s.Price||0,s.Location,s.LinkedType,s.LinkedID];});
     filename='stock.csv';
   } else if(type==='tpm'){
     headers=['ID','TargetType','TargetName','Year','PlannedDate','Status','ActualDate','ActualBy'];
@@ -14401,7 +14423,7 @@ function renderAsset360Profile(target) {
                     thumb +
                     '<div style="min-width:0;">' +
                       '<div style="font-weight:700;font-size:12px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + pt.PartName + '</div>' +
-                      '<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">' + (pt.PartNo || '-') + (pt.Location ? ' • 📍 ' + pt.Location : '') + '</div>' +
+                      '<div style="font-size:11px;color:var(--text-muted);font-family:monospace;">' + (pt.PartNo || '-') + (pt.Price > 0 ? ' • 💰 ฿' + Number(pt.Price).toLocaleString('th-TH') : '') + (pt.Location ? ' • 📍 ' + pt.Location : '') + '</div>' +
                     '</div>' +
                   '</div>' +
                   '<div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;">' +
