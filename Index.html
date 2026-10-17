@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+﻿﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -1710,7 +1710,11 @@ body.role-engineer .role-admin-only { display: none !important; }
           <span>👤</span> <span>เลือกผู้ใช้งาน (Select User)</span>
         </label>
         <select id="login-user-select" class="form-control" onchange="onLoginUserChange()" style="width:100%;height:44px;font-size:14px;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);padding:0 12px;outline:none;">
-          <option value="" disabled selected>-- กำลังโหลดรายชื่อผู้ใช้... --</option>
+          <option value="" disabled selected>-- กรุณาเลือกผู้ใช้งาน --</option>
+          <option value="สาริน T." data-role="Technician">👷‍♂️ สาริน T. (Technician)</option>
+          <option value="ทีมช่างซ่อมบำรุง" data-role="Technician">👷‍♂️ ทีมช่างซ่อมบำรุง (Technician)</option>
+          <option value="ผู้ดูแลระบบ (Admin)" data-role="Admin">⚙️ ผู้ดูแลระบบ (Admin)</option>
+          <option value="หัวหน้า / ผู้จัดการ" data-role="Viewer">👨‍💼 หัวหน้า / ผู้จัดการ (Viewer)</option>
         </select>
         <div id="login-role-badge-display" style="display:none;margin-top:8px;font-size:12px;color:var(--text-muted);align-items:center;gap:6px;">
           <span>ตำแหน่ง/บทบาท:</span> <span id="login-selected-role-name" class="badge" style="font-size:11px;padding:3px 8px;"></span>
@@ -2099,24 +2103,38 @@ body.role-engineer .role-admin-only { display: none !important; }
 
 <!-- QR SCAN & ASSET 360 PORTAL -->
 <div class="page" id="page-qr-scan">
-  <!-- Top Action Toolbar -->
-  <div class="toolbar" style="flex-wrap:wrap;gap:10px;">
-    <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:260px;">
-      <select id="qr-asset-select" style="flex:1;min-width:220px;font-weight:600;" onchange="onQRAssetSelectChange()">
-        <option value="">-- เลือกแม่พิมพ์ (Mold) หรือ เครื่องจักร (Machine) --</option>
-      </select>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-primary" onclick="toggleQRCameraScan()" id="btn-toggle-qr-cam" style="display:flex;align-items:center;gap:6px;font-weight:600;">
-        <span id="qr-cam-icon">📷</span> <span id="qr-cam-text">เปิดกล้องสแกน QR</span>
-      </button>
-      <button class="btn btn-outline" onclick="openBatchQRPrintModal()" title="พิมพ์สติ๊กเกอร์ QR รวม A4" style="display:flex;align-items:center;gap:6px;">
-        <span>🖨️</span> <span>พิมพ์สติ๊กเกอร์รวม (A4)</span>
-      </button>
-      <button class="btn btn-outline" id="btn-print-single-qr" onclick="printCurrentAssetQR()" style="display:none;align-items:center;gap:6px;" title="พิมพ์สติ๊กเกอร์ตัวนี้ 5x5 cm">
-        <span>🏷️</span> <span>พิมพ์สติ๊กเกอร์ตัวนี้ (5x5cm)</span>
+  <!-- Search & Action Header (Mobile First) -->
+  <div class="card" style="padding:12px 14px;margin-bottom:14px;background:var(--surface);border:1px solid var(--border);border-radius:14px;">
+    <!-- Row 1: Search Box + Camera Button -->
+    <div style="display:flex;gap:8px;align-items:center;width:100%;">
+      <div style="position:relative;flex:1;">
+        <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text-muted);pointer-events:none;">🔍</span>
+        <input type="text" id="qr-manual-search-input" class="form-control" placeholder="🔍 พิมพ์ค้นหาชื่อโมล, รหัส Asset, หรือรุ่น..." oninput="onQRManualSearch(this.value)" onfocus="onQRSearchFocus()" style="padding-left:36px;padding-right:32px;height:42px;font-size:13.5px;background:var(--surface2);border-radius:10px;width:100%;box-sizing:border-box;" autocomplete="off" />
+        <button type="button" id="qr-search-clear-btn" onclick="clearQRSearch()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);font-size:15px;cursor:pointer;display:none;padding:4px 8px;">✕</button>
+      </div>
+      <button class="btn btn-primary" onclick="toggleQRCameraScan()" id="btn-toggle-qr-cam" style="display:flex;align-items:center;gap:6px;font-weight:600;height:42px;padding:0 14px;flex-shrink:0;" title="เปิดกล้องสแกน QR Code">
+        <span id="qr-cam-icon">📷</span> <span id="qr-cam-text" class="hide-mobile">สแกน QR</span>
       </button>
     </div>
+
+    <!-- Row 2: Filter Pills + Fallback Select + Print Actions -->
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:10px;flex-wrap:wrap;">
+      <div style="display:flex;gap:5px;align-items:center;">
+        <button type="button" class="btn btn-sm btn-primary" id="qr-tab-filter-all" onclick="setQRSearchFilterType('all')" style="font-size:11px;padding:3px 10px;">ทั้งหมด</button>
+        <button type="button" class="btn btn-sm btn-outline" id="qr-tab-filter-mold" onclick="setQRSearchFilterType('mold')" style="font-size:11px;padding:3px 10px;">🧩 เฉพาะโมล</button>
+        <button type="button" class="btn btn-sm btn-outline" id="qr-tab-filter-machine" onclick="setQRSearchFilterType('machine')" style="font-size:11px;padding:3px 10px;">🏭 เครื่องจักร</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="qr-asset-select" onchange="onQRAssetSelectChange()" style="font-size:11.5px;padding:4px 8px;max-width:180px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+          <option value="">-- เลือกจาก Dropdown --</option>
+        </select>
+        <button class="btn btn-outline btn-sm" onclick="openBatchQRPrintModal()" title="พิมพ์สติ๊กเกอร์ QR รวม A4" style="font-size:11px;padding:4px 8px;">🖨️ A4</button>
+        <button class="btn btn-outline btn-sm" id="btn-print-single-qr" onclick="printCurrentAssetQR()" style="display:none;font-size:11px;padding:4px 8px;" title="พิมพ์สติ๊กเกอร์ตัวนี้ 5x5 cm">🏷️ 5x5</button>
+      </div>
+    </div>
+
+    <!-- Live Search Results Dropdown List (Pop-down when searching) -->
+    <div id="qr-search-results-box" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.5);max-height:280px;overflow-y:auto;padding:6px;margin-top:10px;"></div>
   </div>
 
   <!-- Camera Scanner Box (Expandable) -->
@@ -2138,23 +2156,7 @@ body.role-engineer .role-admin-only { display: none !important; }
   </div>
 
   <!-- Asset 360 Portal View Container -->
-  <div id="qr-asset-portal-content">
-    <div class="card qr-card-empty" style="text-align:center;padding:48px 20px;">
-      <div style="font-size:48px;margin-bottom:12px;">🏷️</div>
-      <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;">ศูนย์ข้อมูลตรวจสอบเครื่องจักร & แม่พิมพ์ (QR Portal)</div>
-      <div style="font-size:13px;color:var(--text-muted);max-width:560px;margin:0 auto 24px;line-height:1.6;">
-        ส่องกล้องสแกนสติ๊กเกอร์ QR ที่ติดอยู่บนแม่พิมพ์หรือเครื่องจักร หรือเลือกรายการจากเมนูด้านบน เพื่อดูสถานะการทำงาน, แผนการบำรุงรักษา TPM, ประวัติปัญหา breakdown, และเบิกอะไหล่คงคลังได้แบบ 360 องศาในที่เดียว
-      </div>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-lg" onclick="startQRCameraScan()" style="display:flex;align-items:center;gap:8px;">
-          <span>📷</span> <span>เริ่มเปิดกล้องสแกน QR</span>
-        </button>
-        <button class="btn btn-outline btn-lg" onclick="document.getElementById('qr-asset-select').focus()" style="display:flex;align-items:center;gap:8px;">
-          <span>🔍</span> <span>ค้นหาหรือเลือกจากรายการ</span>
-        </button>
-      </div>
-    </div>
-  </div>
+  <div id="qr-asset-portal-content"></div>
 </div>
 
 <!-- USERS -->
@@ -4788,7 +4790,7 @@ function populateLoginUserDropdown() {
   var select = document.getElementById('login-user-select');
   if (!select) return;
 
-  var users = getSystemUsers();
+  var users = (STATE.users && STATE.users.length) ? STATE.users : getSystemUsers();
   var curUser = STATE.currentUser || parseJson(localStorage.getItem('TPM_CURRENT_USER'));
   var curName = curUser ? curUser.Name : '';
 
@@ -13366,7 +13368,7 @@ function renderVendorInteractiveForm(plan, asset) {
           '</div>' +
           '<div>' +
             '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07:</label>' +
-            '<input type="text" id="vendor-actual-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('vendor-actual-date', 'date', 'เลือกวันที่ตรวจ TPM จริง')" value="' + formatDMY(todayYMD) + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '<input type="text" id="vendor-actual-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open(\'vendor-actual-date\', \'date\', \'เลือกวันที่ตรวจ TPM จริง\')" value="' + formatDMY(todayYMD) + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
           '</div>' +
         '</div>' +
 
@@ -14470,6 +14472,184 @@ function populateQRAssetSelect(preselectedId) {
   sel.innerHTML = html;
 }
 
+var _qrSearchTypeFilter = 'all'; // 'all' | 'mold' | 'machine'
+
+function setQRSearchFilterType(type) {
+  _qrSearchTypeFilter = type || 'all';
+  var btnAll = document.getElementById('qr-tab-filter-all');
+  var btnMold = document.getElementById('qr-tab-filter-mold');
+  var btnMac = document.getElementById('qr-tab-filter-machine');
+  if (btnAll) { btnAll.className = 'btn btn-sm ' + (_qrSearchTypeFilter === 'all' ? 'btn-primary' : 'btn-outline'); }
+  if (btnMold) { btnMold.className = 'btn btn-sm ' + (_qrSearchTypeFilter === 'mold' ? 'btn-primary' : 'btn-outline'); }
+  if (btnMac) { btnMac.className = 'btn btn-sm ' + (_qrSearchTypeFilter === 'machine' ? 'btn-primary' : 'btn-outline'); }
+
+  var searchInp = document.getElementById('qr-manual-search-input');
+  var q = searchInp ? searchInp.value : '';
+  if (q.trim()) {
+    onQRManualSearch(q);
+  } else {
+    var content = document.getElementById('qr-asset-portal-content');
+    if (content && !STATE._currentQRAsset) {
+      renderQRDefaultBrowser();
+    }
+  }
+}
+
+function onQRSearchFocus() {
+  var searchInp = document.getElementById('qr-manual-search-input');
+  var q = searchInp ? searchInp.value : '';
+  onQRManualSearch(q);
+}
+
+function clearQRSearch() {
+  var searchInp = document.getElementById('qr-manual-search-input');
+  if (searchInp) searchInp.value = '';
+  var clearBtn = document.getElementById('qr-search-clear-btn');
+  if (clearBtn) clearBtn.style.display = 'none';
+  var resultsBox = document.getElementById('qr-search-results-box');
+  if (resultsBox) resultsBox.style.display = 'none';
+  if (!STATE._currentQRAsset) {
+    renderQRDefaultBrowser();
+  }
+}
+
+function onQRManualSearch(query) {
+  query = (query || '').trim().toLowerCase();
+  var clearBtn = document.getElementById('qr-search-clear-btn');
+  if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+
+  var resultsBox = document.getElementById('qr-search-results-box');
+  if (!resultsBox) return;
+
+  var molds = STATE.molds || [];
+  var machines = STATE.machines || [];
+  var list = [];
+
+  if (_qrSearchTypeFilter === 'all' || _qrSearchTypeFilter === 'mold') {
+    molds.forEach(function(m) { list.push({ item: m, type: 'Mold' }); });
+  }
+  if (_qrSearchTypeFilter === 'all' || _qrSearchTypeFilter === 'machine') {
+    machines.forEach(function(mc) { list.push({ item: mc, type: 'Machine' }); });
+  }
+
+  if (query) {
+    list = list.filter(function(obj) {
+      var it = obj.item;
+      var name = (it.Name || '').toLowerCase();
+      var asset = (it.AssetNo || '').toLowerCase();
+      var model = (it.Model || '').toLowerCase();
+      var vendor = (it.Vendor || '').toLowerCase();
+      var draw = (it.DrawingNo || '').toLowerCase();
+      return name.includes(query) || asset.includes(query) || model.includes(query) || vendor.includes(query) || draw.includes(query);
+    });
+  }
+
+  if (!query) {
+    resultsBox.style.display = 'none';
+    if (!STATE._currentQRAsset) renderQRDefaultBrowser();
+    return;
+  }
+
+  if (list.length === 0) {
+    resultsBox.style.display = 'block';
+    resultsBox.innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:12.5px;">🔍 ไม่พบแม่พิมพ์หรือเครื่องจักรที่ตรงกับคำค้นหา "' + esc(query) + '"</div>';
+    return;
+  }
+
+  resultsBox.style.display = 'block';
+  resultsBox.innerHTML = list.slice(0, 15).map(function(obj) {
+    var it = obj.item;
+    var isMold = obj.type === 'Mold';
+    var icon = isMold ? '🧩' : '🏭';
+    var badgeColor = isMold ? '#818cf8' : '#38bdf8';
+    var sub = isMold ? 
+      ((it.AssetNo ? it.AssetNo + ' | ' : '') + (it.MachineTon ? it.MachineTon + ' | ' : '') + (it.Vendor || '')) :
+      ((it.AssetNo ? it.AssetNo + ' | ' : '') + (it.Department || it.Location || ''));
+
+    return '<div class="qr-search-item" onclick="selectQRAssetItem(\'' + it.ID + '\')" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;border-radius:8px;transition:background .15s ease;" onmouseover="this.style.background=\'rgba(255,255,255,0.06)\'" onmouseout="this.style.background=\'transparent\'">' +
+      '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
+        '<div style="font-size:20px;flex-shrink:0;">' + icon + '</div>' +
+        '<div style="min-width:0;">' +
+          '<div style="font-weight:700;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(it.Name) + '</div>' +
+          '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' + esc(sub) + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<span class="badge" style="font-size:10px;padding:2px 8px;background:rgba(255,255,255,0.07);color:' + badgeColor + ';border:1px solid ' + badgeColor + '40;flex-shrink:0;">' + (isMold ? 'โมล' : 'เครื่องจักร') + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+function selectQRAssetItem(id) {
+  var resultsBox = document.getElementById('qr-search-results-box');
+  if (resultsBox) resultsBox.style.display = 'none';
+  var sel = document.getElementById('qr-asset-select');
+  if (sel) sel.value = id;
+  var found = findAssetRecord(id);
+  if (found && found.item) {
+    var searchInp = document.getElementById('qr-manual-search-input');
+    if (searchInp) searchInp.value = found.item.Name;
+  }
+  renderAsset360Profile(id);
+}
+
+function renderQRDefaultBrowser() {
+  var content = document.getElementById('qr-asset-portal-content');
+  if (!content) return;
+
+  var molds = STATE.molds || [];
+  var machines = STATE.machines || [];
+
+  var displayList = [];
+  if (_qrSearchTypeFilter === 'all' || _qrSearchTypeFilter === 'mold') {
+    molds.forEach(function(m) { displayList.push({ item: m, type: 'Mold' }); });
+  }
+  if (_qrSearchTypeFilter === 'all' || _qrSearchTypeFilter === 'machine') {
+    machines.forEach(function(mc) { displayList.push({ item: mc, type: 'Machine' }); });
+  }
+
+  var moldCardsHtml = displayList.map(function(obj) {
+    var it = obj.item;
+    var isMold = obj.type === 'Mold';
+    var icon = isMold ? '🧩' : '🏭';
+    var badgeColor = isMold ? '#818cf8' : '#38bdf8';
+    var sub = isMold ? 
+      ((it.AssetNo ? it.AssetNo + ' • ' : '') + (it.MachineTon || it.Model || '')) :
+      ((it.AssetNo ? it.AssetNo + ' • ' : '') + (it.Location || it.Department || ''));
+
+    var st = it.Status || 'Active';
+    var isAct = st.toLowerCase() === 'active';
+
+    return '<div class="qr-browser-card" onclick="selectQRAssetItem(\'' + it.ID + '\')" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .2s ease;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 8px rgba(0,0,0,0.15);">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">' +
+        '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
+          '<span style="font-size:22px;flex-shrink:0;">' + icon + '</span>' +
+          '<div style="min-width:0;">' +
+            '<div style="font-weight:700;font-size:13.5px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(it.Name) + '</div>' +
+            '<div style="font-size:11px;color:var(--text-muted);font-family:monospace;margin-top:2px;">' + esc(sub) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<span class="badge" style="font-size:9.5px;padding:2px 6px;background:' + (isAct ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)') + ';color:' + (isAct ? '#34d399' : '#f87171') + ';border:1px solid ' + (isAct ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)') + ';flex-shrink:0;">' + st + '</span>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;padding-top:8px;border-top:1px dashed var(--border);font-size:11.5px;color:var(--primary);font-weight:600;">' +
+        '<span>แตะเพื่อเปิดดูข้อมูล 360°</span>' +
+        '<span>➔</span>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  content.innerHTML = 
+    '<!-- Mobile-friendly mold selector -->' +
+    '<div style="margin-bottom:12px;">' +
+      '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px;">' +
+        '<span>📋</span> <span>แตะเลือกแม่พิมพ์ที่ต้องการตรวจสอบ (' + displayList.length + ' รายการ)</span>' +
+      '</div>' +
+      '<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:10px;">หรือพิมพ์ค้นหาชื่อโมล/รหัสในช่องค้นหาด้านบนได้ทันทีโดยไม่ต้องสแกน QR</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:10px;margin-bottom:20px;">' +
+      moldCardsHtml +
+    '</div>';
+}
+
 function loadQRPortal(preselectAsset) {
   var target = preselectAsset || (STATE._currentQRAsset ? STATE._currentQRAsset.ID : '');
   populateQRAssetSelect(target);
@@ -14479,6 +14659,8 @@ function loadQRPortal(preselectAsset) {
     var sel = document.getElementById('qr-asset-select');
     if (sel && sel.value) {
       renderAsset360Profile(sel.value);
+    } else {
+      renderQRDefaultBrowser();
     }
   }
 }
@@ -14486,30 +14668,19 @@ function loadQRPortal(preselectAsset) {
 function onQRAssetSelectChange() {
   var sel = document.getElementById('qr-asset-select');
   if (!sel || !sel.value) {
-    var content = document.getElementById('qr-asset-portal-content');
     var btnPrint = document.getElementById('btn-print-single-qr');
     if (btnPrint) btnPrint.style.display = 'none';
     STATE._currentQRAsset = null;
     STATE._currentQRAssetType = null;
-    if (content) {
-      content.innerHTML = 
-        '<div class="card" style="text-align:center;padding:48px 20px;">' +
-          '<div style="font-size:48px;margin-bottom:12px;">🏷️</div>' +
-          '<div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;">ศูนย์ข้อมูลตรวจสอบเครื่องจักร & แม่พิมพ์ (QR Portal)</div>' +
-          '<div style="font-size:13px;color:var(--text-muted);max-width:560px;margin:0 auto 24px;line-height:1.6;">' +
-            'ส่องกล้องสแกนสติ๊กเกอร์ QR ที่ติดอยู่บนแม่พิมพ์หรือเครื่องจักร หรือเลือกรายการจากเมนูด้านบน เพื่อดูสถานะการทำงาน, แผนการบำรุงรักษา TPM, ประวัติปัญหา breakdown, และเบิกอะไหล่คงคลังได้แบบ 360 องศาในที่เดียว' +
-          '</div>' +
-          '<div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">' +
-            '<button class="btn btn-primary btn-lg" onclick="startQRCameraScan()" style="display:flex;align-items:center;gap:8px;">' +
-              '<span>📷</span> <span>เริ่มเปิดกล้องสแกน QR</span>' +
-            '</button>' +
-            '<button class="btn btn-outline btn-lg" onclick="document.getElementById(\'qr-asset-select\').focus()" style="display:flex;align-items:center;gap:8px;">' +
-              '<span>🔍</span> <span>ค้นหาหรือเลือกจากรายการ</span>' +
-            '</button>' +
-          '</div>' +
-        '</div>';
-    }
+    var searchInp = document.getElementById('qr-manual-search-input');
+    if (searchInp) searchInp.value = '';
+    renderQRDefaultBrowser();
     return;
+  }
+  var found = findAssetRecord(sel.value);
+  if (found && found.item) {
+    var searchInp = document.getElementById('qr-manual-search-input');
+    if (searchInp) searchInp.value = found.item.Name;
   }
   renderAsset360Profile(sel.value);
 }
