@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -1608,6 +1608,82 @@ body.role-engineer .role-admin-only { display: none !important; }
   #dash-issues-table { min-width: 650px !important; }
   #dash-tpm-table { min-width: 650px !important; }
 }
+
+/* App DatePicker & DateTimePicker Modal Component */
+#app-datepicker-modal {
+  display: none;
+  z-index: 100000 !important;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+.adp-modal-card {
+  max-width: 360px;
+  width: 94%;
+  padding: 0 !important;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.1);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  animation: loginCardFadeIn 0.2s ease-out;
+}
+.app-dmy-input {
+  cursor: pointer !important;
+  background-color: var(--surface2) !important;
+  font-family: inherit;
+  font-weight: 500;
+}
+.app-dmy-input:hover {
+  border-color: var(--primary) !important;
+}
+.adp-day-btn {
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  transition: all .12s ease;
+  user-select: none;
+}
+.adp-day-btn:hover {
+  background: var(--surface2);
+  border-color: var(--border);
+}
+.adp-day-btn.selected {
+  background: var(--primary) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+}
+.adp-day-btn.today {
+  border: 1.5px solid var(--primary);
+  color: var(--primary);
+  font-weight: 700;
+}
+.adp-day-btn.other-month {
+  color: var(--text-faint) !important;
+  opacity: 0.35;
+}
+.adp-time-select {
+  padding: 6px 10px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: monospace;
+}
 </style>
 </head>
 <body>
@@ -1981,9 +2057,9 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
 
     <div id="report-custom-date-wrap" style="display:none;align-items:center;gap:6px;">
-      <input type="date" id="report-start-date" onchange="loadReports()" style="width:135px;" />
+      <input type="text" id="report-start-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('report-start-date', 'date', 'เลือกวันที่เริ่มต้น')" onchange="loadReports()" style="width:135px;" />
       <span style="color:var(--text-muted);font-size:12px;">ถึง</span>
-      <input type="date" id="report-end-date" onchange="loadReports()" style="width:135px;" />
+      <input type="text" id="report-end-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('report-end-date', 'date', 'เลือกวันที่สิ้นสุด')" onchange="loadReports()" style="width:135px;" />
     </div>
 
     <div style="display:flex;align-items:center;gap:8px;">
@@ -2158,7 +2234,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     </div>
     <div class="form-row col-3"><div class="form-group"><label>น้ำหนัก Mold</label><input id="mold-weight" placeholder="เช่น 1,200 kg"/></div><div class="form-group"><label>น้ำหนักชิ้นงาน (Part)</label><input id="mold-part-weight" placeholder="เช่น 45.5 g"/></div><div class="form-group"><label>น้ำหนัก Runner</label><input id="mold-runner-weight" placeholder="เช่น 12.3 g"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="mold-vendor" placeholder="ผู้ผลิต / ผู้ขาย"/></div><div class="form-group"><label>Material</label><input id="mold-material" placeholder="ชนิดพลาสติก / วัตถุดิบ"/></div></div>
-    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity" oninput="calcMoldProduction()"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input id="mold-purchase-date" type="date"/></div></div>
+    <div class="form-row col-3"><div class="form-group"><label>Cavity</label><input id="mold-cavity" type="number" placeholder="จำนวน Cavity" oninput="calcMoldProduction()"/></div><div class="form-group"><label>Location</label><input id="mold-location" placeholder="ตำแหน่งจัดเก็บ"/></div><div class="form-group"><label>Purchase Date</label><input type="text" id="mold-purchase-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('mold-purchase-date', 'date', 'เลือกวันที่เริ่มใช้งาน / ซื้อแม่พิมพ์')"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>&#9201; Cycle Time (วิ/ช็อต) <small style="color:var(--text-muted)">เวลาจับเวลา 1 รอบฟีด</small></label><input id="mold-cycle-time" type="number" step="0.1" min="0" placeholder="เช่น 45.5" oninput="calcMoldProduction()"/></div><div class="form-group"><label>&#9889; ยอดผลิต / 8 ชม. <small style="color:var(--text-muted)">(คำนวณอัตโนมัติ)</small></label><div id="mold-production-preview" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 14px;font-size:13px;color:var(--text-muted);min-height:38px;display:flex;align-items:center;">กรอก Cycle Time เพื่อดูยอดผลิต</div></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Status (สถานะแม่พิมพ์)</label><select id="mold-status"><option value="Active">🟢 Active (ใช้งานอยู่)</option><option value="Inactive">⚪ Inactive (หยุดใช้งาน / ยกเว้น PM)</option></select></div><div class="form-group"><label>หมายเหตุ</label><textarea id="mold-notes" placeholder="ข้อมูลเพิ่มเติม..." style="height:38px"></textarea></div></div>
     
@@ -2194,7 +2270,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div class="form-row col-2"><div class="form-group"><label>Machine Name *</label><input id="machine-name"/></div><div class="form-group"><label>Asset No. *</label><input id="machine-asset"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>Vendor</label><input id="machine-vendor"/></div><div class="form-group"><label>Model</label><input id="machine-model"/></div></div>
     <div class="form-row col-3"><div class="form-group"><label>Serial No.</label><input id="machine-serial"/></div><div class="form-group"><label>Department</label><input id="machine-dept"/></div><div class="form-group"><label>Location</label><input id="machine-location"/></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>Purchase Date</label><input id="machine-purchase-date" type="date"/></div><div class="form-group"><label>Status</label><select id="machine-status"><option>Active</option><option>Inactive</option></select></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>Purchase Date</label><input type="text" id="machine-purchase-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('machine-purchase-date', 'date', 'เลือกวันที่เริ่มใช้งาน / ซื้อเครื่องจักร')"/></div><div class="form-group"><label>Status</label><select id="machine-status"><option>Active</option><option>Inactive</option></select></div></div>
     <div class="form-group"><label>&#3627;&#3617;&#3634;&#3618;&#3648;&#3627;&#3605;&#3640;</label><textarea id="machine-notes"></textarea></div>
     <div class="form-group"><label>&#3619;&#3641;&#3611;&#3616;&#3634;&#3614;</label>
       <div class="photo-upload-area" onclick="triggerUpload('machine-photos-input')"><div style="font-size:28px;margin-bottom:6px">&#128247;</div><div style="font-size:12px;color:var(--text-muted)">&#3588;&#3621;&#3636;&#3585;&#3648;&#3614;&#3639;&#3656;&#3629;&#3648;&#3621;&#3639;&#3629;&#3585;&#3619;&#3641;&#3611;</div></div>
@@ -2212,7 +2288,7 @@ body.role-engineer .role-admin-only { display: none !important; }
   <div class="modal-body">
     <input type="hidden" id="tpm-id"/>
     <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3619;&#3632;&#3648;&#3616;&#3607;</label><select id="tpm-target-type" onchange="loadTPMTargets()"><option value="Mold">Mold</option><option value="Machine">Machine</option></select></div><div class="form-group"><label>Mold / Machine *</label><select id="tpm-target-id"><option value="">-- &#3648;&#3621;&#3639;&#3629;&#3585; --</option></select></div></div>
-    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input id="tpm-planned-date" type="date"/></div></div>
+    <div class="form-row col-2"><div class="form-group"><label>&#3611;&#3637;</label><input id="tpm-plan-year" type="number"/></div><div class="form-group"><label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3585;&#3635;&#3627;&#3609;&#3604; *</label><input type="text" id="tpm-planned-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('tpm-planned-date', 'date', 'เลือกวันที่ตามแผน PM')"/></div></div>
     <div class="form-row col-2"><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN / WP <span style="color:var(--danger)">*</span></label><input id="tpm-assigned" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; WEN/WP (&#3648;&#3594;&#3656;&#3609; Sarin T.)"/></div><div class="form-group"><label>&#3612;&#3641;&#3657;&#3619;&#3633;&#3610;&#3612;&#3636;&#3604;&#3594;&#3629;&#3610; (VENDOR) <span style="color:var(--danger)">*</span></label><input id="tpm-vendor-resp" placeholder="&#3619;&#3632;&#3610;&#3640;&#3594;&#3639;&#3656;&#3629;&#3605;&#3633;&#3623;&#3649;&#3607;&#3609;/&#3610;&#3619;&#3636;&#3625;&#3633;&#3607; Vendor (&#3648;&#3594;&#3656;&#3609; SPP)"/></div></div>
     <div class="form-group"><label>Checklist Template</label><select id="tpm-checklist-template"><option value="mold-standard">Mold PM Standard</option><option value="machine-standard">Machine PM Standard</option></select></div>
   </div>
@@ -2303,7 +2379,7 @@ body.role-engineer .role-admin-only { display: none !important; }
 
       <div id="tpm-plan-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:16px;font-size:13px;"></div>
       <div class="form-row col-3">
-        <div class="form-group"><label>วันที่ทำจริง <span style="color:var(--danger)">*</span> (DD/MM/YYYY)</label><input id="tpm-actual-date" type="text" placeholder="เช่น 20/08/2026"/></div>
+        <div class="form-group"><label>วันที่ทำจริง <span style="color:var(--danger)">*</span> (DD/MM/YYYY)</label><input type="text" id="tpm-actual-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('tpm-actual-date', 'date', 'เลือกวันที่ตรวจจริง')"/></div>
         <div class="form-group"><label>ผู้ตรวจสอบ (WEN/WP) *</label><input id="tpm-actual-by" placeholder="ระบุชื่อผู้ตรวจสอบ WEN/WP"/></div>
         <div class="form-group"><label>ผู้ตรวจสอบร่วม (Vendor)</label><input id="tpm-co-inspector" placeholder="ระบุชื่อตัวแทน Vendor"/></div>
       </div>
@@ -2431,7 +2507,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       <div class="form-row col-2"><div class="form-group"><label>ประเภทปัญหา</label><select id="issue-type" onchange="onIssueTypeChange()"><option value="Breakdown">Breakdown</option><option value="Quality">Quality</option><option value="Minor Stop">Minor Stop</option><option value="DPM">DPM</option><option value="Other">Other</option></select></div><div class="form-group"><label>Severity</label><select id="issue-severity"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option></select></div></div>
       <div class="form-group" id="issue-type-other-wrap" style="display:none;margin-top:-4px;"><label>ระบุประเภทปัญหาอื่นๆ (Other Issue Type) <span style="color:var(--danger)">*</span></label><input type="text" id="issue-type-other" placeholder="เช่น ไฟฟ้าดับ, อากาศรั่ว, ปัญหาน้ำหล่อเย็น..."/></div>
       <div class="form-group"><label>รายละเอียดปัญหา *</label><textarea id="issue-description" placeholder="อธิบายอาการ/ปัญหา..."></textarea></div>
-      <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input id="issue-occurred" type="datetime-local"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
+      <div class="form-row col-2"><div class="form-group"><label>วันที่/เวลาเกิดปัญหา</label><input type="text" id="issue-occurred" class="form-control app-dmy-input" placeholder="dd/mm/yyyy HH:mm" readonly data-datepicker="datetime" onclick="AppDatePicker.open('issue-occurred', 'datetime', 'เลือกวันและเวลาที่เกิดปัญหา')"/></div><div class="form-group"><label>ผู้แจ้ง</label><input id="issue-reporter"/></div></div>
       <div class="form-group" style="margin-bottom:0;"><label>📷 รูปภาพตอนแจ้งปัญหา (Before Photos)</label>
         <div class="photo-upload-area" onclick="triggerUpload('issue-photos-input')"><div style="font-size:24px;margin-bottom:4px">📷</div><div style="font-size:12px;color:var(--text-muted)">อัปโหลดรูปปัญหา (หลายรูปได้)</div></div>
         <input type="file" id="issue-photos-input" accept="image/*" multiple style="display:none" onchange="previewPhotos(this,'issue-photos-preview','issue')"/>
@@ -2450,7 +2526,7 @@ body.role-engineer .role-admin-only { display: none !important; }
       </div>
       <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง)</label><textarea id="issue-edit-root-cause" placeholder="ระบุสาเหตุที่พบ..."></textarea></div>
       <div class="form-group"><label>Corrective Action (วิธีแก้ไข)</label><textarea id="issue-edit-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
-      <div class="form-row col-2"><div class="form-group"><label>วันที่ปิดงาน</label><input id="issue-edit-closed-date" type="datetime-local"/></div><div class="form-group"><label>ผู้ปิดงาน/ผู้ซ่อม</label><input id="issue-edit-closed-by"/></div></div>
+      <div class="form-row col-2"><div class="form-group"><label>วันที่ปิดงาน</label><input type="text" id="issue-edit-closed-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy HH:mm" readonly data-datepicker="datetime" onclick="AppDatePicker.open('issue-edit-closed-date', 'datetime', 'เลือกวันและเวลาปิดงาน')"/></div><div class="form-group"><label>ผู้ปิดงาน/ผู้ซ่อม</label><input id="issue-edit-closed-by"/></div></div>
       
       <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
         <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
@@ -2500,7 +2576,7 @@ body.role-engineer .role-admin-only { display: none !important; }
         </div>
         <div class="form-group">
           <label>วันที่ทดสอบ (Trial Date)</label>
-          <input id="issue-edit-trial-date" type="datetime-local"/>
+          <input type="text" id="issue-edit-trial-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy HH:mm" readonly data-datepicker="datetime" onclick="AppDatePicker.open('issue-edit-trial-date', 'datetime', 'เลือกวันและเวลา Trial')"/>
         </div>
         <div class="form-group">
           <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
@@ -2623,7 +2699,7 @@ body.role-engineer .role-admin-only { display: none !important; }
         <div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:10px;">🔧 ข้อมูลการซ่อมแซม &amp; เบิกอะไหล่</div>
         <div class="form-group"><label>Root Cause (สาเหตุที่แท้จริง) *</label><textarea id="repair-root-cause" placeholder="ระบุสาเหตุที่ตรวจพบ..."></textarea></div>
         <div class="form-group"><label>Corrective Action (วิธีแก้ไข) *</label><textarea id="repair-corrective" placeholder="ระบุวิธีการแก้ไข/ซ่อมแซม..."></textarea></div>
-        <div class="form-row col-2"><div class="form-group"><label>วันที่ซ่อมเสร็จ</label><input id="repair-date" type="datetime-local"/></div><div class="form-group"><label>ผู้แก้ไข/ผู้ซ่อม</label><input id="repair-by"/></div></div>
+        <div class="form-row col-2"><div class="form-group"><label>วันที่ซ่อมเสร็จ</label><input type="text" id="repair-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy HH:mm" readonly data-datepicker="datetime" onclick="AppDatePicker.open('repair-date', 'datetime', 'เลือกวันและเวลาซ่อม')"/></div><div class="form-group"><label>ผู้แก้ไข/ผู้ซ่อม</label><input id="repair-by"/></div></div>
         
         <div class="form-group" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;margin-bottom:12px;">
           <label style="font-weight:700;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;">
@@ -2719,7 +2795,7 @@ body.role-engineer .role-admin-only { display: none !important; }
         <div class="form-row col-2">
           <div class="form-group">
             <label>วันที่และเวลาทดสอบ (Trial Date) *</label>
-            <input id="trial-date" type="datetime-local"/>
+            <input type="text" id="trial-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy HH:mm" readonly data-datepicker="datetime" onclick="AppDatePicker.open('trial-date', 'datetime', 'เลือกวันและเวลา Trial')"/>
           </div>
           <div class="form-group">
             <label>จำนวน Shot ที่ลองฉีด (Trial Shots)</label>
@@ -2835,7 +2911,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div class="form-row col-2">
       <div class="form-group">
         <label>📅 วันที่คาดว่าจะได้รับ (Expected Date)</label>
-        <input id="order-expected-date" type="date" />
+        <input type="text" id="order-expected-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('order-expected-date', 'date', 'เลือกวันที่คาดว่าจะได้รับของ')"/>
       </div>
       <div class="form-group">
         <label>เลขที่ใบสั่งซื้อ / PO / PR</label>
@@ -3114,7 +3190,7 @@ body.role-engineer .role-admin-only { display: none !important; }
         </div>
         <div class="form-group">
           <label>&#3623;&#3633;&#3609;&#3607;&#3637;&#3656;&#3629;&#3609;&#3648;&#3617;&#3633;&#3605;&#3636;:</label>
-          <input id="main-stamp-date" type="date"/>
+          <input type="text" id="main-stamp-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('main-stamp-date', 'date', 'เลือกวันที่ลงลายเซ็น')"/>
         </div>
       </div>
       <div id="main-sig-pane-none" style="display:none;padding:16px 0;text-align:center;color:var(--text-muted);font-size:13px">
@@ -3181,6 +3257,91 @@ body.role-engineer .role-admin-only { display: none !important; }
 </div>
 
 <div id="global-loading"><div class="spinner"></div></div>
+<!-- APP DATEPICKER MODAL DIALOG -->
+<div id="app-datepicker-modal" class="modal-overlay" onclick="AppDatePicker.onOverlayClick(event)">
+  <div class="modal-card adp-modal-card" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="background:var(--surface2);padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div>
+        <div id="adp-modal-title" style="font-size:14px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:6px;">
+          <span>📅</span> <span>เลือกวันที่</span>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">รูปแบบ วัน/เดือน/ปี (dd/mm/yyyy)</div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="AppDatePicker.close()" style="padding:2px 8px;font-size:16px;" title="ปิด">✕</button>
+    </div>
+
+    <!-- Calendar Month Nav -->
+    <div style="padding:12px 16px 8px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px dashed var(--border);">
+      <button type="button" class="btn btn-outline btn-sm" onclick="AppDatePicker.prevMonth()" style="padding:4px 10px;font-size:13px;" title="เดือนก่อนหน้า">◀</button>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <select id="adp-month-select" onchange="AppDatePicker.onMonthChange(this.value)" style="padding:4px 8px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+          <option value="0">มกราคม (ม.ค.)</option>
+          <option value="1">กุมภาพันธ์ (ก.พ.)</option>
+          <option value="2">มีนาคม (มี.ค.)</option>
+          <option value="3">เมษายน (เม.ย.)</option>
+          <option value="4">พฤษภาคม (พ.ค.)</option>
+          <option value="5">มิถุนายน (มิ.ย.)</option>
+          <option value="6">กรกฎาคม (ก.ค.)</option>
+          <option value="7">สิงหาคม (ส.ค.)</option>
+          <option value="8">กันยายน (ก.ย.)</option>
+          <option value="9">ตุลาคม (ต.ค.)</option>
+          <option value="10">พฤศจิกายน (พ.ย.)</option>
+          <option value="11">ธันวาคม (ธ.ค.)</option>
+        </select>
+        <select id="adp-year-select" onchange="AppDatePicker.onYearChange(this.value)" style="padding:4px 8px;font-size:12.5px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);">
+        </select>
+      </div>
+      <button type="button" class="btn btn-outline btn-sm" onclick="AppDatePicker.nextMonth()" style="padding:4px 10px;font-size:13px;" title="เดือนถัดไป">▶</button>
+    </div>
+
+    <!-- Day Headers -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);padding:8px 14px 4px;text-align:center;font-size:11px;font-weight:700;color:var(--text-muted);">
+      <span style="color:#f87171;">อา</span>
+      <span>จ</span>
+      <span>อ</span>
+      <span>พ</span>
+      <span>พฤ</span>
+      <span>ศ</span>
+      <span style="color:#60a5fa;">ส</span>
+    </div>
+
+    <!-- Calendar Grid -->
+    <div id="adp-calendar-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:4px 14px 10px;">
+    </div>
+
+    <!-- Time Selection (shown for datetime type) -->
+    <div id="adp-time-section" style="display:none;padding:10px 16px;background:var(--surface2);border-top:1px solid var(--border);align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:6px;">
+        <span>🕒</span> <span>เวลา (ชม.:นาที)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <select id="adp-hour-select" class="adp-time-select" onchange="AppDatePicker.onTimeChange()"></select>
+        <span style="font-weight:700;color:var(--text-muted)">:</span>
+        <select id="adp-minute-select" class="adp-time-select" onchange="AppDatePicker.onTimeChange()"></select>
+      </div>
+    </div>
+
+    <!-- Selected Date Preview -->
+    <div style="padding:8px 16px;background:rgba(99,102,241,0.06);border-top:1px dashed var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;">
+      <span style="color:var(--text-muted)">วันที่เลือก:</span>
+      <span id="adp-selected-preview" style="font-weight:700;font-size:13px;color:var(--primary);font-family:monospace;">-</span>
+    </div>
+
+    <!-- Footer Action Buttons: Today, Clear, Cancel, Confirm -->
+    <div style="padding:12px 16px;background:var(--surface2);border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;justify-content:space-between;">
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="AppDatePicker.selectToday()" style="padding:5px 10px;font-size:12px;font-weight:600;" title="เลือกเป็นวันนี้ทันที">📅 วันนี้</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="AppDatePicker.clearValue()" style="padding:5px 8px;font-size:11.5px;color:var(--text-muted);" title="ล้างค่าวันที่">ล้างค่า</button>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="AppDatePicker.close()" style="padding:5px 12px;font-size:12px;">ยกเลิก</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="AppDatePicker.confirm()" style="padding:5px 16px;font-size:12.5px;font-weight:700;box-shadow:0 2px 8px rgba(99,102,241,0.35);">✅ ยืนยัน</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
@@ -6004,7 +6165,7 @@ function renderDashboardIssuesSummary(scopedIssues, isNewData) {
     var isDone = (st === 'Closed' || st === 'Resolved');
     var sev = (i.Severity || 'Low').toLowerCase();
     var tagClass = isDone ? 'tag-done' : (sev === 'critical' ? 'tag-critical' : (sev === 'high' ? 'tag-warning' : 'tag-info'));
-    var dateStr = (i.OccurredAt || i.ReportDate || i.CreatedAt || '').substring(0, 10) || '-';
+    var dateStr = formatDMY(i.OccurredAt || i.ReportDate || i.CreatedAt) || '-';
     var isMold = i.TargetType === 'Mold' || ((STATE.molds || []).some(function(m) { return m.ID === i.TargetID; }));
     var targetIcon = isMold ? '🧩' : '🏭';
 
@@ -6147,7 +6308,7 @@ function renderDashIssuesDrilldown() {
     var displayCode = getIssueDisplayCode(iss);
     var sevBadge = '<span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span>';
     var stBadge = '<span class="badge ' + (iss.Status||'open').toLowerCase().replace(' ','-') + '">' + (iss.Status||'Open') + '</span>';
-    var dateStr = iss.OccurredAt ? iss.OccurredAt.split('T')[0] : '-';
+    var dateStr = iss.OccurredAt ? formatDMY(iss.OccurredAt) : '-';
 
     return '<tr style="cursor:pointer;" onclick="closeModal(\'dash-issues-modal\'); openIssueDetailModal(\'' + iss.ID + '\');">' +
       '<td><strong>#' + displayCode + '</strong><br><span style="font-size:11px;color:var(--text-muted)">' + dateStr + '</span></td>' +
@@ -7025,7 +7186,7 @@ function renderTPMList(container){
           : ('<span style="color:var(--success);font-size:12px">✅ เสร็จ</span>' +
              ' <button class="btn btn-outline btn-sm" onclick="openTPMCompleteModal(\''+p.ID+'\')" title="ดูผลการตรวจและรูปภาพ" style="padding:2px 6px;font-size:11px;margin-left:4px">🔍 ดูผล</button>' +
              (can('tpm', 'edit') ? ' <button class="btn btn-outline btn-sm" onclick="resetTPMPlan(\''+p.ID+'\')" title="รีเซ็ตกลับเป็น Planned" style="padding:2px 6px;font-size:11px;margin-left:4px">🔄 รีเซ็ต</button>' : ''))));
-    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate?new Date(p.PlannedDate).toLocaleDateString('th-TH'):'-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
+    return '<tr class="m-card-row tpm-card"><td>'+(p.PlannedDate ? formatDMY(p.PlannedDate) : '-')+'</td><td><span class="badge '+(p.TargetType||'mold').toLowerCase()+'">'+p.TargetType+'</span></td><td><strong>'+(p.TargetName||'-')+'</strong>' + photoTag + '</td><td>'+(p.Year||'-')+'</td><td>'+(p.AssignedTo||'-')+'</td><td>'+getTPMStatusBadge(p)+'</td><td>'+actionBtns+(can('tpm', 'delete') ? ' <button class="btn btn-ghost btn-sm" onclick="delTPMPlan(\''+p.ID+'\')" title="ลบแผนนี้">🗑️</button>' : '')+'</td></tr>';
   }).join('')+'</tbody></table></div></div>';
 }
 function loadTPMTargets(){var type=v('tpm-target-type');var s=document.getElementById('tpm-target-id');var list=type==='Mold'?STATE.molds:STATE.machines;s.innerHTML='<option value="">-- \u0e40\u0e25\u0e37\u0e2d\u0e01 --</option>'+list.filter(function(x){return x.Status==='Active';}).map(function(x){return '<option value="'+x.ID+'">'+x.Name+'</option>';}).join('');}
@@ -8580,7 +8741,7 @@ function filterIssues() {
       '<td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + escapeHtml(i.Description || '') + '">' + (i.Description || '-') + '</td>' +
       '<td title="' + (i.Severity || '-') + '"><span class="badge ' + (i.Severity || 'low').toLowerCase() + '">' + (i.Severity || '-') + '</span></td>' +
       '<td title="' + escapeHtml(stLabel) + '"><span class="badge ' + stClass + '">' + stLabel + '</span></td>' +
-      '<td title="' + ((i.OccurredAt || '').substring(0, 10) || '-') + '">' + ((i.OccurredAt || '').substring(0, 10) || '-') + '</td>' +
+      '<td title="' + (formatDMY(i.OccurredAt) || '-') + '">' + (formatDMY(i.OccurredAt) || '-') + '</td>' +
       '<td>' + beforeThumbs + '</td>' +
       '<td>' + afterThumbs + '</td>' +
       '<td>' + trialThumbs + '</td>' +
@@ -9129,7 +9290,7 @@ async function openIssueDetailModal(id){
       return '<div style="' + cardBorder + 'border-radius:6px;padding:10px 14px;margin-bottom:10px;">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
           '<div><strong style="font-size:13px;">📌 Trial รอบที่ ' + rNum + '</strong> ' + rBadge + '</div>' +
-          '<div style="font-size:11.5px;color:var(--text-muted);">' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + '</div>' +
+          '<div style="font-size:11.5px;color:var(--text-muted);">' + (rd.trialDate ? formatDMY(rd.trialDate, true) : '-') + '</div>' +
         '</div>' +
         '<div style="color:var(--text-muted);font-size:12px;margin-bottom:4px;">' +
           '👤 ผู้ทดสอบ/QC: <strong>' + (rd.trialBy || '-') + '</strong> | 🎯 จำนวนฉีด: <strong>' + (rd.shots ? rd.shots + ' Shots' : '-') + '</strong>' +
@@ -9163,7 +9324,7 @@ async function openIssueDetailModal(id){
     '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:16px;">' +
       '<div>' +
         '<div style="font-size:16px;font-weight:700;">#' + displayCode + ' — ' + (iss.TargetName||'-') + '</div>' +
-        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | เกิดเมื่อ: ' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</div>' +
+        '<div style="font-size:12px;color:var(--text-muted);margin-top:2px;">' + (iss.TargetType||'Mold') + ' | ' + (iss.IssueType||'-') + ' | เกิดเมื่อ: ' + (iss.OccurredAt ? formatDMY(iss.OccurredAt, true) : '-') + '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;align-items:center;">' + sevBadge + stBadge + '</div>' +
     '</div>' +
@@ -9183,7 +9344,7 @@ async function openIssueDetailModal(id){
         '<div style="font-size:13px;font-weight:700;color:var(--success);margin-bottom:8px;">🔧 2. ข้อมูลการแก้ไข & ปิดงาน (After)</div>' +
         (iss.Status === 'Closed' || iss.RootCause || iss.CorrectiveAction ? 
           '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>ผู้ปิดงาน/ผู้ซ่อม:</strong> ' + (iss.ClosedBy||'-') + '</div>' +
-          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>วันที่ปิดงาน:</strong> ' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</div>' +
+          '<div style="font-size:12px;color:var(--text-muted);margin-bottom:4px"><strong>วันที่ปิดงาน:</strong> ' + (iss.ClosedAt ? formatDMY(iss.ClosedAt, true) : '-') + '</div>' +
           '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Root Cause (สาเหตุ):</strong></div>' +
           '<div style="font-size:12px;background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);margin-top:2px;">' + (iss.RootCause||'-') + '</div>' +
           '<div style="font-size:12px;color:var(--text-muted);margin-top:6px;"><strong>Corrective Action (วิธีแก้ไข):</strong></div>' +
@@ -9267,7 +9428,7 @@ async function printIssueReport(id) {
       return '<div style="border:1px solid #cbd5e1;border-radius:4px;padding:8px 10px;margin-bottom:8px;background:#f8fafc;">' +
         '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">' +
           '<strong>รอบที่ ' + rNum + ': ' + rBadge + '</strong>' +
-          '<span style="font-size:11px;color:#555;">วันที่: ' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + '</span>' +
+          '<span style="font-size:11px;color:#555;">วันที่: ' + (rd.trialDate ? formatDMY(rd.trialDate, true) : '-') + '</span>' +
         '</div>' +
         '<div style="font-size:11.5px;color:#333;margin-bottom:4px;">' +
           'ผู้ทดสอบ/QC: <strong>' + (rd.trialBy || '-') + '</strong> | จำนวนทดสอบ: <strong>' + (rd.shots ? rd.shots + ' Shots' : '-') + '</strong>' +
@@ -9320,7 +9481,7 @@ async function printIssueReport(id) {
         '<th>ระดับความรุนแรง</th><td><span class="badge ' + (iss.Severity||'low').toLowerCase() + '">' + (iss.Severity||'-') + '</span></td>' +
       '</tr>' +
       '<tr>' +
-        '<th>วันที่/เวลาเกิดเหตุ</th><td>' + (iss.OccurredAt ? iss.OccurredAt.replace('T', ' ') : '-') + '</td>' +
+        '<th>วันที่/เวลาเกิดเหตุ</th><td>' + (iss.OccurredAt ? formatDMY(iss.OccurredAt, true) : '-') + '</td>' +
         '<th>ผู้แจ้งปัญหา</th><td>' + (iss.ReportedBy||'-') + '</td>' +
       '</tr>' +
     '</table>' +
@@ -9346,7 +9507,7 @@ async function printIssueReport(id) {
         '<td colspan="3" style="white-space:pre-wrap;">' + (iss.CleanCorrectiveAction||iss.CorrectiveAction||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
-        '<th style="width:20%;">วันที่ซ่อมเสร็จ / ปิดงาน</th><td style="width:30%;">' + (iss.ClosedAt ? iss.ClosedAt.replace('T', ' ') : '-') + '</td>' +
+        '<th style="width:20%;">วันที่ซ่อมเสร็จ / ปิดงาน</th><td style="width:30%;">' + (iss.ClosedAt ? formatDMY(iss.ClosedAt, true) : '-') + '</td>' +
         '<th style="width:20%;">ผู้ดำเนินการ / ผู้ซ่อม</th><td style="width:30%;">' + (iss.ClosedBy||'-') + '</td>' +
       '</tr>' +
       '<tr>' +
@@ -10018,7 +10179,7 @@ async function openTrialModal(id) {
           '<strong>📌 Trial รอบที่ ' + rNum + '</strong> ' + rBadge +
         '</div>' +
         '<div style="color:var(--text-muted);font-size:11.5px;margin-bottom:4px;">' +
-          '📅 ' + (rd.trialDate ? rd.trialDate.replace('T', ' ') : '-') + ' | 👤 ตรวจโดย: ' + (rd.trialBy || '-') + ' | 🎯 ' + (rd.shots ? rd.shots + ' Shots' : '-') +
+          '📅 ' + (rd.trialDate ? formatDMY(rd.trialDate, true) : '-') + ' | 👤 ตรวจโดย: ' + (rd.trialBy || '-') + ' | 🎯 ' + (rd.shots ? rd.shots + ' Shots' : '-') +
         '</div>' +
         '<div style="background:var(--surface);padding:6px 8px;border-radius:4px;border:1px solid var(--border);font-size:12px;white-space:pre-wrap;margin-bottom:4px;">' +
           '<strong>ข้อสังเกต/ปัญหา:</strong> ' + (rd.notes || '-') +
@@ -10306,7 +10467,7 @@ function filterStock(){
 
     var onOrderBadge = '';
     if (p.OnOrderQty > 0) {
-      var expStr = p.ExpectedDate ? ('~' + p.ExpectedDate.substring(5)) : '';
+      var expStr = p.ExpectedDate ? ('~' + formatDMY(p.ExpectedDate)) : '';
       onOrderBadge = '<div style="margin-top:3px;"><span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-size:9px;padding:1px 5px;" title="กำลังสั่งซื้อ ' + p.OnOrderQty + ' ' + (p.Unit||'ชิ้น') + (p.PONo ? ' (PO: ' + p.PONo + ')' : '') + (p.ExpectedDate ? ' คาดว่าถึง: ' + p.ExpectedDate : '') + '">🚚 สั่งแล้ว ' + p.OnOrderQty + ' ' + (p.Unit||'') + (expStr ? ' (' + expStr + ')' : '') + '</span></div>';
     }
 
@@ -10777,6 +10938,358 @@ async function doTransaction(){
 // ============================================
 //  HELPERS
 // ============================================
+// ============================================
+//  DATE & TIME FORMATTER: STRICT DD/MM/YYYY
+// ============================================
+function formatDMY(val, includeTime) {
+  if (!val) return '';
+  if (typeof val === 'string') {
+    val = val.trim();
+    if (!val) return '';
+    // Already in dd/mm/yyyy or dd/mm/yyyy HH:mm format
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(val)) {
+      if (includeTime && val.length === 10) return val + ' 00:00';
+      if (!includeTime && val.length > 10) return val.substring(0, 10);
+      return val;
+    }
+  }
+  var d = new Date(val);
+  if (isNaN(d.getTime())) return String(val);
+  var dd = String(d.getDate()).padStart(2, '0');
+  var mm = String(d.getMonth() + 1).padStart(2, '0');
+  var yyyy = d.getFullYear();
+  var dateStr = dd + '/' + mm + '/' + yyyy;
+  if (includeTime) {
+    var hh = String(d.getHours()).padStart(2, '0');
+    var min = String(d.getMinutes()).padStart(2, '0');
+    return dateStr + ' ' + hh + ':' + min;
+  }
+  return dateStr;
+}
+
+function parseDMYToISO(dmyStr, isDateTime) {
+  if (!dmyStr || typeof dmyStr !== 'string') return '';
+  dmyStr = dmyStr.trim();
+  // If already ISO format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}/.test(dmyStr)) return dmyStr;
+  var parts = dmyStr.split(' ');
+  var datePart = parts[0];
+  var timePart = parts[1] || '00:00';
+  var dp = datePart.split('/');
+  if (dp.length !== 3) return dmyStr;
+  var dd = dp[0].padStart(2, '0');
+  var mm = dp[1].padStart(2, '0');
+  var yyyy = dp[2];
+  if (isDateTime) {
+    var tp = timePart.split(':');
+    var hh = (tp[0] || '00').padStart(2, '0');
+    var min = (tp[1] || '00').padStart(2, '0');
+    return yyyy + '-' + mm + '-' + dd + 'T' + hh + ':' + min + ':00';
+  }
+  return yyyy + '-' + mm + '-' + dd;
+}
+
+// Global AppDatePicker Controller
+var AppDatePicker = {
+  targetInputId: null,
+  mode: 'date', // 'date' | 'datetime'
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+  selectedYear: null,
+  selectedMonth: null,
+  selectedDay: null,
+  selectedHour: '09',
+  selectedMinute: '00',
+
+  open: function(inputId, mode, titleText) {
+    this.targetInputId = inputId;
+    this.mode = mode || 'date';
+    var inp = document.getElementById(inputId);
+    var curVal = inp ? (inp.value || '').trim() : '';
+
+    var tEl = document.getElementById('adp-modal-title');
+    if (tEl) {
+      tEl.innerHTML = '<span>📅</span> <span>' + (titleText || (this.mode === 'datetime' ? 'เลือกวันและเวลา' : 'เลือกวันที่')) + '</span>';
+    }
+
+    var timeSec = document.getElementById('adp-time-section');
+    if (timeSec) {
+      timeSec.style.display = (this.mode === 'datetime') ? 'flex' : 'none';
+    }
+
+    // Populate Year Dropdown (from current year - 15 to current year + 10)
+    var curY = new Date().getFullYear();
+    var yrSel = document.getElementById('adp-year-select');
+    if (yrSel && yrSel.options.length < 5) {
+      yrSel.innerHTML = '';
+      for (var y = curY - 15; y <= curY + 10; y++) {
+        var opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + ' (' + (y + 543) + ')';
+        yrSel.appendChild(opt);
+      }
+    }
+
+    // Populate Hour & Minute Dropdowns
+    var hrSel = document.getElementById('adp-hour-select');
+    var minSel = document.getElementById('adp-minute-select');
+    if (hrSel && hrSel.options.length < 24) {
+      hrSel.innerHTML = '';
+      for (var h = 0; h < 24; h++) {
+        var hStr = String(h).padStart(2, '0');
+        hrSel.innerHTML += '<option value="' + hStr + '">' + hStr + '</option>';
+      }
+    }
+    if (minSel && minSel.options.length < 12) {
+      minSel.innerHTML = '';
+      for (var m = 0; m < 60; m += 5) {
+        var mStr = String(m).padStart(2, '0');
+        minSel.innerHTML += '<option value="' + mStr + '">' + mStr + '</option>';
+      }
+    }
+
+    // Parse current value if exists
+    var initDate = new Date();
+    if (curVal) {
+      if (/^\d{2}\/\d{2}\/\d{4}/.test(curVal)) {
+        var p = curVal.split(' ');
+        var dp = p[0].split('/');
+        var dNum = parseInt(dp[0], 10);
+        var mNum = parseInt(dp[1], 10) - 1;
+        var yNum = parseInt(dp[2], 10);
+        if (!isNaN(dNum) && !isNaN(mNum) && !isNaN(yNum)) {
+          initDate = new Date(yNum, mNum, dNum);
+          if (p[1] && p[1].indexOf(':') !== -1) {
+            var tp = p[1].split(':');
+            this.selectedHour = String(parseInt(tp[0], 10) || 0).padStart(2, '0');
+            this.selectedMinute = String(parseInt(tp[1], 10) || 0).padStart(2, '0');
+          }
+        }
+      } else if (/^\d{4}-\d{2}-\d{2}/.test(curVal)) {
+        var parsed = new Date(curVal);
+        if (!isNaN(parsed.getTime())) {
+          initDate = parsed;
+          this.selectedHour = String(parsed.getHours()).padStart(2, '0');
+          this.selectedMinute = String(parsed.getMinutes()).padStart(2, '0');
+        }
+      }
+    } else {
+      this.selectedHour = String(initDate.getHours()).padStart(2, '0');
+      var rawM = initDate.getMinutes();
+      this.selectedMinute = String(Math.round(rawM / 5) * 5 % 60).padStart(2, '0');
+    }
+
+    this.selectedYear = initDate.getFullYear();
+    this.selectedMonth = initDate.getMonth();
+    this.selectedDay = initDate.getDate();
+    this.viewYear = this.selectedYear;
+    this.viewMonth = this.selectedMonth;
+
+    if (hrSel) hrSel.value = this.selectedHour;
+    if (minSel) minSel.value = this.selectedMinute;
+
+    this.render();
+    var modal = document.getElementById('app-datepicker-modal');
+    if (modal) modal.style.display = 'flex';
+  },
+
+  render: function() {
+    var mSel = document.getElementById('adp-month-select');
+    var ySel = document.getElementById('adp-year-select');
+    if (mSel) mSel.value = this.viewMonth;
+    if (ySel) ySel.value = this.viewYear;
+
+    var grid = document.getElementById('adp-calendar-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+
+    var firstDay = new Date(this.viewYear, this.viewMonth, 1).getDay(); // 0 = Sun
+    var daysInMonth = new Date(this.viewYear, this.viewMonth + 1, 0).getDate();
+    var daysInPrevMonth = new Date(this.viewYear, this.viewMonth, 0).getDate();
+
+    var today = new Date();
+    var isCurrentMonthToday = (today.getFullYear() === this.viewYear && today.getMonth() === this.viewMonth);
+    var todayDate = today.getDate();
+
+    // Previous month filler days
+    for (var i = firstDay - 1; i >= 0; i--) {
+      var d = daysInPrevMonth - i;
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'adp-day-btn other-month';
+      btn.textContent = d;
+      btn.onclick = (function(self, targetDay) {
+        return function() {
+          self.prevMonth();
+          self.selectDay(targetDay);
+        };
+      })(this, d);
+      grid.appendChild(btn);
+    }
+
+    // Current month days
+    for (var day = 1; day <= daysInMonth; day++) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'adp-day-btn';
+      btn.textContent = day;
+
+      var isSelected = (this.selectedYear === this.viewYear && this.selectedMonth === this.viewMonth && this.selectedDay === day);
+      var isToday = (isCurrentMonthToday && todayDate === day);
+
+      if (isSelected) btn.classList.add('selected');
+      if (isToday) btn.classList.add('today');
+
+      btn.onclick = (function(self, targetDay) {
+        return function() {
+          self.selectDay(targetDay);
+        };
+      })(this, day);
+
+      grid.appendChild(btn);
+    }
+
+    // Next month filler days to complete rows (up to 42 cells)
+    var totalCells = firstDay + daysInMonth;
+    var nextFill = totalCells <= 35 ? (35 - totalCells) : (42 - totalCells);
+    for (var nd = 1; nd <= nextFill; nd++) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'adp-day-btn other-month';
+      btn.textContent = nd;
+      btn.onclick = (function(self, targetDay) {
+        return function() {
+          self.nextMonth();
+          self.selectDay(targetDay);
+        };
+      })(this, nd);
+      grid.appendChild(btn);
+    }
+
+    this.updatePreview();
+  },
+
+  selectDay: function(d) {
+    this.selectedDay = d;
+    this.selectedMonth = this.viewMonth;
+    this.selectedYear = this.viewYear;
+    this.render();
+  },
+
+  selectToday: function() {
+    var now = new Date();
+    this.viewYear = now.getFullYear();
+    this.viewMonth = now.getMonth();
+    this.selectedYear = this.viewYear;
+    this.selectedMonth = this.viewMonth;
+    this.selectedDay = now.getDate();
+    this.selectedHour = String(now.getHours()).padStart(2, '0');
+    var rawM = now.getMinutes();
+    this.selectedMinute = String(Math.round(rawM / 5) * 5 % 60).padStart(2, '0');
+    var hrSel = document.getElementById('adp-hour-select');
+    var minSel = document.getElementById('adp-minute-select');
+    if (hrSel) hrSel.value = this.selectedHour;
+    if (minSel) minSel.value = this.selectedMinute;
+    this.render();
+  },
+
+  onMonthChange: function(m) {
+    this.viewMonth = parseInt(m, 10);
+    this.render();
+  },
+
+  onYearChange: function(y) {
+    this.viewYear = parseInt(y, 10);
+    this.render();
+  },
+
+  prevMonth: function() {
+    this.viewMonth--;
+    if (this.viewMonth < 0) {
+      this.viewMonth = 11;
+      this.viewYear--;
+    }
+    this.render();
+  },
+
+  nextMonth: function() {
+    this.viewMonth++;
+    if (this.viewMonth > 11) {
+      this.viewMonth = 0;
+      this.viewYear++;
+    }
+    this.render();
+  },
+
+  onTimeChange: function() {
+    var hrSel = document.getElementById('adp-hour-select');
+    var minSel = document.getElementById('adp-minute-select');
+    if (hrSel) this.selectedHour = hrSel.value;
+    if (minSel) this.selectedMinute = minSel.value;
+    this.updatePreview();
+  },
+
+  getFormattedValue: function() {
+    if (!this.selectedYear || this.selectedMonth === null || !this.selectedDay) return '';
+    var dd = String(this.selectedDay).padStart(2, '0');
+    var mm = String(this.selectedMonth + 1).padStart(2, '0');
+    var yyyy = this.selectedYear;
+    var res = dd + '/' + mm + '/' + yyyy;
+    if (this.mode === 'datetime') {
+      res += ' ' + (this.selectedHour || '00') + ':' + (this.selectedMinute || '00');
+    }
+    return res;
+  },
+
+  updatePreview: function() {
+    var pEl = document.getElementById('adp-selected-preview');
+    if (pEl) {
+      var val = this.getFormattedValue();
+      pEl.textContent = val || '- (ยังไม่ได้เลือก)';
+    }
+  },
+
+  clearValue: function() {
+    if (this.targetInputId) {
+      var inp = document.getElementById(this.targetInputId);
+      if (inp) {
+        inp.value = '';
+        var evt = new Event('change', { bubbles: true });
+        inp.dispatchEvent(evt);
+      }
+    }
+    this.close();
+  },
+
+  confirm: function() {
+    var val = this.getFormattedValue();
+    if (!val) {
+      showToast('กรุณาคลิกเลือกวันที่ในปฏิทินก่อนกดยืนยัน', 'warning');
+      return;
+    }
+    if (this.targetInputId) {
+      var inp = document.getElementById(this.targetInputId);
+      if (inp) {
+        inp.value = val;
+        var evt = new Event('change', { bubbles: true });
+        inp.dispatchEvent(evt);
+      }
+    }
+    this.close();
+  },
+
+  close: function() {
+    var modal = document.getElementById('app-datepicker-modal');
+    if (modal) modal.style.display = 'none';
+  },
+
+  onOverlayClick: function(e) {
+    if (e.target.id === 'app-datepicker-modal') {
+      this.close();
+    }
+  }
+};
+
 function esc(s){if(s===null||s===undefined)return '';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function escHtml(s){return esc(s);}
 function escapeHtml(s){return esc(s);}
@@ -10785,8 +11298,30 @@ function filterTableByCol(sel,tableId,colIdx){var q=sel.value.toLowerCase();docu
 function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
 function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
 document.querySelectorAll('.modal-overlay').forEach(function(o){o.addEventListener('click',function(e){if(e.target===o)o.classList.remove('open');});});
-function v(id){var el=document.getElementById(id);return el?el.value:'';}
-function v_set(id,val){var el=document.getElementById(id);if(el)el.value=val;}
+function v(id){
+  var el=document.getElementById(id);
+  if(!el) return '';
+  var val = (el.value || '').trim();
+  var dpType = el.getAttribute('data-datepicker');
+  if (dpType === 'datetime') {
+    return parseDMYToISO(val, true);
+  } else if (dpType === 'date') {
+    return parseDMYToISO(val, false);
+  }
+  return el.value;
+}
+function v_set(id,val){
+  var el=document.getElementById(id);
+  if(!el) return;
+  var dpType = el.getAttribute('data-datepicker');
+  if (dpType === 'datetime') {
+    el.value = formatDMY(val, true);
+  } else if (dpType === 'date') {
+    el.value = formatDMY(val, false);
+  } else {
+    el.value = (val !== null && val !== undefined) ? val : '';
+  }
+}
 function showToast(msg,type){type=type||'success';var t=document.createElement('div');t.className='toast '+type;var icon={success:'\u2705',error:'\u274c',warning:'\u26a0\ufe0f'}[type]||'\u2139\ufe0f';t.innerHTML='<span style="font-size:16px">'+icon+'</span><span>'+msg+'</span>';document.getElementById('toast-container').appendChild(t);setTimeout(function(){t.remove();},3500);}
 function showGlobalLoading(show){var el=document.getElementById('global-loading');if(el){if(show)el.classList.add('show');else el.classList.remove('show');}}
 function tryParse(str){
@@ -11019,7 +11554,7 @@ function getReportFilterRange() {
     start = (document.getElementById('report-start-date') || {}).value || null;
     end = (document.getElementById('report-end-date') || {}).value || null;
     if (start && end) {
-      label = start + ' ถึง ' + end;
+      label = formatDMY(start) + ' ถึง ' + formatDMY(end);
     } else {
       label = 'กำหนดช่วงวันเอง';
     }
@@ -11355,8 +11890,8 @@ function loadReports() {
         '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(i.Description || '') + '">' + esc(i.Description || '-') + '</td>' +
         '<td>' + sevBadge + '</td>' +
         '<td>' + stBadge + '</td>' +
-        '<td>' + ((i.OccurredAt || '').split('T')[0] || '-') + '</td>' +
-        '<td>' + ((i.ClosedAt || '').split('T')[0] || '-') + '</td>' +
+        '<td>' + (formatDMY(i.OccurredAt) || '-') + '</td>' +
+        '<td>' + (formatDMY(i.ClosedAt) || '-') + '</td>' +
         '<td>' + esc(i.ClosedBy || '-') + '</td>' +
         '<td><button class="btn btn-outline btn-sm" onclick="openIssueDetailModal(\'' + i.ID + '\')" title="ดูรายละเอียด">🔍 ดู</button></td>' +
       '</tr>';
@@ -11544,7 +12079,7 @@ function exportCSV(type){
     filename='molds.csv';
   } else if(type==='issues'){
     headers=['ID','TargetType','TargetName','IssueType','Severity','Status','OccurredAt','ReportedBy','Description','ClosedAt','ClosedBy'];
-    data=(STATE.issues||[]).map(function(i){return [i.ID,i.TargetType,i.TargetName,i.IssueType,i.Severity,i.Status,i.OccurredAt,i.ReportedBy,i.Description,i.ClosedAt,i.ClosedBy];});
+    data=(STATE.issues||[]).map(function(i){return [i.ID,i.TargetType,i.TargetName,i.IssueType,i.Severity,i.Status,formatDMY(i.OccurredAt, true),i.ReportedBy,i.Description,formatDMY(i.ClosedAt, true),i.ClosedBy];});
     filename='issues.csv';
   } else if(type==='stock'){
     headers=['ID','PartName','PartNo','Vendor','Qty','MinQty','Unit','Price','Location','LinkedType','LinkedID'];
@@ -11552,7 +12087,7 @@ function exportCSV(type){
     filename='stock.csv';
   } else if(type==='tpm'){
     headers=['ID','TargetType','TargetName','Year','PlannedDate','Status','ActualDate','ActualBy'];
-    data=(STATE.tpmPlans||[]).map(function(t){return [t.ID,t.TargetType,t.TargetName,t.Year,t.PlannedDate,t.Status,t.ActualDate,t.ActualBy];});
+    data=(STATE.tpmPlans||[]).map(function(t){return [t.ID,t.TargetType,t.TargetName,t.Year,formatDMY(t.PlannedDate),t.Status,formatDMY(t.ActualDate),t.ActualBy];});
     filename='tpm_plans.csv';
   }
   if(!data.length){showToast('\u0e44\u0e21\u0e48\u0e21\u0e35\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a Export','warning');return;}
@@ -12092,7 +12627,7 @@ async function initMobileSignPage(moldId, defaultRole) {
           </div>
           <div style="margin-bottom:10px;">
             <label style="display:block;font-size:11.5px;color:#94a3b8;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E2D\u0E19\u0E38\u0E21\u0E31\u0E15\u0E34:</label>
-            <input id="mob-stamp-date" type="date" style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
+            <input type="text" id="mob-stamp-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('mob-stamp-date', 'date', 'เลือกวันที่ลงลายเซ็น')" style="width:100%;padding:10px;border-radius:8px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:14px;box-sizing:border-box;" />
           </div>
         </div>
 
@@ -12831,7 +13366,7 @@ function renderVendorInteractiveForm(plan, asset) {
           '</div>' +
           '<div>' +
             '<label style="display:block;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:4px;">\u0E27\u0E31\u0E19\u0E17\u0E35\u0E48\u0E40\u0E02\u0E49\u0E32\u0E17\u0E33\u0E08\u0E23\u0E34\u0E07:</label>' +
-            '<input type="date" id="vendor-actual-date" value="' + todayYMD + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
+            '<input type="text" id="vendor-actual-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly data-datepicker="date" onclick="AppDatePicker.open('vendor-actual-date', 'date', 'เลือกวันที่ตรวจ TPM จริง')" value="' + formatDMY(todayYMD) + '" style="width:100%;box-sizing:border-box;background:#0f172a;border:1px solid #475569;color:#fff;padding:9px 10px;border-radius:8px;font-size:12.5px;" />' +
           '</div>' +
         '</div>' +
 
@@ -14159,7 +14694,7 @@ function renderAsset360Profile(target) {
     if (item.Serial) specsHtml += '<div class="qr-spec-chip"><strong>Serial:</strong> ' + item.Serial + '</div>';
     if (item.Department) specsHtml += '<div class="qr-spec-chip"><strong>แผนก:</strong> ' + item.Department + '</div>';
     if (item.Location) specsHtml += '<div class="qr-spec-chip"><strong>ตำแหน่ง:</strong> ' + item.Location + '</div>';
-    if (item.PurchaseDate) specsHtml += '<div class="qr-spec-chip"><strong>วันที่ซื้อ:</strong> ' + item.PurchaseDate + '</div>';
+    if (item.PurchaseDate) specsHtml += '<div class="qr-spec-chip"><strong>วันที่ซื้อ:</strong> ' + formatDMY(item.PurchaseDate) + '</div>';
   }
 
   // Current Month TPM Badge with distinct green for Done and bright blue for Planned
@@ -14370,7 +14905,7 @@ function renderAsset360Profile(target) {
                   '<div style="font-size:11.5px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;">' + (iss.Description || '-') + '</div>' +
                   '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:6px;border-top:1px dashed rgba(244,63,94,0.2);">' +
                     '<div style="font-size:10px;color:var(--text-faint);display:flex;gap:8px;">' +
-                      '<span>🕒 ' + (iss.OccurredAt ? iss.OccurredAt.slice(0,10) : '-') + '</span>' +
+                      '<span>🕒 ' + (iss.OccurredAt ? formatDMY(iss.OccurredAt) : '-') + '</span>' +
                       '<span>👤 ' + (iss.ReportedBy || '-') + '</span>' +
                     '</div>' +
                     '<div style="display:flex;gap:4px;align-items:center;">' +
