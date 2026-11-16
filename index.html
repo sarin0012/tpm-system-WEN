@@ -1,4 +1,4 @@
-﻿﻿<!DOCTYPE html>
+﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -1789,6 +1789,7 @@ body.role-engineer .role-admin-only { display: none !important; }
     <div class="nav-section">Action &amp; Operations</div>
     <div class="nav-item" onclick="nav('qr-scan')" data-page="qr-scan"><div class="icon">🏷️</div>QR ตรวจสอบเครื่อง/โมล</div>
     <div class="nav-item" onclick="nav('issues')" data-page="issues"><div class="icon">🚨</div>แจ้งปัญหา / Issues<span class="nav-badge" id="badge-issues" style="display:none">0</span></div>
+    <div class="nav-item" onclick="nav('followup')" data-page="followup"><div class="icon">📋</div>Follow Up งานซ่อม<span class="nav-badge" id="badge-followup" style="display:none;background:#f59e0b">0</span></div>
     <div class="nav-item" onclick="nav('tpm')" data-page="tpm"><div class="icon">🔧</div>แผน TPM<span class="nav-badge" id="badge-tpm" style="display:none">0</span></div>
     <div class="nav-item" onclick="nav('stock')" data-page="stock"><div class="icon">📦</div>Stock Part<span class="nav-badge" id="badge-stock" style="display:none">0</span></div>
     <div class="nav-section">Registration</div>
@@ -2023,6 +2024,40 @@ body.role-engineer .role-admin-only { display: none !important; }
     </tr></thead>
     <tbody id="issues-tbody"></tbody>
   </table></div></div>
+</div>
+
+<!-- FOLLOW UP -->
+<div class="page" id="page-followup">
+  <!-- Summary Bar -->
+  <div id="fu-summary-bar" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;"></div>
+  <!-- Filter Toolbar -->
+  <div class="toolbar" style="flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+    <input id="fu-search" class="search-input" type="text" placeholder="🔍 ค้นหา Issue No. / โมล / ปัญหา..." oninput="renderFollowUp()" style="min-width:220px;"/>
+    <select id="fu-stage-filter" onchange="renderFollowUp()" style="width:175px;">
+      <option value="">📋 ทุก Stage</option>
+      <option value="แจ้งปัญหา">🔴 แจ้งปัญหา</option>
+      <option value="ยกโมล">🏗️ ยกโมล</option>
+      <option value="ส่งซ่อม">🔧 ส่งซ่อม</option>
+      <option value="Trial">🧪 Trial</option>
+      <option value="ปิดงาน">✅ ปิดงาน</option>
+    </select>
+    <select id="fu-alert-filter" onchange="renderFollowUp()" style="width:165px;">
+      <option value="">🔔 ทุกสถานะ Alert</option>
+      <option value="overdue">🔴 เกินกำหนด</option>
+      <option value="near">🟡 ใกล้ถึงกำหนด</option>
+      <option value="ok">🟢 ปกติ</option>
+    </select>
+    <div style="flex:1"></div>
+    <button class="btn btn-primary" onclick="openFollowUpPlanModal(null)">+ วางแผนงานซ่อม</button>
+  </div>
+  <!-- Cards Container -->
+  <div id="fu-cards-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;"></div>
+  <div id="fu-empty-state" style="display:none;text-align:center;padding:60px 20px;">
+    <div style="font-size:48px;margin-bottom:12px;">📋</div>
+    <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:6px;">ยังไม่มีแผนงานซ่อม</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">กดปุ่ม "+ วางแผนงานซ่อม" เพื่อเพิ่มแผนการติดตามงานซ่อมครั้งแรก</div>
+    <button class="btn btn-primary" onclick="openFollowUpPlanModal(null)">+ วางแผนงานซ่อม</button>
+  </div>
 </div>
 
 <!-- STOCK -->
@@ -5045,6 +5080,7 @@ function applyRolePermissions() {
     'tpm': can('tpm', 'view'),
     'qr-scan': true,
     'issues': can('issues', 'view'),
+    'followup': true,
     'stock': can('stock', 'view'),
     'reports': can('reports', 'view'),
     'settings': can('settings', 'view')
@@ -5060,7 +5096,8 @@ function applyRolePermissions() {
     'molds': can('molds', 'view'),
     'qr-scan': true,
     'tpm': can('tpm', 'view'),
-    'issues': can('issues', 'view')
+    'issues': can('issues', 'view'),
+    'followup': true
   };
   Object.keys(mobileItems).forEach(function(p) {
     var mEl = document.querySelector('#mobile-bottom-nav .mobile-nav-item[data-mobile-page="' + p + '"]');
@@ -5537,7 +5574,18 @@ async function loadAllData() {
     ]);
     if (m && m.success)  STATE.molds = m.data || [];
     if (mc && mc.success) STATE.machines = mc.data || [];
-    if (s && s.success)  STATE.stockParts = (s.data || []).filter(function(x){ return x.ID !== '__SYS_USERS_CONFIG__' && x.ID !== '__SYS_HEADER_SIGS_CONFIG__'; });
+    if (s && s.success) {
+      STATE.stockParts = (s.data || []).filter(function(x){ return x.ID !== '__SYS_USERS_CONFIG__' && x.ID !== '__SYS_HEADER_SIGS_CONFIG__' && x.ID !== '__SYS_FOLLOWUP_CONFIG__'; });
+      try {
+        var fuCfg = (s.data || []).find(function(x){ return x.ID === '__SYS_FOLLOWUP_CONFIG__'; });
+        if (fuCfg && fuCfg.Location) {
+          var cloudPlans = JSON.parse(fuCfg.Location);
+          if (Array.isArray(cloudPlans) && cloudPlans.length > 0) {
+            localStorage.setItem('TPM_FOLLOWUP_PLANS', JSON.stringify(cloudPlans));
+          }
+        }
+      } catch(ex){ console.warn('Load cloud FU error', ex); }
+    }
     if (i && i.success)  STATE.issues = i.data || [];
     if (t && t.success)  STATE.checklistTemplates = t.data || [];
     if (hs && hs.success && hs.data) {
@@ -5580,6 +5628,7 @@ async function loadAllData() {
       else if (pName === 'issues') renderIssues();
       else if (pName === 'stock') renderStock();
       else if (pName === 'reports') loadReports();
+      else if (pName === 'followup') loadFollowUpPage();
     }
   } catch (err) {
     console.error('Error in loadAllData:', err);
@@ -5607,6 +5656,7 @@ const PAGE_INFO = {
   stock:{title:'Stock Part',sub:'คลังอะไหล่'},
   reports:{title:'Reports',sub:'รายงาน'},
   settings:{title:'ผู้ใช้งาน',sub:'จัดการสิทธิ์ผู้ใช้'},
+  followup:{title:'Follow Up',sub:'ติดตามงานซ่อม-แม่พิมพ์'},
 };
 
 function toggleMobileSidebar() {
@@ -5630,7 +5680,7 @@ function closeMobileSidebar() {
 
 function nav(page) {
   try {
-    if (page !== 'dashboard' && page !== 'qr-scan' && !can(page, 'view')) {
+    if (page !== 'dashboard' && page !== 'qr-scan' && page !== 'followup' && !can(page, 'view')) {
       showToast('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'warning');
       page = 'dashboard';
     }
@@ -5663,6 +5713,7 @@ function nav(page) {
     else if (page==='stock') renderStock();
     else if (page==='reports') loadReports();
     else if (page==='settings') loadUsers();
+    else if (page==='followup') loadFollowUpPage();
   } catch (err) {
     console.error('Navigation error for page ' + page + ':', err);
   }
@@ -5739,6 +5790,7 @@ function updateBadges() {
     const bi2 = document.getElementById('badge-issues');
     const mbi = document.getElementById('mobile-badge-issues');
     if (mbi) { mbi.style.display = open>0?'':'none'; mbi.textContent = open; }
+    if (typeof updateFUBadge === 'function') updateFUBadge();
   } catch (err) {
     console.error('Badge update error:', err);
   }
@@ -8727,7 +8779,8 @@ function filterIssues() {
         }
       } else {
         actionButtons = '<button class="btn btn-outline btn-sm" onclick="updIssueStatus(\'' + i.ID + '\',\'In Progress\')" title="เริ่มดำเนินการ (In Progress)">▶️ เริ่มซ่อม</button> ' +
-          '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลซ่อม">🔧</button> ';
+          '<button class="btn btn-ghost btn-sm" onclick="openRepairModal(\'' + i.ID + '\')" title="บันทึกผลซ่อม">🔧</button> ' +
+          '<button class="btn btn-outline btn-sm" onclick="openFollowUpForIssue(\'' + i.ID + '\')" title="วางแผน & ติดตามงานซ่อม (Follow Up)" style="font-size:11px;padding:3px 7px;color:#f59e0b;border-color:rgba(245,158,11,0.4);">📋 Follow Up</button> ';
       }
     }
 
@@ -14650,6 +14703,471 @@ function renderQRDefaultBrowser() {
     '</div>';
 }
 
+// =====================================================
+// FOLLOW UP MODULE — DATA + RENDER + CRUD
+// =====================================================
+var FU_STORE_KEY = 'TPM_FOLLOWUP_PLANS';
+
+function getFUPlans() {
+  try {
+    var raw = localStorage.getItem(FU_STORE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveFUPlans(plans) {
+  localStorage.setItem(FU_STORE_KEY, JSON.stringify(plans));
+  updateFUBadge();
+  if (typeof sb !== 'undefined' && sb) {
+    try {
+      sb.from('stock_parts').upsert({
+        ID: '__SYS_FOLLOWUP_CONFIG__',
+        PartName: '__SYSTEM_CONFIG_FOLLOWUP__',
+        Category: '__CONFIG__',
+        Location: JSON.stringify(plans),
+        Qty: 0,
+        MinQty: 0,
+        Unit: 'config'
+      }).then(function(){}).catch(function(e){ console.warn('Sync FU plans error:', e); });
+    } catch(err) { console.warn('Sync FU plans error:', err); }
+  }
+}
+
+function openFollowUpForIssue(issueId) {
+  var plans = getFUPlans();
+  var existing = plans.find(function(p){ return p.issueId === issueId; });
+  if (existing) {
+    nav('followup');
+    openFollowUpPlanModal(existing.id);
+  } else {
+    nav('followup');
+    openFollowUpPlanModal(null);
+    var issSel = document.getElementById('fu-issue-select');
+    if (issSel) {
+      issSel.value = issueId;
+      onFUIssueLinkChange();
+    }
+  }
+}
+
+function updateFUBadge() {
+  var plans = getFUPlans();
+  var active = plans.filter(function(p){ return p.stage !== 'ปิดงาน'; });
+  var overdue = active.filter(function(p){ return getFUAlertLevel(p) === 'overdue'; });
+  var n = overdue.length;
+  var badge = document.getElementById('badge-followup');
+  var mbadge = document.getElementById('mobile-badge-followup');
+  if (badge) {
+    badge.textContent = n > 0 ? n : active.length;
+    badge.style.display = (n > 0 || active.length > 0) ? 'inline-block' : 'none';
+    badge.style.background = n > 0 ? '#ef4444' : '#f59e0b';
+  }
+  if (mbadge) {
+    mbadge.textContent = n > 0 ? n : active.length;
+    mbadge.style.display = (n > 0 || active.length > 0) ? 'inline-block' : 'none';
+  }
+}
+
+function parseDMYtoDate(dmy) {
+  if (!dmy) return null;
+  var parts = dmy.split('/');
+  if (parts.length !== 3) return null;
+  return new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+}
+
+function getFUAlertLevel(plan) {
+  // Key date = most upcoming planned date that isn't done yet
+  var today = new Date(); today.setHours(0,0,0,0);
+  var keyDateStr = '';
+  if (plan.stage === 'แจ้งปัญหา') keyDateStr = plan.liftDate;
+  else if (plan.stage === 'ยกโมล') keyDateStr = plan.repairDate || plan.liftDate;
+  else if (plan.stage === 'ส่งซ่อม') {
+    // compute expected return
+    if (plan.repairDate && plan.repairDays) {
+      var d = parseDMYtoDate(plan.repairDate);
+      if (d) { d.setDate(d.getDate() + parseInt(plan.repairDays)); keyDateStr = formatDMY(d.toISOString().slice(0,10)); }
+    } else keyDateStr = plan.trialDate;
+  }
+  else if (plan.stage === 'Trial') keyDateStr = plan.trialDate;
+
+  if (!keyDateStr) return 'ok';
+  var keyDate = parseDMYtoDate(keyDateStr);
+  if (!keyDate) return 'ok';
+  keyDate.setHours(0,0,0,0);
+  var diff = Math.round((keyDate - today) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 2) return 'near';
+  return 'ok';
+}
+
+function getFUDueLabel(plan) {
+  var today = new Date(); today.setHours(0,0,0,0);
+  var keyDateStr = '';
+  if (plan.stage === 'แจ้งปัญหา') keyDateStr = plan.liftDate;
+  else if (plan.stage === 'ยกโมล') keyDateStr = plan.repairDate || plan.liftDate;
+  else if (plan.stage === 'ส่งซ่อม') {
+    if (plan.repairDate && plan.repairDays) {
+      var d = parseDMYtoDate(plan.repairDate);
+      if (d) { d.setDate(d.getDate() + parseInt(plan.repairDays)); keyDateStr = d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear(); }
+    } else keyDateStr = plan.trialDate;
+  }
+  else if (plan.stage === 'Trial') keyDateStr = plan.trialDate;
+  if (!keyDateStr) return '';
+  var keyDate = parseDMYtoDate(keyDateStr);
+  if (!keyDate) return '';
+  keyDate.setHours(0,0,0,0);
+  var diff = Math.round((keyDate - today) / 86400000);
+  if (diff < 0) return 'เกินกำหนด ' + Math.abs(diff) + ' วัน';
+  if (diff === 0) return 'วันนี้!';
+  if (diff === 1) return 'พรุ่งนี้';
+  return 'อีก ' + diff + ' วัน (' + keyDateStr + ')';
+}
+
+function getStageIndex(stage) {
+  var stages = ['แจ้งปัญหา','ยกโมล','ส่งซ่อม','Trial','ปิดงาน'];
+  return stages.indexOf(stage);
+}
+
+function loadFollowUpPage() {
+  populateFUAssetSelect();
+  populateFUIssueSelect();
+  renderFollowUp();
+  updateFUBadge();
+}
+
+function renderFollowUp() {
+  var plans = getFUPlans();
+  var q = (document.getElementById('fu-search') ? document.getElementById('fu-search').value : '').toLowerCase();
+  var stageF = document.getElementById('fu-stage-filter') ? document.getElementById('fu-stage-filter').value : '';
+  var alertF = document.getElementById('fu-alert-filter') ? document.getElementById('fu-alert-filter').value : '';
+
+  // Enrich with asset name
+  plans = plans.map(function(p) {
+    if (!p.assetName && p.assetId) {
+      var found = findAssetRecord(p.assetId);
+      p.assetName = found && found.item ? found.item.Name : p.assetId;
+    }
+    return p;
+  });
+
+  // Filter
+  var filtered = plans.filter(function(p) {
+    if (q && !(p.assetName||'').toLowerCase().includes(q) && !(p.desc||'').toLowerCase().includes(q) && !(p.vendor||'').toLowerCase().includes(q) && !(p.issueNo||'').toLowerCase().includes(q)) return false;
+    if (stageF && p.stage !== stageF) return false;
+    if (alertF && getFUAlertLevel(p) !== alertF) return false;
+    return true;
+  });
+
+  // Sort: overdue first, then by stage index descending (most progress first), then by id desc
+  filtered.sort(function(a,b) {
+    var la = getFUAlertLevel(a), lb = getFUAlertLevel(b);
+    var order = {overdue:0, near:1, ok:2};
+    if ((order[la]||2) !== (order[lb]||2)) return (order[la]||2) - (order[lb]||2);
+    // closed last
+    var sa = a.stage === 'ปิดงาน' ? 999 : (5 - getStageIndex(a.stage));
+    var sb = b.stage === 'ปิดงาน' ? 999 : (5 - getStageIndex(b.stage));
+    return sa - sb;
+  });
+
+  // Summary bar
+  var total = plans.length;
+  var active = plans.filter(function(p){ return p.stage !== 'ปิดงาน'; });
+  var overdue = active.filter(function(p){ return getFUAlertLevel(p) === 'overdue'; });
+  var near = active.filter(function(p){ return getFUAlertLevel(p) === 'near'; });
+  var bar = document.getElementById('fu-summary-bar');
+  if (bar) {
+    bar.innerHTML =
+      '<div style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;min-width:140px;">' +
+        '<span style="font-size:20px;">🔴</span>' +
+        '<div><div style="font-size:11px;color:var(--text-muted);">เกินกำหนด</div><div style="font-size:22px;font-weight:800;color:#ef4444;">'+overdue.length+'</div></div>' +
+      '</div>' +
+      '<div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;min-width:140px;">' +
+        '<span style="font-size:20px;">🟡</span>' +
+        '<div><div style="font-size:11px;color:var(--text-muted);">ใกล้ถึงกำหนด</div><div style="font-size:22px;font-weight:800;color:#f59e0b;">'+near.length+'</div></div>' +
+      '</div>' +
+      '<div style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.25);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;min-width:140px;">' +
+        '<span style="font-size:20px;">🟢</span>' +
+        '<div><div style="font-size:11px;color:var(--text-muted);">งาน In Progress</div><div style="font-size:22px;font-weight:800;color:#10b981;">'+active.length+'</div></div>' +
+      '</div>' +
+      '<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:8px;min-width:140px;">' +
+        '<span style="font-size:20px;">📋</span>' +
+        '<div><div style="font-size:11px;color:var(--text-muted);">ทั้งหมด</div><div style="font-size:22px;font-weight:800;color:var(--text);">'+total+'</div></div>' +
+      '</div>';
+  }
+
+  var container = document.getElementById('fu-cards-container');
+  var empty = document.getElementById('fu-empty-state');
+  if (!container) return;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '';
+    if (empty) empty.style.display = 'block';
+    return;
+  }
+  if (empty) empty.style.display = 'none';
+
+  container.innerHTML = filtered.map(function(p) { return renderFUCard(p); }).join('');
+}
+
+function renderFUCard(plan) {
+  var stages = ['แจ้งปัญหา','ยกโมล','ส่งซ่อม','Trial','ปิดงาน'];
+  var stageIcons = ['🔴','🏗️','🔧','🧪','✅'];
+  var stageIdx = getStageIndex(plan.stage);
+  var alert = getFUAlertLevel(plan);
+  var dueLabel = getFUDueLabel(plan);
+  var isClosed = plan.stage === 'ปิดงาน';
+
+  var alertColor = alert === 'overdue' ? '#ef4444' : (alert === 'near' ? '#f59e0b' : '#10b981');
+  var alertBg = alert === 'overdue' ? 'rgba(239,68,68,0.08)' : (alert === 'near' ? 'rgba(245,158,11,0.08)' : 'transparent');
+  var borderColor = isClosed ? 'rgba(16,185,129,0.3)' : (alert === 'overdue' ? '#ef4444' : (alert === 'near' ? '#f59e0b' : 'var(--border)'));
+
+  // Build timeline dots
+  var timelineDots = stages.map(function(s, i) {
+    var isDone = i <= stageIdx;
+    var isCur = i === stageIdx;
+    var dotColor = isDone ? (isCur ? alertColor : '#10b981') : 'var(--border)';
+    var dotSize = isCur ? '14px' : '10px';
+    return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;">' +
+      '<div style="width:'+dotSize+';height:'+dotSize+';border-radius:50%;background:'+dotColor+';border:2px solid '+dotColor+';margin:auto;'+(isCur?'box-shadow:0 0 6px '+alertColor+'88':'')+'"></div>' +
+      '<div style="font-size:9.5px;color:'+(isDone?'var(--text)':'var(--text-muted)')+';text-align:center;line-height:1.2;">'+stageIcons[i]+'<br>'+s+'</div>' +
+    '</div>';
+  }).join('<div style="flex:1;height:2px;background:linear-gradient(to right,'+(stageIdx>0?'#10b981':'var(--border)')+',var(--border));margin-top:5px;align-self:start;margin-top:7px;"></div>');
+
+  // Date rows
+  var dateRows = '';
+  if (plan.liftDate) dateRows += '<div style="display:flex;gap:6px;align-items:center;font-size:12px;"><span style="color:#f59e0b;">🏗️</span><span style="color:var(--text-muted);">ยกโมล (แผน):</span><span style="font-weight:600;">'+plan.liftDate+'</span>'+(plan.liftActual?'<span style="color:var(--text-muted);margin-left:4px;">จริง: '+plan.liftActual+'</span>':'')+'</div>';
+  if (plan.repairDate) dateRows += '<div style="display:flex;gap:6px;align-items:center;font-size:12px;"><span style="color:#818cf8;">🔧</span><span style="color:var(--text-muted);">วันซ่อม:</span><span style="font-weight:600;">'+plan.repairDate+'</span>'+(plan.repairDays?'<span style="color:var(--text-muted);">('+plan.repairDays+' วัน)</span>':'')+'</div>';
+  if (plan.trialDate) dateRows += '<div style="display:flex;gap:6px;align-items:center;font-size:12px;"><span style="color:#38bdf8;">🧪</span><span style="color:var(--text-muted);">Trial (แผน):</span><span style="font-weight:600;">'+plan.trialDate+'</span>'+(plan.trialActual?'<span style="color:var(--text-muted);">จริง: '+plan.trialActual+'</span>':'')+'</div>';
+
+  return '<div style="background:var(--surface);border:1.5px solid '+borderColor+';border-radius:14px;padding:16px;cursor:default;'+(isClosed?'opacity:0.7;':'')+alertBg+';">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">' +
+      '<div>' +
+        '<div style="font-weight:800;font-size:14px;color:var(--text);">🧩 '+esc(plan.assetName || plan.assetId || '-')+'</div>' +
+        (plan.issueNo ? '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">Issue: '+esc(plan.issueNo)+'</div>' : '') +
+        (plan.vendor ? '<div style="font-size:11px;color:#818cf8;margin-top:1px;">🏭 '+esc(plan.vendor)+'</div>' : '') +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">' +
+        (dueLabel ? '<span style="font-size:11px;font-weight:700;color:'+alertColor+';background:'+alertBg+';border:1px solid '+alertColor+'44;padding:2px 8px;border-radius:20px;">'+dueLabel+'</span>' : '') +
+      '</div>' +
+    '</div>' +
+    // Timeline
+    '<div style="display:flex;align-items:flex-start;gap:0;margin-bottom:14px;">'+timelineDots+'</div>' +
+    // Description
+    (plan.desc ? '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;border-left:3px solid var(--border);padding-left:8px;">'+esc(plan.desc)+'</div>' : '') +
+    // Date rows
+    (dateRows ? '<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:12px;padding:10px;background:var(--surface2);border-radius:8px;">'+dateRows+'</div>' : '') +
+    // Note
+    (plan.note ? '<div style="font-size:11.5px;color:var(--text-muted);font-style:italic;margin-bottom:10px;">📌 '+esc(plan.note)+'</div>' : '') +
+    // Action buttons
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+      (!isClosed ? '<button class="btn btn-sm btn-primary" onclick="advanceFUStage(\''+plan.id+'\')" style="font-size:11px;padding:4px 10px;">➡️ เลื่อน Stage</button>' : '') +
+      '<button class="btn btn-sm btn-outline" onclick="openFollowUpPlanModal(\''+plan.id+'\')" style="font-size:11px;padding:4px 10px;">✏️ แก้ไข</button>' +
+      (isClosed ? '' : '<button class="btn btn-sm" onclick="closeFUPlan(\''+plan.id+'\')" style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.15);color:#10b981;border:1px solid rgba(16,185,129,0.4);">✅ ปิดงาน</button>') +
+      '<button class="btn btn-sm btn-ghost" onclick="deleteFUPlan(\''+plan.id+'\')" style="font-size:11px;padding:4px 10px;color:#ef4444;">🗑️ ลบ</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function advanceFUStage(id) {
+  var stages = ['แจ้งปัญหา','ยกโมล','ส่งซ่อม','Trial','ปิดงาน'];
+  var plans = getFUPlans();
+  var idx = plans.findIndex(function(p){ return p.id === id; });
+  if (idx === -1) return;
+  var curIdx = getStageIndex(plans[idx].stage);
+  if (curIdx >= stages.length - 1) { showToast('งานนี้ปิดแล้ว', 'info'); return; }
+  plans[idx].stage = stages[curIdx + 1];
+  plans[idx].updatedAt = new Date().toISOString();
+  if (plans[idx].stage === 'ปิดงาน') plans[idx].closedAt = new Date().toISOString();
+  saveFUPlans(plans);
+  renderFollowUp();
+  showToast('เลื่อน Stage เป็น ' + plans[idx].stage + ' แล้ว', 'success');
+}
+
+function closeFUPlan(id) {
+  var plans = getFUPlans();
+  var idx = plans.findIndex(function(p){ return p.id === id; });
+  if (idx === -1) return;
+  plans[idx].stage = 'ปิดงาน';
+  plans[idx].closedAt = new Date().toISOString();
+  plans[idx].updatedAt = new Date().toISOString();
+  saveFUPlans(plans);
+  renderFollowUp();
+  showToast('ปิดงานเรียบร้อยแล้ว ✅', 'success');
+}
+
+function deleteFUPlan(id) {
+  if (!confirm('ต้องการลบแผนงานนี้ใช่ไหม?')) return;
+  var plans = getFUPlans().filter(function(p){ return p.id !== id; });
+  saveFUPlans(plans);
+  renderFollowUp();
+  showToast('ลบแผนงานเรียบร้อย', 'info');
+}
+
+function populateFUAssetSelect() {
+  var sel = document.getElementById('fu-asset-select');
+  if (!sel) return;
+  var molds = STATE.molds || [];
+  var machines = STATE.machines || [];
+  sel.innerHTML = '<option value="">-- เลือกโมล / เครื่องจักร --</option>';
+  if (molds.length) {
+    var og1 = document.createElement('optgroup'); og1.label = '🧩 แม่พิมพ์ (Mold)';
+    molds.forEach(function(m) {
+      var o = document.createElement('option'); o.value = m.ID; o.textContent = m.Name + (m.AssetNo ? ' ('+m.AssetNo+')' : '');
+      og1.appendChild(o);
+    });
+    sel.appendChild(og1);
+  }
+  if (machines.length) {
+    var og2 = document.createElement('optgroup'); og2.label = '🏭 เครื่องจักร (Machine)';
+    machines.forEach(function(mc) {
+      var o = document.createElement('option'); o.value = mc.ID; o.textContent = mc.Name + (mc.AssetNo ? ' ('+mc.AssetNo+')' : '');
+      og2.appendChild(o);
+    });
+    sel.appendChild(og2);
+  }
+}
+
+function populateFUIssueSelect() {
+  var sel = document.getElementById('fu-issue-select');
+  if (!sel) return;
+  var issues = (STATE.issues || []).filter(function(iss){ return iss.status !== 'Closed'; });
+  sel.innerHTML = '<option value="">-- ไม่เชื่อมกับ Issue --</option>';
+  issues.slice(0,100).forEach(function(iss) {
+    var o = document.createElement('option');
+    o.value = iss.ID || iss.id;
+    o.dataset.issueNo = iss.IssueNo || iss.issueNo || '';
+    o.dataset.assetId = iss.AssetID || iss.assetId || iss.TargetID || '';
+    o.dataset.assetName = iss.TargetName || iss.targetName || '';
+    o.dataset.desc = iss.Description || iss.description || '';
+    o.textContent = (iss.IssueNo || iss.issueNo || iss.ID) + ' — ' + (iss.TargetName || iss.targetName || '') + ' — ' + (iss.Description || iss.description || '').substring(0,40);
+    sel.appendChild(o);
+  });
+}
+
+function onFUIssueLinkChange() {
+  var sel = document.getElementById('fu-issue-select');
+  if (!sel || !sel.value) return;
+  var opt = sel.options[sel.selectedIndex];
+  var assetSel = document.getElementById('fu-asset-select');
+  if (assetSel && opt.dataset.assetId) assetSel.value = opt.dataset.assetId;
+  var descEl = document.getElementById('fu-desc');
+  if (descEl && opt.dataset.desc && !descEl.value) descEl.value = opt.dataset.desc;
+}
+
+var _fuCurrentStage = 'แจ้งปัญหา';
+function setFUStage(stage) {
+  _fuCurrentStage = stage;
+  var stageColors = { 'แจ้งปัญหา':'#ef4444', 'ยกโมล':'#f59e0b', 'ส่งซ่อม':'#818cf8', 'Trial':'#38bdf8', 'ปิดงาน':'#10b981' };
+  var stageIcons = { 'แจ้งปัญหา':'🔴', 'ยกโมล':'🏗️', 'ส่งซ่อม':'🔧', 'Trial':'🧪', 'ปิดงาน':'✅' };
+  document.querySelectorAll('.fu-stage-btn').forEach(function(btn) {
+    var s = btn.dataset.stage;
+    var c = stageColors[s] || 'var(--text-muted)';
+    if (s === stage) {
+      btn.style.background = 'rgba(' + hexToRgb(c) + ',0.2)';
+      btn.style.color = c;
+      btn.style.borderColor = c;
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--text-muted)';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.fontWeight = '400';
+    }
+  });
+  var hidden = document.getElementById('fu-stage-val');
+  if (hidden) hidden.value = stage;
+}
+
+function hexToRgb(hex) {
+  var r = { '#ef4444':'239,68,68', '#f59e0b':'245,158,11', '#818cf8':'129,140,248', '#38bdf8':'56,189,248', '#10b981':'16,185,129' };
+  return r[hex] || '99,102,241';
+}
+
+function openFollowUpPlanModal(id) {
+  populateFUAssetSelect();
+  populateFUIssueSelect();
+  var title = document.getElementById('fu-modal-title');
+  var editId = document.getElementById('fu-edit-id');
+
+  // Reset form
+  ['fu-issue-select','fu-asset-select','fu-desc','fu-vendor','fu-lift-date','fu-lift-actual','fu-repair-date','fu-repair-days','fu-trial-date','fu-trial-actual','fu-note'].forEach(function(elId) {
+    var el = document.getElementById(elId);
+    if (el) el.value = '';
+  });
+  setFUStage('แจ้งปัญหา');
+
+  if (id) {
+    var plan = getFUPlans().find(function(p){ return p.id === id; });
+    if (!plan) return;
+    if (title) title.textContent = '✏️ แก้ไขแผนงานซ่อม';
+    if (editId) editId.value = id;
+    var fieldMap = { 'fu-issue-select':'issueId','fu-asset-select':'assetId','fu-desc':'desc','fu-vendor':'vendor','fu-lift-date':'liftDate','fu-lift-actual':'liftActual','fu-repair-date':'repairDate','fu-repair-days':'repairDays','fu-trial-date':'trialDate','fu-trial-actual':'trialActual','fu-note':'note' };
+    Object.keys(fieldMap).forEach(function(elId) {
+      var el = document.getElementById(elId);
+      if (el && plan[fieldMap[elId]] !== undefined) el.value = plan[fieldMap[elId]];
+    });
+    setFUStage(plan.stage || 'แจ้งปัญหา');
+  } else {
+    if (title) title.textContent = '📋 วางแผนงานซ่อม';
+    if (editId) editId.value = '';
+  }
+
+  openModal('followup-plan-modal');
+}
+
+function saveFollowUpPlan() {
+  var assetId = (document.getElementById('fu-asset-select') || {}).value || '';
+  var desc = (document.getElementById('fu-desc') || {}).value || '';
+  if (!assetId) { showToast('กรุณาเลือกโมล / เครื่องจักรก่อน', 'warning'); return; }
+  if (!desc.trim()) { showToast('กรุณาระบุรายละเอียดงาน', 'warning'); return; }
+
+  var assetSel = document.getElementById('fu-asset-select');
+  var assetName = assetSel && assetSel.selectedIndex > 0 ? assetSel.options[assetSel.selectedIndex].textContent.split(' (')[0] : assetId;
+  var issueSel = document.getElementById('fu-issue-select');
+  var issueId = issueSel ? issueSel.value : '';
+  var issueNo = '';
+  if (issueSel && issueSel.selectedIndex > 0) issueNo = issueSel.options[issueSel.selectedIndex].dataset.issueNo || '';
+
+  var plan = {
+    assetId: assetId,
+    assetName: assetName,
+    issueId: issueId,
+    issueNo: issueNo,
+    desc: desc,
+    vendor: (document.getElementById('fu-vendor') || {}).value || '',
+    stage: (document.getElementById('fu-stage-val') || {}).value || 'แจ้งปัญหา',
+    liftDate: (document.getElementById('fu-lift-date') || {}).value || '',
+    liftActual: (document.getElementById('fu-lift-actual') || {}).value || '',
+    repairDate: (document.getElementById('fu-repair-date') || {}).value || '',
+    repairDays: (document.getElementById('fu-repair-days') || {}).value || '',
+    trialDate: (document.getElementById('fu-trial-date') || {}).value || '',
+    trialActual: (document.getElementById('fu-trial-actual') || {}).value || '',
+    note: (document.getElementById('fu-note') || {}).value || '',
+    updatedAt: new Date().toISOString()
+  };
+
+  var editId = (document.getElementById('fu-edit-id') || {}).value || '';
+  var plans = getFUPlans();
+  if (editId) {
+    var idx = plans.findIndex(function(p){ return p.id === editId; });
+    if (idx !== -1) { plan.id = editId; plan.createdAt = plans[idx].createdAt; plans[idx] = plan; }
+    else plans.push(Object.assign(plan, { id: editId, createdAt: new Date().toISOString() }));
+  } else {
+    plan.id = 'FU_' + Date.now();
+    plan.createdAt = new Date().toISOString();
+    plans.push(plan);
+  }
+
+  saveFUPlans(plans);
+  closeModal('followup-plan-modal');
+  renderFollowUp();
+  showToast('บันทึกแผนงานซ่อมเรียบร้อยแล้ว ✅', 'success');
+}
+
+// =====================================================
+// END FOLLOW UP MODULE
+// =====================================================
+
 function loadQRPortal(preselectAsset) {
   var target = preselectAsset || (STATE._currentQRAsset ? STATE._currentQRAsset.ID : '');
   populateQRAssetSelect(target);
@@ -15508,11 +16026,103 @@ function executeBatchQRPrint() {
     <span>แจ้งงาน</span>
     <span class="mobile-nav-badge" id="mobile-badge-issues" style="display:none">0</span>
   </button>
+  <button type="button" class="mobile-nav-item" onclick="nav('followup')" data-mobile-page="followup">
+    <div class="icon">📋</div>
+    <span>Follow Up</span>
+    <span class="mobile-nav-badge" id="mobile-badge-followup" style="display:none;background:#f59e0b;color:#000">0</span>
+  </button>
   <button type="button" class="mobile-nav-item" onclick="toggleMobileSidebar()">
     <div class="icon">&#9776;</div>
     <span>เมนู</span>
   </button>
 </nav>
+
+<!-- ============================================ -->
+<!-- FOLLOW UP PLAN MODAL                        -->
+<!-- ============================================ -->
+<div class="modal-overlay" id="followup-plan-modal" onclick="if(event.target===this)closeModal('followup-plan-modal')">
+  <div class="modal" style="max-width:580px;width:95%;">
+    <div class="modal-header">
+      <div class="modal-title" id="fu-modal-title">📋 วางแผนงานซ่อม</div>
+      <button class="modal-close" onclick="closeModal('followup-plan-modal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+      <input type="hidden" id="fu-edit-id"/>
+      <!-- Issue Link -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">🚨 เชื่อมกับ Issue (ถ้ามี)</label>
+        <select id="fu-issue-select" class="form-control" onchange="onFUIssueLinkChange()">
+          <option value="">-- ไม่เชื่อมกับ Issue --</option>
+        </select>
+      </div>
+      <!-- Mold/Machine (manual if no issue) -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">🧩 โมล / เครื่องจักร <span style="color:#ef4444">*</span></label>
+        <select id="fu-asset-select" class="form-control">
+          <option value="">-- เลือกโมล / เครื่องจักร --</option>
+        </select>
+      </div>
+      <!-- Problem description -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">📝 รายละเอียดปัญหา / งาน <span style="color:#ef4444">*</span></label>
+        <textarea id="fu-desc" class="form-control" rows="2" placeholder="เช่น แตกครีบ, ชำรุด core pin, ส่งซ่อมผู้รับเหมา..." style="resize:vertical;"></textarea>
+      </div>
+      <!-- Repair Vendor -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">🏭 Vendor / ผู้รับซ่อม</label>
+        <input type="text" id="fu-vendor" class="form-control" placeholder="เช่น บริษัท ABC, ช่างภายใน..."/>
+      </div>
+      <!-- Stage selector -->
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">📌 Stage ปัจจุบัน <span style="color:#ef4444">*</span></label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button type="button" class="fu-stage-btn" data-stage="แจ้งปัญหา" onclick="setFUStage('แจ้งปัญหา')" style="padding:6px 12px;border-radius:20px;border:1.5px solid #ef4444;background:rgba(239,68,68,0.15);color:#ef4444;font-size:12px;cursor:pointer;font-weight:600;">🔴 แจ้งปัญหา</button>
+          <button type="button" class="fu-stage-btn" data-stage="ยกโมล" onclick="setFUStage('ยกโมล')" style="padding:6px 12px;border-radius:20px;border:1.5px solid #f59e0b;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;">🏗️ ยกโมล</button>
+          <button type="button" class="fu-stage-btn" data-stage="ส่งซ่อม" onclick="setFUStage('ส่งซ่อม')" style="padding:6px 12px;border-radius:20px;border:1.5px solid #818cf8;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;">🔧 ส่งซ่อม</button>
+          <button type="button" class="fu-stage-btn" data-stage="Trial" onclick="setFUStage('Trial')" style="padding:6px 12px;border-radius:20px;border:1.5px solid #38bdf8;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;">🧪 Trial</button>
+          <button type="button" class="fu-stage-btn" data-stage="ปิดงาน" onclick="setFUStage('ปิดงาน')" style="padding:6px 12px;border-radius:20px;border:1.5px solid #10b981;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;">✅ ปิดงาน</button>
+        </div>
+        <input type="hidden" id="fu-stage-val" value="แจ้งปัญหา"/>
+      </div>
+      <!-- Date Grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
+        <div class="form-group">
+          <label class="form-label">🏗️ วันที่ยกโมล (แผน)</label>
+          <input type="text" id="fu-lift-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly onclick="AppDatePicker.open('fu-lift-date','date','วันที่ยกโมล (แผน)')"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🏗️ วันที่ยกโมลจริง</label>
+          <input type="text" id="fu-lift-actual" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly onclick="AppDatePicker.open('fu-lift-actual','date','วันที่ยกโมลจริง')"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🔧 วันที่ส่งซ่อม</label>
+          <input type="text" id="fu-repair-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly onclick="AppDatePicker.open('fu-repair-date','date','วันที่ส่งซ่อม')"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">⏱️ ระยะเวลาซ่อม (วัน)</label>
+          <input type="number" id="fu-repair-days" class="form-control" placeholder="เช่น 3" min="1" max="90"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🧪 วัน Trial (แผน)</label>
+          <input type="text" id="fu-trial-date" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly onclick="AppDatePicker.open('fu-trial-date','date','วัน Trial (แผน)')"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">🧪 วัน Trial จริง</label>
+          <input type="text" id="fu-trial-actual" class="form-control app-dmy-input" placeholder="dd/mm/yyyy" readonly onclick="AppDatePicker.open('fu-trial-actual','date','วัน Trial จริง')"/>
+        </div>
+      </div>
+      <!-- Notes -->
+      <div class="form-group" style="margin-bottom:6px;">
+        <label class="form-label">📌 หมายเหตุ / Note</label>
+        <textarea id="fu-note" class="form-control" rows="2" placeholder="เช่น รอชิ้นส่วน, ติดต่อ Vendor วันจันทร์..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('followup-plan-modal')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveFollowUpPlan()">💾 บันทึกแผน</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
