@@ -9499,7 +9499,9 @@ async function printIssueReport(id) {
   }
 
   var html = '<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ใบแจ้งปัญหาและรายงานผลการแก้ไข - #' + displayCode + '</title>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>' +
     '<style>' +
+    '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
     '@media print { @page { size: A4 portrait; margin: 12mm 10mm; } body { font-size: 11px; } .no-print { display: none !important; } }' +
     'body { font-family: "Sarabun", "Segoe UI", sans-serif; font-size: 11px; line-height: 1.4; color: #1e293b; margin: 0; padding: 15px; }' +
     'h2 { margin: 0 0 2px 0; font-size: 16px; text-align: center; color: #1e3a8a; }' +
@@ -9521,6 +9523,7 @@ async function printIssueReport(id) {
       '<button onclick="window.close()" style="padding:7px 14px; font-size:10pt; background:#64748b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
 
+    '<div id="print-area">' +
     '<h2>ใบแจ้งปัญหาและรายงานผลการแก้ไข (Issue & Maintenance Report)</h2>' +
     '<div class="sub-title">ระบบบริหารจัดการและบำรุงรักษาแม่พิมพ์/เครื่องจักร (TPM Management System)</div>' +
 
@@ -9590,23 +9593,142 @@ async function printIssueReport(id) {
       '<div class="sig-box"><div><strong>หัวหน้างาน/อนุมัติ<br>(Supervisor)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
     '</div>' +
 
+    '</div>' +
+
     '<script>' +
+      'var PDF_FILENAME = "Issue_Report_#" + ' + JSON.stringify(displayCode) + ' + ".pdf";' +
+      'var PDF_TITLE = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ';' +
+      'var PDF_SHARE_TEXT = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ' + "\\n🧩 อุปกรณ์: " + ' + JSON.stringify(iss.TargetName || '-') + ' + "\\n📌 ปัญหา: " + ' + JSON.stringify(iss.IssueType || '-') + ' + " - " + ' + JSON.stringify((iss.Description || '').substring(0, 80)) + ' + "\\n🚨 Severity: " + ' + JSON.stringify(iss.Severity || '-') + ' + " | สถานะ: " + ' + JSON.stringify(iss.Status || 'Open') + ' + "\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'function showToast(msg, type) {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (!t) {' +
+      '    t = document.createElement("div");' +
+      '    t.id = "print-toast";' +
+      '    t.className = "no-print";' +
+      '    t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity 0.25s ease;font-family:sans-serif;border:1px solid #334155;";' +
+      '    document.body.appendChild(t);' +
+      '  }' +
+      '  var icon = type === "loading" ? "<span style=\"display:inline-block;animation:spin 1s linear infinite;\">⏳</span>" : (type === "success" ? "✅" : (type === "error" ? "❌" : "ℹ️"));' +
+      '  t.innerHTML = icon + " <span>" + msg + "</span>";' +
+      '  t.style.display = "flex";' +
+      '  t.style.opacity = "1";' +
+      '  clearTimeout(window._toastTimer);' +
+      '  if (type !== "loading") {' +
+      '    window._toastTimer = setTimeout(function() {' +
+      '      t.style.opacity = "0";' +
+      '      setTimeout(function() { t.style.display = "none"; }, 260);' +
+      '    }, 4000);' +
+      '  }' +
+      '}' +
+      'function hideToast() {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (t) { t.style.opacity = "0"; setTimeout(function() { t.style.display = "none"; }, 260); }' +
+      '}' +
+      'function ensureHtml2Pdf(cb) {' +
+      '  if (typeof html2pdf !== "undefined") return cb();' +
+      '  showToast("กำลังโหลดระบบแปลงไฟล์ PDF...", "loading");' +
+      '  var s = document.createElement("script");' +
+      '  s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";' +
+      '  s.onload = function() { hideToast(); cb(); };' +
+      '  s.onerror = function() {' +
+      '    showToast("ไม่สามารถโหลดระบบ PDF ได้ กำลังเปิดหน้าต่างพิมพ์", "error");' +
+      '    setTimeout(function() { window.print(); }, 800);' +
+      '  };' +
+      '  document.head.appendChild(s);' +
+      '}' +
+      'function downloadBlob(blob, filename) {' +
+      '  var url = URL.createObjectURL(blob);' +
+      '  var a = document.createElement("a");' +
+      '  a.href = url;' +
+      '  a.download = filename;' +
+      '  document.body.appendChild(a);' +
+      '  a.click();' +
+      '  document.body.removeChild(a);' +
+      '  setTimeout(function() { URL.revokeObjectURL(url); }, 30000);' +
+      '}' +
+      'function showLineModal(filename, shareText) {' +
+      '  var existing = document.getElementById("line-share-modal");' +
+      '  if (existing) existing.remove();' +
+      '  var lineUrl = "https://line.me/R/share?text=" + encodeURIComponent(shareText);' +
+      '  var m = document.createElement("div");' +
+      '  m.id = "line-share-modal";' +
+      '  m.className = "no-print";' +
+      '  m.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(3px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;";' +
+      '  m.innerHTML =' +
+      '    "<div style=\"background:#fff;border-radius:14px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;\">" +' +
+      '      "<div style=\"width:52px;height:52px;background:#06c755;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;\">📲</div>" +' +
+      '      "<h3 style=\"margin:0 0 6px;color:#0f172a;font-size:16px;font-weight:700;\">ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว!</h3>" +' +
+      '      "<div style=\"background:#f1f5f9;border-radius:8px;padding:8px 12px;margin:10px 0 14px;font-size:12px;color:#334155;word-break:break-all;font-weight:600;\">📄 " + filename + "</div>" +' +
+      '      "<p style=\"font-size:12px;color:#64748b;line-height:1.5;margin:0 0 18px;text-align:left;\">" +' +
+      '        "1. ไฟล์ PDF ถูกบันทึกไว้ในเครื่องเรียบร้อยแล้ว<br>" +' +
+      '        "2. กดปุ่มด้านล่างเพื่อเปิด LINE แล้วแนบไฟล์นี้ส่งในห้องแชทได้ทันทีครับ" +' +
+      '      "</p>" +' +
+      '      "<div style=\"display:flex;gap:8px;justify-content:center;flex-wrap:wrap;\">" +' +
+      '        "<a href=\"" + lineUrl + "\" target=\"_blank\" onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 20px;background:#06c755;color:#fff;text-decoration:none;border-radius:7px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;\"><span>📲</span> <span>เปิด LINE ส่งข้อความ</span></a>" +' +
+      '        "<button onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;\">✕ ปิด</button>" +' +
+      '      "</div>" +' +
+      '    "</div>";' +
+      '  document.body.appendChild(m);' +
+      '}' +
       'function saveAsPDF() {' +
-        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
-        'window.print();' +
+      '  showToast("กำลังสร้างไฟล์ PDF กรุณารอสักครู่...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).save().then(function() {' +
+      '      showToast("บันทึกไฟล์ PDF เรียบร้อยแล้ว!", "success");' +
+      '    }).catch(function(err) {' +
+      '      console.error("Save PDF error:", err);' +
+      '      showToast("เกิดข้อผิดพลาด กำลังเปิดหน้าต่างพิมพ์...", "error");' +
+      '      setTimeout(function() { window.print(); }, 800);' +
+      '    });' +
+      '  });' +
       '}' +
       'function shareIssueToLine() {' +
-        'var title = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ';' +
-        'var summary = "🧩 อุปกรณ์: " + ' + JSON.stringify(iss.TargetName || '-') + ' + "\\n📌 ปัญหา: " + ' + JSON.stringify(iss.IssueType || '-') + ' + " - " + ' + JSON.stringify((iss.Description || '').substring(0, 80)) + ' + "\\n🚨 Severity: " + ' + JSON.stringify(iss.Severity || '-') + ' + " | สถานะ: " + ' + JSON.stringify(iss.Status || 'Open') + ';' +
-        'var url = "https://tpm-system-wen.vercel.app/";' +
-        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
-        'if (navigator.share) {' +
-          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
-            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-          '});' +
-        '} else {' +
-          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-        '}' +
+      '  showToast("กำลังเตรียมไฟล์ PDF สำหรับ LINE...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob) {' +
+      '      hideToast();' +
+      '      var file = new File([blob], PDF_FILENAME, { type: "application/pdf" });' +
+      '      if (navigator.canShare && navigator.canShare({ files: [file] })) {' +
+      '        navigator.share({' +
+      '          files: [file],' +
+      '          title: PDF_TITLE,' +
+      '          text: PDF_SHARE_TEXT' +
+      '        }).then(function() {' +
+      '          showToast("ส่งไฟล์ไปยัง LINE สำเร็จ!", "success");' +
+      '        }).catch(function(err) {' +
+      '          if (err.name !== "AbortError") {' +
+      '            downloadBlob(blob, PDF_FILENAME);' +
+      '            showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '          }' +
+      '        });' +
+      '      } else {' +
+      '        downloadBlob(blob, PDF_FILENAME);' +
+      '        showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '      }' +
+      '    }).catch(function(err) {' +
+      '      console.error("Share to LINE error:", err);' +
+      '      showToast("ไม่สามารถสร้าง PDF ได้ กำลังเปิด LINE...", "error");' +
+      '      window.location.href = "https://line.me/R/share?text=" + encodeURIComponent(PDF_SHARE_TEXT);' +
+      '    });' +
+      '  });' +
       '}' +
     '<\/script>' +
     '<' + '/body><' + '/html>';
@@ -12008,6 +12130,7 @@ function printMonthlyExecutiveReport() {
 
   var printHtml = '<!DOCTYPE html>' +
     '<html><head><meta charset="utf-8"/><title>Monthly Executive TPM Report - ' + esc(range.label) + '</title>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>' +
     '<link rel="preconnect" href="https://fonts.googleapis.com"/>' +
     '<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet"/>' +
     '<style>' +
@@ -12040,7 +12163,7 @@ function printMonthlyExecutiveReport() {
       '<button onclick="shareExecutiveToLine()" style="padding:7px 16px;font-size:10pt;background:#06c755;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;display:flex;align-items:center;gap:5px;"><span>📲</span> <span>ส่งไปที่ LINE</span></button>' +
       '<button onclick="window.close()" style="padding:7px 14px;font-size:10pt;background:#64748b;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
-    '<div style="padding: 12px 16px;">' +
+    '<div id="print-area" style="padding: 12px 16px;">' +
       '<div class="header">' +
         '<div><div class="company-title">TPM MANAGEMENT SYSTEM WEN</div><div style="font-size:8.5pt;color:#64748b;">ระบบบริหารจัดการการซ่อมบำรุงและแผนงาน TPM</div></div>' +
         '<div class="doc-badge">EXECUTIVE SUMMARY</div>' +
@@ -12142,22 +12265,139 @@ function printMonthlyExecutiveReport() {
       '</div>' +
     '</div>' +
     '<script>' +
+      'var PDF_FILENAME = "TPM_Executive_Summary_" + esc(range.label || "Report").replace(/[^a-zA-Z0-9_\\-\\u0e00-\\u0e7f]/g, "_") + ".pdf";' +
+      'var PDF_TITLE = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary";' +
+      'var PDF_SHARE_TEXT = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary\\n📅 งวด: " + esc(range.label) + " (" + esc(scope) + ")\\n✅ TPM Completion: " + m.tpmCompRate + "% (เสร็จ " + m.donePlans + "/" + m.totalPlans + " แผน)\\n🚨 ปัญหา Breakdown ทั้งหมด: " + m.totalIssues + " เคส (ปิดแล้ว " + m.closedIssues + " เคส)\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'function showToast(msg, type) {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (!t) {' +
+      '    t = document.createElement("div");' +
+      '    t.id = "print-toast";' +
+      '    t.className = "no-print";' +
+      '    t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity 0.25s ease;font-family:sans-serif;border:1px solid #334155;";' +
+      '    document.body.appendChild(t);' +
+      '  }' +
+      '  var icon = type === "loading" ? "<span style=\"display:inline-block;animation:spin 1s linear infinite;\">⏳</span>" : (type === "success" ? "✅" : (type === "error" ? "❌" : "ℹ️"));' +
+      '  t.innerHTML = icon + " <span>" + msg + "</span>";' +
+      '  t.style.display = "flex";' +
+      '  t.style.opacity = "1";' +
+      '  clearTimeout(window._toastTimer);' +
+      '  if (type !== "loading") {' +
+      '    window._toastTimer = setTimeout(function() {' +
+      '      t.style.opacity = "0";' +
+      '      setTimeout(function() { t.style.display = "none"; }, 260);' +
+      '    }, 4000);' +
+      '  }' +
+      '}' +
+      'function hideToast() {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (t) { t.style.opacity = "0"; setTimeout(function() { t.style.display = "none"; }, 260); }' +
+      '}' +
+      'function ensureHtml2Pdf(cb) {' +
+      '  if (typeof html2pdf !== "undefined") return cb();' +
+      '  showToast("กำลังโหลดระบบแปลงไฟล์ PDF...", "loading");' +
+      '  var s = document.createElement("script");' +
+      '  s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";' +
+      '  s.onload = function() { hideToast(); cb(); };' +
+      '  s.onerror = function() {' +
+      '    showToast("ไม่สามารถโหลดระบบ PDF ได้ กำลังเปิดหน้าต่างพิมพ์", "error");' +
+      '    setTimeout(function() { window.print(); }, 800);' +
+      '  };' +
+      '  document.head.appendChild(s);' +
+      '}' +
+      'function downloadBlob(blob, filename) {' +
+      '  var url = URL.createObjectURL(blob);' +
+      '  var a = document.createElement("a");' +
+      '  a.href = url;' +
+      '  a.download = filename;' +
+      '  document.body.appendChild(a);' +
+      '  a.click();' +
+      '  document.body.removeChild(a);' +
+      '  setTimeout(function() { URL.revokeObjectURL(url); }, 30000);' +
+      '}' +
+      'function showLineModal(filename, shareText) {' +
+      '  var existing = document.getElementById("line-share-modal");' +
+      '  if (existing) existing.remove();' +
+      '  var lineUrl = "https://line.me/R/share?text=" + encodeURIComponent(shareText);' +
+      '  var m = document.createElement("div");' +
+      '  m.id = "line-share-modal";' +
+      '  m.className = "no-print";' +
+      '  m.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(3px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;";' +
+      '  m.innerHTML =' +
+      '    "<div style=\"background:#fff;border-radius:14px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;\">" +' +
+      '      "<div style=\"width:52px;height:52px;background:#06c755;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;\">📲</div>" +' +
+      '      "<h3 style=\"margin:0 0 6px;color:#0f172a;font-size:16px;font-weight:700;\">ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว!</h3>" +' +
+      '      "<div style=\"background:#f1f5f9;border-radius:8px;padding:8px 12px;margin:10px 0 14px;font-size:12px;color:#334155;word-break:break-all;font-weight:600;\">📄 " + filename + "</div>" +' +
+      '      "<p style=\"font-size:12px;color:#64748b;line-height:1.5;margin:0 0 18px;text-align:left;\">" +' +
+      '        "1. ไฟล์ PDF ถูกบันทึกไว้ในเครื่องเรียบร้อยแล้ว<br>" +' +
+      '        "2. กดปุ่มด้านล่างเพื่อเปิด LINE แล้วแนบไฟล์นี้ส่งในห้องแชทได้ทันทีครับ" +' +
+      '      "</p>" +' +
+      '      "<div style=\"display:flex;gap:8px;justify-content:center;flex-wrap:wrap;\">" +' +
+      '        "<a href=\"" + lineUrl + "\" target=\"_blank\" onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 20px;background:#06c755;color:#fff;text-decoration:none;border-radius:7px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;\"><span>📲</span> <span>เปิด LINE ส่งข้อความ</span></a>" +' +
+      '        "<button onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;\">✕ ปิด</button>" +' +
+      '      "</div>" +' +
+      '    "</div>";' +
+      '  document.body.appendChild(m);' +
+      '}' +
       'function saveAsPDF() {' +
-        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
-        'window.print();' +
+      '  showToast("กำลังสร้างไฟล์ PDF กรุณารอสักครู่...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).save().then(function() {' +
+      '      showToast("บันทึกไฟล์ PDF เรียบร้อยแล้ว!", "success");' +
+      '    }).catch(function(err) {' +
+      '      console.error("Save PDF error:", err);' +
+      '      showToast("เกิดข้อผิดพลาด กำลังเปิดหน้าต่างพิมพ์...", "error");' +
+      '      setTimeout(function() { window.print(); }, 800);' +
+      '    });' +
+      '  });' +
       '}' +
       'function shareExecutiveToLine() {' +
-        'var title = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary";' +
-        'var summary = "📅 งวดข้อมูล: " + esc(range.label) + " (" + esc(scope) + ")\\n✅ TPM Completion: " + m.tpmCompRate + "% (เสร็จ " + m.donePlans + "/" + m.totalPlans + " แผน)\\n🚨 ปัญหา Breakdown ทั้งหมด: " + m.totalIssues + " เคส (ปิดแล้ว " + m.closedIssues + " เคส)";' +
-        'var url = "https://tpm-system-wen.vercel.app/";' +
-        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
-        'if (navigator.share) {' +
-          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
-            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-          '});' +
-        '} else {' +
-          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-        '}' +
+      '  showToast("กำลังเตรียมไฟล์ PDF สำหรับ LINE...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob) {' +
+      '      hideToast();' +
+      '      var file = new File([blob], PDF_FILENAME, { type: "application/pdf" });' +
+      '      if (navigator.canShare && navigator.canShare({ files: [file] })) {' +
+      '        navigator.share({' +
+      '          files: [file],' +
+      '          title: PDF_TITLE,' +
+      '          text: PDF_SHARE_TEXT' +
+      '        }).then(function() {' +
+      '          showToast("ส่งไฟล์ไปยัง LINE สำเร็จ!", "success");' +
+      '        }).catch(function(err) {' +
+      '          if (err.name !== "AbortError") {' +
+      '            downloadBlob(blob, PDF_FILENAME);' +
+      '            showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '          }' +
+      '        });' +
+      '      } else {' +
+      '        downloadBlob(blob, PDF_FILENAME);' +
+      '        showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '      }' +
+      '    }).catch(function(err) {' +
+      '      console.error("Share to LINE error:", err);' +
+      '      showToast("ไม่สามารถสร้าง PDF ได้ กำลังเปิด LINE...", "error");' +
+      '      window.location.href = "https://line.me/R/share?text=" + encodeURIComponent(PDF_SHARE_TEXT);' +
+      '    });' +
+      '  });' +
       '}' +
     '<\/script>' +
     '</body></html>';
@@ -14414,7 +14654,9 @@ async function openPMPrintForm(moldId) {
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>PM Form - ' + mold.Name + '</title>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>' +
     '<style>' +
+    '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
       '@page { size: A4 landscape; margin: 6mm 8mm; }' +
       '* { box-sizing: border-box; }' +
       'body { font-family: "Sarabun", "TH SarabunPSK", Tahoma, sans-serif; font-size: 8.5pt; color: #000; background: #fff; margin: 0; padding: 0; }' +
@@ -14434,24 +14676,141 @@ async function openPMPrintForm(moldId) {
       '<button onclick="window.close()" style="padding:7px 14px; font-size:10pt; background:#64748b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
 
-    pagesHtml +
+    '<div id="print-area">' + pagesHtml + '</div>' +
     '<script>' +
+      'var PDF_FILENAME = "TPM_Checklist_" + (mold.Name || "Mold").replace(/[^a-zA-Z0-9_\\-\\u0e00-\\u0e7f]/g, "_") + "_FY" + curFY + ".pdf";' +
+      'var PDF_TITLE = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + escapeHtml(mold.Name || "");' +
+      'var PDF_SHARE_TEXT = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + escapeHtml(mold.Name || "") + "\\n🧩 โมล: " + escapeHtml(mold.Name || "") + (mold.AssetNo ? " (" + escapeHtml(mold.AssetNo) + ")" : "") + "\\n📅 ประจำงวด: FY" + curFY + "\\n🏭 Vendor: " + escapeHtml(mold.Vendor || "-") + "\\n🔗 ดูข้อมูลโมล 360°: https://tpm-system-wen.vercel.app/?asset=" + encodeURIComponent(mold.ID || mold.AssetNo || "");' +
+      'function showToast(msg, type) {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (!t) {' +
+      '    t = document.createElement("div");' +
+      '    t.id = "print-toast";' +
+      '    t.className = "no-print";' +
+      '    t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity 0.25s ease;font-family:sans-serif;border:1px solid #334155;";' +
+      '    document.body.appendChild(t);' +
+      '  }' +
+      '  var icon = type === "loading" ? "<span style=\"display:inline-block;animation:spin 1s linear infinite;\">⏳</span>" : (type === "success" ? "✅" : (type === "error" ? "❌" : "ℹ️"));' +
+      '  t.innerHTML = icon + " <span>" + msg + "</span>";' +
+      '  t.style.display = "flex";' +
+      '  t.style.opacity = "1";' +
+      '  clearTimeout(window._toastTimer);' +
+      '  if (type !== "loading") {' +
+      '    window._toastTimer = setTimeout(function() {' +
+      '      t.style.opacity = "0";' +
+      '      setTimeout(function() { t.style.display = "none"; }, 260);' +
+      '    }, 4000);' +
+      '  }' +
+      '}' +
+      'function hideToast() {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (t) { t.style.opacity = "0"; setTimeout(function() { t.style.display = "none"; }, 260); }' +
+      '}' +
+      'function ensureHtml2Pdf(cb) {' +
+      '  if (typeof html2pdf !== "undefined") return cb();' +
+      '  showToast("กำลังโหลดระบบแปลงไฟล์ PDF...", "loading");' +
+      '  var s = document.createElement("script");' +
+      '  s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";' +
+      '  s.onload = function() { hideToast(); cb(); };' +
+      '  s.onerror = function() {' +
+      '    showToast("ไม่สามารถโหลดระบบ PDF ได้ กำลังเปิดหน้าต่างพิมพ์", "error");' +
+      '    setTimeout(function() { window.print(); }, 800);' +
+      '  };' +
+      '  document.head.appendChild(s);' +
+      '}' +
+      'function downloadBlob(blob, filename) {' +
+      '  var url = URL.createObjectURL(blob);' +
+      '  var a = document.createElement("a");' +
+      '  a.href = url;' +
+      '  a.download = filename;' +
+      '  document.body.appendChild(a);' +
+      '  a.click();' +
+      '  document.body.removeChild(a);' +
+      '  setTimeout(function() { URL.revokeObjectURL(url); }, 30000);' +
+      '}' +
+      'function showLineModal(filename, shareText) {' +
+      '  var existing = document.getElementById("line-share-modal");' +
+      '  if (existing) existing.remove();' +
+      '  var lineUrl = "https://line.me/R/share?text=" + encodeURIComponent(shareText);' +
+      '  var m = document.createElement("div");' +
+      '  m.id = "line-share-modal";' +
+      '  m.className = "no-print";' +
+      '  m.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(3px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;";' +
+      '  m.innerHTML =' +
+      '    "<div style=\"background:#fff;border-radius:14px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;\">" +' +
+      '      "<div style=\"width:52px;height:52px;background:#06c755;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;\">📲</div>" +' +
+      '      "<h3 style=\"margin:0 0 6px;color:#0f172a;font-size:16px;font-weight:700;\">ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว!</h3>" +' +
+      '      "<div style=\"background:#f1f5f9;border-radius:8px;padding:8px 12px;margin:10px 0 14px;font-size:12px;color:#334155;word-break:break-all;font-weight:600;\">📄 " + filename + "</div>" +' +
+      '      "<p style=\"font-size:12px;color:#64748b;line-height:1.5;margin:0 0 18px;text-align:left;\">" +' +
+      '        "1. ไฟล์ PDF ถูกบันทึกไว้ในเครื่องเรียบร้อยแล้ว<br>" +' +
+      '        "2. กดปุ่มด้านล่างเพื่อเปิด LINE แล้วแนบไฟล์นี้ส่งในห้องแชทได้ทันทีครับ" +' +
+      '      "</p>" +' +
+      '      "<div style=\"display:flex;gap:8px;justify-content:center;flex-wrap:wrap;\">" +' +
+      '        "<a href=\"" + lineUrl + "\" target=\"_blank\" onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 20px;background:#06c755;color:#fff;text-decoration:none;border-radius:7px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;\"><span>📲</span> <span>เปิด LINE ส่งข้อความ</span></a>" +' +
+      '        "<button onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;\">✕ ปิด</button>" +' +
+      '      "</div>" +' +
+      '    "</div>";' +
+      '  document.body.appendChild(m);' +
+      '}' +
       'function saveAsPDF() {' +
-        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 แนวนอนสวยงามให้อัตโนมัติครับ");' +
-        'window.print();' +
+      '  showToast("กำลังสร้างไฟล์ PDF กรุณารอสักครู่...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).save().then(function() {' +
+      '      showToast("บันทึกไฟล์ PDF เรียบร้อยแล้ว!", "success");' +
+      '    }).catch(function(err) {' +
+      '      console.error("Save PDF error:", err);' +
+      '      showToast("เกิดข้อผิดพลาด กำลังเปิดหน้าต่างพิมพ์...", "error");' +
+      '      setTimeout(function() { window.print(); }, 800);' +
+      '    });' +
+      '  });' +
       '}' +
       'function sharePMToLine() {' +
-        'var title = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - ' + escapeHtml(mold.Name || '') + '";' +
-        'var summary = "🧩 โมล: ' + escapeHtml(mold.Name || '') + (mold.AssetNo ? ' (' + escapeHtml(mold.AssetNo) + ')' : '') + '\\n📅 ประจำงวด: FY' + curFY + '\\n🏭 Vendor: ' + escapeHtml(mold.Vendor || '-') + '";' +
-        'var url = "https://tpm-system-wen.vercel.app/?asset=' + encodeURIComponent(mold.ID || mold.AssetNo || '') + '";' +
-        'var fullText = title + "\\n" + summary + "\\n🔗 ดูข้อมูลโมล 360°: " + url;' +
-        'if (navigator.share) {' +
-          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
-            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-          '});' +
-        '} else {' +
-          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-        '}' +
+      '  showToast("กำลังเตรียมไฟล์ PDF สำหรับ LINE...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob) {' +
+      '      hideToast();' +
+      '      var file = new File([blob], PDF_FILENAME, { type: "application/pdf" });' +
+      '      if (navigator.canShare && navigator.canShare({ files: [file] })) {' +
+      '        navigator.share({' +
+      '          files: [file],' +
+      '          title: PDF_TITLE,' +
+      '          text: PDF_SHARE_TEXT' +
+      '        }).then(function() {' +
+      '          showToast("ส่งไฟล์ไปยัง LINE สำเร็จ!", "success");' +
+      '        }).catch(function(err) {' +
+      '          if (err.name !== "AbortError") {' +
+      '            downloadBlob(blob, PDF_FILENAME);' +
+      '            showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '          }' +
+      '        });' +
+      '      } else {' +
+      '        downloadBlob(blob, PDF_FILENAME);' +
+      '        showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '      }' +
+      '    }).catch(function(err) {' +
+      '      console.error("Share to LINE error:", err);' +
+      '      showToast("ไม่สามารถสร้าง PDF ได้ กำลังเปิด LINE...", "error");' +
+      '      window.location.href = "https://line.me/R/share?text=" + encodeURIComponent(PDF_SHARE_TEXT);' +
+      '    });' +
+      '  });' +
       '}' +
     '<\/script>' +
     '</body></html>';
@@ -15913,7 +16272,9 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>QR Sticker - ' + (asset.AssetNo || asset.Name) + '</title>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>' +
     '<style>' +
+    '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
       '@page { size: 50mm 50mm; margin: 0; }' +
       '* { box-sizing: border-box; margin: 0; padding: 0; }' +
       'body { width: 50mm; height: 50mm; font-family: Arial, "Sarabun", sans-serif; color: #000; background: #fff; padding: 2mm; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
@@ -15932,7 +16293,7 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
       '<button onclick="shareQRToLine()" style="background:#06c755;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">📲 ส่งไปที่ LINE</button>' +
       '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;">✕ ปิด</button>' +
     '</div>' +
-    '<div class="sticker-box">' +
+    '<div id="print-area"><div class="sticker-box">' +
       '<div class="header-title">TPM SYSTEM • WEN</div>' +
       '<img class="qr-img" src="' + qrImgSrc + '" alt="QR Code"/>' +
       '<div style="width:100%;">' +
@@ -15940,24 +16301,141 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
         '<div class="asset-name">' + asset.Name + '</div>' +
         '<div class="asset-sub">' + subInfo + '</div>' +
       '</div>' +
-    '</div>' +
+    '</div></div>' +
     '<script>' +
+      'var PDF_FILENAME = "QR_Sticker_" + (asset.AssetNo || asset.ID || "Asset") + ".pdf";' +
+      'var PDF_TITLE = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ';' +
+      'var PDF_SHARE_TEXT = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ' + "\\n🔢 รหัส Asset: " + ' + JSON.stringify(asset.AssetNo || asset.ID) + ' + "\\nℹ️ ข้อมูล: " + ' + JSON.stringify(subInfo) + ' + "\\n🔗 ลิงก์สแกนตรวจสอบ 360°:\\n" + ' + JSON.stringify(targetUrl) + ';' +
+      'function showToast(msg, type) {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (!t) {' +
+      '    t = document.createElement("div");' +
+      '    t.id = "print-toast";' +
+      '    t.className = "no-print";' +
+      '    t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity 0.25s ease;font-family:sans-serif;border:1px solid #334155;";' +
+      '    document.body.appendChild(t);' +
+      '  }' +
+      '  var icon = type === "loading" ? "<span style=\"display:inline-block;animation:spin 1s linear infinite;\">⏳</span>" : (type === "success" ? "✅" : (type === "error" ? "❌" : "ℹ️"));' +
+      '  t.innerHTML = icon + " <span>" + msg + "</span>";' +
+      '  t.style.display = "flex";' +
+      '  t.style.opacity = "1";' +
+      '  clearTimeout(window._toastTimer);' +
+      '  if (type !== "loading") {' +
+      '    window._toastTimer = setTimeout(function() {' +
+      '      t.style.opacity = "0";' +
+      '      setTimeout(function() { t.style.display = "none"; }, 260);' +
+      '    }, 4000);' +
+      '  }' +
+      '}' +
+      'function hideToast() {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (t) { t.style.opacity = "0"; setTimeout(function() { t.style.display = "none"; }, 260); }' +
+      '}' +
+      'function ensureHtml2Pdf(cb) {' +
+      '  if (typeof html2pdf !== "undefined") return cb();' +
+      '  showToast("กำลังโหลดระบบแปลงไฟล์ PDF...", "loading");' +
+      '  var s = document.createElement("script");' +
+      '  s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";' +
+      '  s.onload = function() { hideToast(); cb(); };' +
+      '  s.onerror = function() {' +
+      '    showToast("ไม่สามารถโหลดระบบ PDF ได้ กำลังเปิดหน้าต่างพิมพ์", "error");' +
+      '    setTimeout(function() { window.print(); }, 800);' +
+      '  };' +
+      '  document.head.appendChild(s);' +
+      '}' +
+      'function downloadBlob(blob, filename) {' +
+      '  var url = URL.createObjectURL(blob);' +
+      '  var a = document.createElement("a");' +
+      '  a.href = url;' +
+      '  a.download = filename;' +
+      '  document.body.appendChild(a);' +
+      '  a.click();' +
+      '  document.body.removeChild(a);' +
+      '  setTimeout(function() { URL.revokeObjectURL(url); }, 30000);' +
+      '}' +
+      'function showLineModal(filename, shareText) {' +
+      '  var existing = document.getElementById("line-share-modal");' +
+      '  if (existing) existing.remove();' +
+      '  var lineUrl = "https://line.me/R/share?text=" + encodeURIComponent(shareText);' +
+      '  var m = document.createElement("div");' +
+      '  m.id = "line-share-modal";' +
+      '  m.className = "no-print";' +
+      '  m.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(3px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;";' +
+      '  m.innerHTML =' +
+      '    "<div style=\"background:#fff;border-radius:14px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;\">" +' +
+      '      "<div style=\"width:52px;height:52px;background:#06c755;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;\">📲</div>" +' +
+      '      "<h3 style=\"margin:0 0 6px;color:#0f172a;font-size:16px;font-weight:700;\">ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว!</h3>" +' +
+      '      "<div style=\"background:#f1f5f9;border-radius:8px;padding:8px 12px;margin:10px 0 14px;font-size:12px;color:#334155;word-break:break-all;font-weight:600;\">📄 " + filename + "</div>" +' +
+      '      "<p style=\"font-size:12px;color:#64748b;line-height:1.5;margin:0 0 18px;text-align:left;\">" +' +
+      '        "1. ไฟล์ PDF ถูกบันทึกไว้ในเครื่องเรียบร้อยแล้ว<br>" +' +
+      '        "2. กดปุ่มด้านล่างเพื่อเปิด LINE แล้วแนบไฟล์นี้ส่งในห้องแชทได้ทันทีครับ" +' +
+      '      "</p>" +' +
+      '      "<div style=\"display:flex;gap:8px;justify-content:center;flex-wrap:wrap;\">" +' +
+      '        "<a href=\"" + lineUrl + "\" target=\"_blank\" onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 20px;background:#06c755;color:#fff;text-decoration:none;border-radius:7px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;\"><span>📲</span> <span>เปิด LINE ส่งข้อความ</span></a>" +' +
+      '        "<button onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;\">✕ ปิด</button>" +' +
+      '      "</div>" +' +
+      '    "</div>";' +
+      '  document.body.appendChild(m);' +
+      '}' +
       'function saveAsPDF() {' +
-        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"");' +
-        'window.print();' +
+      '  showToast("กำลังสร้างไฟล์ PDF กรุณารอสักครู่...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [2, 2, 2, 2],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: [52, 52], orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).save().then(function() {' +
+      '      showToast("บันทึกไฟล์ PDF เรียบร้อยแล้ว!", "success");' +
+      '    }).catch(function(err) {' +
+      '      console.error("Save PDF error:", err);' +
+      '      showToast("เกิดข้อผิดพลาด กำลังเปิดหน้าต่างพิมพ์...", "error");' +
+      '      setTimeout(function() { window.print(); }, 800);' +
+      '    });' +
+      '  });' +
       '}' +
       'function shareQRToLine() {' +
-        'var title = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ';' +
-        'var summary = "🔢 รหัส Asset: " + ' + JSON.stringify(asset.AssetNo || asset.ID) + ' + "\\nℹ️ ข้อมูล: " + ' + JSON.stringify(subInfo) + ';' +
-        'var url = ' + JSON.stringify(targetUrl) + ';' +
-        'var fullText = title + "\\n" + summary + "\\n🔗 ลิงก์สแกนตรวจสอบ 360°:\\n" + url;' +
-        'if (navigator.share) {' +
-          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
-            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-          '});' +
-        '} else {' +
-          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-        '}' +
+      '  showToast("กำลังเตรียมไฟล์ PDF สำหรับ LINE...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [2, 2, 2, 2],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: [52, 52], orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob) {' +
+      '      hideToast();' +
+      '      var file = new File([blob], PDF_FILENAME, { type: "application/pdf" });' +
+      '      if (navigator.canShare && navigator.canShare({ files: [file] })) {' +
+      '        navigator.share({' +
+      '          files: [file],' +
+      '          title: PDF_TITLE,' +
+      '          text: PDF_SHARE_TEXT' +
+      '        }).then(function() {' +
+      '          showToast("ส่งไฟล์ไปยัง LINE สำเร็จ!", "success");' +
+      '        }).catch(function(err) {' +
+      '          if (err.name !== "AbortError") {' +
+      '            downloadBlob(blob, PDF_FILENAME);' +
+      '            showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '          }' +
+      '        });' +
+      '      } else {' +
+      '        downloadBlob(blob, PDF_FILENAME);' +
+      '        showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '      }' +
+      '    }).catch(function(err) {' +
+      '      console.error("Share to LINE error:", err);' +
+      '      showToast("ไม่สามารถสร้าง PDF ได้ กำลังเปิด LINE...", "error");' +
+      '      window.location.href = "https://line.me/R/share?text=" + encodeURIComponent(PDF_SHARE_TEXT);' +
+      '    });' +
+      '  });' +
       '}' +
     '<\/script>' +
     '</body></html>';
@@ -16047,7 +16525,9 @@ function executeBatchQRPrint() {
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
     '<title>Batch QR Sticker Sheet (' + list.length + ' รายการ)</title>' +
+    '<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>' +
     '<style>' +
+    '@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }' +
       '@page { size: A4 portrait; margin: 8mm 6mm; }' +
       '* { box-sizing: border-box; margin: 0; padding: 0; }' +
       'body { font-family: Arial, "Sarabun", sans-serif; color: #000; background: #fff; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }' +
@@ -16070,26 +16550,143 @@ function executeBatchQRPrint() {
       '<span style="font-size:11px;color:#94a3b8;margin:0 4px;">เรียง 3 คอลัมน์บน A4</span>' +
       '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
-    '<div class="grid-container">' +
+    '<div id="print-area"><div class="grid-container">' +
       stickersHtml +
-    '</div>' +
+    '</div></div>' +
     '<script>' +
+      'var PDF_FILENAME = "Batch_QR_Stickers_" + ' + list.length + ' + "_items.pdf";' +
+      'var PDF_TITLE = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + ' + list.length + ' + " ดวง)";' +
+      'var PDF_SHARE_TEXT = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + ' + list.length + ' + " ดวง)\\nรายการสติ๊กเกอร์แม่พิมพ์/เครื่องจักรสำหรับติดหน้างาน จำนวน " + ' + list.length + ' + " รายการ\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'function showToast(msg, type) {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (!t) {' +
+      '    t = document.createElement("div");' +
+      '    t.id = "print-toast";' +
+      '    t.className = "no-print";' +
+      '    t.style.cssText = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#0f172a;color:#f8fafc;padding:12px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:999999;box-shadow:0 8px 24px rgba(0,0,0,0.35);display:flex;align-items:center;gap:10px;pointer-events:none;transition:opacity 0.25s ease;font-family:sans-serif;border:1px solid #334155;";' +
+      '    document.body.appendChild(t);' +
+      '  }' +
+      '  var icon = type === "loading" ? "<span style=\"display:inline-block;animation:spin 1s linear infinite;\">⏳</span>" : (type === "success" ? "✅" : (type === "error" ? "❌" : "ℹ️"));' +
+      '  t.innerHTML = icon + " <span>" + msg + "</span>";' +
+      '  t.style.display = "flex";' +
+      '  t.style.opacity = "1";' +
+      '  clearTimeout(window._toastTimer);' +
+      '  if (type !== "loading") {' +
+      '    window._toastTimer = setTimeout(function() {' +
+      '      t.style.opacity = "0";' +
+      '      setTimeout(function() { t.style.display = "none"; }, 260);' +
+      '    }, 4000);' +
+      '  }' +
+      '}' +
+      'function hideToast() {' +
+      '  var t = document.getElementById("print-toast");' +
+      '  if (t) { t.style.opacity = "0"; setTimeout(function() { t.style.display = "none"; }, 260); }' +
+      '}' +
+      'function ensureHtml2Pdf(cb) {' +
+      '  if (typeof html2pdf !== "undefined") return cb();' +
+      '  showToast("กำลังโหลดระบบแปลงไฟล์ PDF...", "loading");' +
+      '  var s = document.createElement("script");' +
+      '  s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";' +
+      '  s.onload = function() { hideToast(); cb(); };' +
+      '  s.onerror = function() {' +
+      '    showToast("ไม่สามารถโหลดระบบ PDF ได้ กำลังเปิดหน้าต่างพิมพ์", "error");' +
+      '    setTimeout(function() { window.print(); }, 800);' +
+      '  };' +
+      '  document.head.appendChild(s);' +
+      '}' +
+      'function downloadBlob(blob, filename) {' +
+      '  var url = URL.createObjectURL(blob);' +
+      '  var a = document.createElement("a");' +
+      '  a.href = url;' +
+      '  a.download = filename;' +
+      '  document.body.appendChild(a);' +
+      '  a.click();' +
+      '  document.body.removeChild(a);' +
+      '  setTimeout(function() { URL.revokeObjectURL(url); }, 30000);' +
+      '}' +
+      'function showLineModal(filename, shareText) {' +
+      '  var existing = document.getElementById("line-share-modal");' +
+      '  if (existing) existing.remove();' +
+      '  var lineUrl = "https://line.me/R/share?text=" + encodeURIComponent(shareText);' +
+      '  var m = document.createElement("div");' +
+      '  m.id = "line-share-modal";' +
+      '  m.className = "no-print";' +
+      '  m.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(3px);z-index:999999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:sans-serif;";' +
+      '  m.innerHTML =' +
+      '    "<div style=\"background:#fff;border-radius:14px;padding:24px 20px;max-width:440px;width:100%;box-shadow:0 20px 40px rgba(0,0,0,0.35);text-align:center;\">" +' +
+      '      "<div style=\"width:52px;height:52px;background:#06c755;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-size:26px;\">📲</div>" +' +
+      '      "<h3 style=\"margin:0 0 6px;color:#0f172a;font-size:16px;font-weight:700;\">ดาวน์โหลดไฟล์ PDF เรียบร้อยแล้ว!</h3>" +' +
+      '      "<div style=\"background:#f1f5f9;border-radius:8px;padding:8px 12px;margin:10px 0 14px;font-size:12px;color:#334155;word-break:break-all;font-weight:600;\">📄 " + filename + "</div>" +' +
+      '      "<p style=\"font-size:12px;color:#64748b;line-height:1.5;margin:0 0 18px;text-align:left;\">" +' +
+      '        "1. ไฟล์ PDF ถูกบันทึกไว้ในเครื่องเรียบร้อยแล้ว<br>" +' +
+      '        "2. กดปุ่มด้านล่างเพื่อเปิด LINE แล้วแนบไฟล์นี้ส่งในห้องแชทได้ทันทีครับ" +' +
+      '      "</p>" +' +
+      '      "<div style=\"display:flex;gap:8px;justify-content:center;flex-wrap:wrap;\">" +' +
+      '        "<a href=\"" + lineUrl + "\" target=\"_blank\" onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 20px;background:#06c755;color:#fff;text-decoration:none;border-radius:7px;font-weight:700;font-size:13px;display:inline-flex;align-items:center;gap:6px;\"><span>📲</span> <span>เปิด LINE ส่งข้อความ</span></a>" +' +
+      '        "<button onclick=\"document.getElementById(\'line-share-modal\').remove();\" style=\"padding:10px 18px;background:#e2e8f0;color:#334155;border:none;border-radius:7px;font-weight:600;font-size:13px;cursor:pointer;\">✕ ปิด</button>" +' +
+      '      "</div>" +' +
+      '    "</div>";' +
+      '  document.body.appendChild(m);' +
+      '}' +
       'function saveAsPDF() {' +
-        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
-        'window.print();' +
+      '  showToast("กำลังสร้างไฟล์ PDF กรุณารอสักครู่...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).save().then(function() {' +
+      '      showToast("บันทึกไฟล์ PDF เรียบร้อยแล้ว!", "success");' +
+      '    }).catch(function(err) {' +
+      '      console.error("Save PDF error:", err);' +
+      '      showToast("เกิดข้อผิดพลาด กำลังเปิดหน้าต่างพิมพ์...", "error");' +
+      '      setTimeout(function() { window.print(); }, 800);' +
+      '    });' +
+      '  });' +
       '}' +
       'function shareBatchQRToLine() {' +
-        'var title = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (' + list.length + ' ดวง)";' +
-        'var summary = "รายการสติ๊กเกอร์แม่พิมพ์/เครื่องจักรสำหรับติดหน้างาน จำนวน ' + list.length + ' รายการ";' +
-        'var url = "https://tpm-system-wen.vercel.app/";' +
-        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
-        'if (navigator.share) {' +
-          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
-            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-          '});' +
-        '} else {' +
-          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
-        '}' +
+      '  showToast("กำลังเตรียมไฟล์ PDF สำหรับ LINE...", "loading");' +
+      '  ensureHtml2Pdf(function() {' +
+      '    var el = document.getElementById("print-area") || document.body;' +
+      '    var opt = {' +
+      '      margin: [4, 4, 4, 4],' +
+      '      filename: PDF_FILENAME,' +
+      '      image: { type: "jpeg", quality: 0.98 },' +
+      '      html2canvas: { scale: 2, useCORS: true, logging: false },' +
+      '      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },' +
+      '      pagebreak: { mode: ["css", "legacy"] }' +
+      '    };' +
+      '    html2pdf().set(opt).from(el).outputPdf("blob").then(function(blob) {' +
+      '      hideToast();' +
+      '      var file = new File([blob], PDF_FILENAME, { type: "application/pdf" });' +
+      '      if (navigator.canShare && navigator.canShare({ files: [file] })) {' +
+      '        navigator.share({' +
+      '          files: [file],' +
+      '          title: PDF_TITLE,' +
+      '          text: PDF_SHARE_TEXT' +
+      '        }).then(function() {' +
+      '          showToast("ส่งไฟล์ไปยัง LINE สำเร็จ!", "success");' +
+      '        }).catch(function(err) {' +
+      '          if (err.name !== "AbortError") {' +
+      '            downloadBlob(blob, PDF_FILENAME);' +
+      '            showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '          }' +
+      '        });' +
+      '      } else {' +
+      '        downloadBlob(blob, PDF_FILENAME);' +
+      '        showLineModal(PDF_FILENAME, PDF_SHARE_TEXT);' +
+      '      }' +
+      '    }).catch(function(err) {' +
+      '      console.error("Share to LINE error:", err);' +
+      '      showToast("ไม่สามารถสร้าง PDF ได้ กำลังเปิด LINE...", "error");' +
+      '      window.location.href = "https://line.me/R/share?text=" + encodeURIComponent(PDF_SHARE_TEXT);' +
+      '    });' +
+      '  });' +
       '}' +
     '<\/script>' +
     '</body></html>';
