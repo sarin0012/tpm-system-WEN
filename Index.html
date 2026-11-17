@@ -9596,9 +9596,9 @@ async function printIssueReport(id) {
     '</div>' +
 
     '<script>' +
-      'var PDF_FILENAME = "Issue_Report_#" + ' + JSON.stringify(displayCode) + ' + ".pdf";' +
-      'var PDF_TITLE = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ';' +
-      'var PDF_SHARE_TEXT = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ' + "\\n🧩 อุปกรณ์: " + ' + JSON.stringify(iss.TargetName || '-') + ' + "\\n📌 ปัญหา: " + ' + JSON.stringify(iss.IssueType || '-') + ' + " - " + ' + JSON.stringify((iss.Description || '').substring(0, 80)) + ' + "\\n🚨 Severity: " + ' + JSON.stringify(iss.Severity || '-') + ' + " | สถานะ: " + ' + JSON.stringify(iss.Status || 'Open') + ' + "\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'var PDF_FILENAME = ' + JSON.stringify("Issue_Report_#" + displayCode + ".pdf") + ';' +
+      'var PDF_TITLE = ' + JSON.stringify("🚨 ใบแจ้งปัญหา & งานซ่อม - #" + displayCode) + ';' +
+      'var PDF_SHARE_TEXT = ' + JSON.stringify("🚨 ใบแจ้งปัญหา & งานซ่อม - #" + displayCode + "\n🧩 อุปกรณ์: " + (iss.TargetName || "-") + "\n📌 ปัญหา: " + (iss.IssueType || "-") + " - " + (iss.Description || "").substring(0, 80) + "\n🚨 Severity: " + (iss.Severity || "-") + " | สถานะ: " + (iss.Status || "Open") + "\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/") + ';' +
       'function showToast(msg, type) {' +
       '  var t = document.getElementById("print-toast");' +
       '  if (!t) {' +
@@ -12265,9 +12265,9 @@ function printMonthlyExecutiveReport() {
       '</div>' +
     '</div>' +
     '<script>' +
-      'var PDF_FILENAME = "TPM_Executive_Summary_" + esc(range.label || "Report").replace(/[^a-zA-Z0-9_\\-\\u0e00-\\u0e7f]/g, "_") + ".pdf";' +
-      'var PDF_TITLE = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary";' +
-      'var PDF_SHARE_TEXT = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary\\n📅 งวด: " + esc(range.label) + " (" + esc(scope) + ")\\n✅ TPM Completion: " + m.tpmCompRate + "% (เสร็จ " + m.donePlans + "/" + m.totalPlans + " แผน)\\n🚨 ปัญหา Breakdown ทั้งหมด: " + m.totalIssues + " เคส (ปิดแล้ว " + m.closedIssues + " เคส)\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'var PDF_FILENAME = ' + JSON.stringify("TPM_Executive_Summary_" + (range.label || "Report").replace(/[^a-zA-Z0-9_\-\u0e00-\u0e7f]/g, "_") + ".pdf") + ';' +
+      'var PDF_TITLE = ' + JSON.stringify("📊 รายงานสรุปผู้บริหาร TPM Executive Summary") + ';' +
+      'var PDF_SHARE_TEXT = ' + JSON.stringify("📊 รายงานสรุปผู้บริหาร TPM Executive Summary\n📅 งวดข้อมูล: " + (range.label || "") + " (" + (scope || "") + ")\n✅ TPM Completion: " + (m ? m.tpmCompRate : 0) + "% (เสร็จ " + (m ? m.donePlans : 0) + "/" + (m ? m.totalPlans : 0) + " แผน)\n🚨 ปัญหา Breakdown ทั้งหมด: " + (m ? m.totalIssues : 0) + " เคส (ปิดแล้ว " + (m ? m.closedIssues : 0) + " เคส)\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/") + ';' +
       'function showToast(msg, type) {' +
       '  var t = document.getElementById("print-toast");' +
       '  if (!t) {' +
@@ -14678,9 +14678,9 @@ async function openPMPrintForm(moldId) {
 
     '<div id="print-area">' + pagesHtml + '</div>' +
     '<script>' +
-      'var PDF_FILENAME = "TPM_Checklist_" + (mold.Name || "Mold").replace(/[^a-zA-Z0-9_\\-\\u0e00-\\u0e7f]/g, "_") + "_FY" + curFY + ".pdf";' +
-      'var PDF_TITLE = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + escapeHtml(mold.Name || "");' +
-      'var PDF_SHARE_TEXT = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + escapeHtml(mold.Name || "") + "\\n🧩 โมล: " + escapeHtml(mold.Name || "") + (mold.AssetNo ? " (" + escapeHtml(mold.AssetNo) + ")" : "") + "\\n📅 ประจำงวด: FY" + curFY + "\\n🏭 Vendor: " + escapeHtml(mold.Vendor || "-") + "\\n🔗 ดูข้อมูลโมล 360°: https://tpm-system-wen.vercel.app/?asset=" + encodeURIComponent(mold.ID || mold.AssetNo || "");' +
+      'var PDF_FILENAME = ' + JSON.stringify("TPM_Checklist_" + (mold.Name || "Mold").replace(/[^a-zA-Z0-9_\-\u0e00-\u0e7f]/g, "_") + "_FY" + (fy % 100) + ".pdf") + ';' +
+      'var PDF_TITLE = ' + JSON.stringify("📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + (mold.Name || "")) + ';' +
+      'var PDF_SHARE_TEXT = ' + JSON.stringify("📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - " + (mold.Name || "") + "\n🧩 โมล: " + (mold.Name || "") + (mold.AssetNo ? " (" + mold.AssetNo + ")" : "") + "\n📅 ประจำงวด: FY" + (fy % 100) + "\n🏭 Vendor: " + (mold.Vendor || "-") + "\n🔗 ดูข้อมูลโมล 360°: https://tpm-system-wen.vercel.app/?asset=" + encodeURIComponent(mold.ID || mold.AssetNo || "")) + ';' +
       'function showToast(msg, type) {' +
       '  var t = document.getElementById("print-toast");' +
       '  if (!t) {' +
@@ -16303,9 +16303,9 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
       '</div>' +
     '</div></div>' +
     '<script>' +
-      'var PDF_FILENAME = "QR_Sticker_" + (asset.AssetNo || asset.ID || "Asset") + ".pdf";' +
-      'var PDF_TITLE = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ';' +
-      'var PDF_SHARE_TEXT = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ' + "\\n🔢 รหัส Asset: " + ' + JSON.stringify(asset.AssetNo || asset.ID) + ' + "\\nℹ️ ข้อมูล: " + ' + JSON.stringify(subInfo) + ' + "\\n🔗 ลิงก์สแกนตรวจสอบ 360°:\\n" + ' + JSON.stringify(targetUrl) + ';' +
+      'var PDF_FILENAME = ' + JSON.stringify("QR_Sticker_" + (asset.AssetNo || asset.ID || "Asset") + ".pdf") + ';' +
+      'var PDF_TITLE = ' + JSON.stringify("🏷️ QR Code อุปกรณ์: " + (asset.Name || "")) + ';' +
+      'var PDF_SHARE_TEXT = ' + JSON.stringify("🏷️ QR Code อุปกรณ์: " + (asset.Name || "") + "\n🔢 รหัส Asset: " + (asset.AssetNo || asset.ID) + "\nℹ️ ข้อมูล: " + subInfo + "\n🔗 ลิงก์สแกนตรวจสอบ 360°:\n" + targetUrl) + ';' +
       'function showToast(msg, type) {' +
       '  var t = document.getElementById("print-toast");' +
       '  if (!t) {' +
@@ -16554,9 +16554,9 @@ function executeBatchQRPrint() {
       stickersHtml +
     '</div></div>' +
     '<script>' +
-      'var PDF_FILENAME = "Batch_QR_Stickers_" + ' + list.length + ' + "_items.pdf";' +
-      'var PDF_TITLE = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + ' + list.length + ' + " ดวง)";' +
-      'var PDF_SHARE_TEXT = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + ' + list.length + ' + " ดวง)\\nรายการสติ๊กเกอร์แม่พิมพ์/เครื่องจักรสำหรับติดหน้างาน จำนวน " + ' + list.length + ' + " รายการ\\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/";' +
+      'var PDF_FILENAME = ' + JSON.stringify("Batch_QR_Stickers_" + list.length + "_items.pdf") + ';' +
+      'var PDF_TITLE = ' + JSON.stringify("🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + list.length + " ดวง)") + ';' +
+      'var PDF_SHARE_TEXT = ' + JSON.stringify("🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (" + list.length + " ดวง)\nรายการสติ๊กเกอร์แม่พิมพ์/เครื่องจักรสำหรับติดหน้างาน จำนวน " + list.length + " รายการ\n🔗 เข้าสู่ระบบ TPM: https://tpm-system-wen.vercel.app/") + ';' +
       'function showToast(msg, type) {' +
       '  var t = document.getElementById("print-toast");' +
       '  if (!t) {' +
