@@ -1,4 +1,4 @@
-﻿﻿﻿﻿<!DOCTYPE html>
+﻿﻿﻿﻿﻿<!DOCTYPE html>
 <html lang="th">
 <head>
 <meta charset="UTF-8"/>
@@ -9514,9 +9514,11 @@ async function printIssueReport(id) {
     '.sig-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-top: 16px; text-align: center; page-break-inside: avoid; }' +
     '.sig-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 8px 6px; min-height: 80px; display: flex; flex-direction: column; justify-content: space-between; }' +
     '</style></head><body>' +
-    '<div class="no-print">' +
-      '<button onclick="window.print()" style="padding:8px 20px;font-size:14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์ / Print Report</button>' +
-      '<button onclick="window.close()" style="padding:8px 16px;font-size:14px;background:#6b7280;color:#fff;border:none;border-radius:6px;cursor:pointer;">✕ ปิด</button>' +
+    '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:8px 12px; background:#1e293b; margin-bottom:12px; border-bottom:1px solid #334155; flex-wrap:wrap; position:sticky; top:0; z-index:100; box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
+      '<button onclick="window.print()" style="padding:7px 16px; font-size:10pt; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>🖨️</span> <span>สั่งพิมพ์ (Print)</span></button>' +
+      '<button onclick="saveAsPDF()" style="padding:7px 16px; font-size:10pt; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>📥</span> <span>บันทึกเป็น PDF</span></button>' +
+      '<button onclick="shareIssueToLine()" style="padding:7px 16px; font-size:10pt; background:#06c755; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>📲</span> <span>ส่งไปที่ LINE</span></button>' +
+      '<button onclick="window.close()" style="padding:7px 14px; font-size:10pt; background:#64748b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
 
     '<h2>ใบแจ้งปัญหาและรายงานผลการแก้ไข (Issue & Maintenance Report)</h2>' +
@@ -9588,6 +9590,25 @@ async function printIssueReport(id) {
       '<div class="sig-box"><div><strong>หัวหน้างาน/อนุมัติ<br>(Supervisor)</strong></div><div style="font-size:10px;color:#666;">ลงชื่อ: .............................<br>วันที่: ......./......./...........</div></div>' +
     '</div>' +
 
+    '<script>' +
+      'function saveAsPDF() {' +
+        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
+        'window.print();' +
+      '}' +
+      'function shareIssueToLine() {' +
+        'var title = "🚨 ใบแจ้งปัญหา & งานซ่อม - #" + ' + JSON.stringify(displayCode) + ';' +
+        'var summary = "🧩 อุปกรณ์: " + ' + JSON.stringify(iss.TargetName || '-') + ' + "\\n📌 ปัญหา: " + ' + JSON.stringify(iss.IssueType || '-') + ' + " - " + ' + JSON.stringify((iss.Description || '').substring(0, 80)) + ' + "\\n🚨 Severity: " + ' + JSON.stringify(iss.Severity || '-') + ' + " | สถานะ: " + ' + JSON.stringify(iss.Status || 'Open') + ';' +
+        'var url = "https://tpm-system-wen.vercel.app/";' +
+        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
+        'if (navigator.share) {' +
+          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
+            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+          '});' +
+        '} else {' +
+          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+        '}' +
+      '}' +
+    '<\/script>' +
     '<' + '/body><' + '/html>';
 
   var w = window.open('', '_blank');
@@ -12013,9 +12034,11 @@ function printMonthlyExecutiveReport() {
       '.sig-line { border-bottom: 1px dotted #94a3b8; margin: 36px 12px 4px; }' +
       '@media print { .no-print { display: none !important; } }' +
     '</style></head><body>' +
-    '<div class="no-print" style="background:#f1f5f9;border-bottom:1px solid #cbd5e1;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;">' +
-      '<span>🖨️ ตัวอย่างก่อนพิมพ์ (Print Preview) - ขนาด A4</span>' +
-      '<div><button onclick="window.print()" style="background:#6366f1;color:#fff;border:none;border-radius:4px;padding:6px 16px;font-weight:600;cursor:pointer;">พิมพ์เอกสาร (Print)</button> <button onclick="window.close()" style="background:#e2e8f0;border:none;border-radius:4px;padding:6px 12px;margin-left:6px;cursor:pointer;">ปิด</button></div>' +
+    '<div class="no-print" style="background:#1e293b;border-bottom:1px solid #334155;padding:8px 16px;display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:0;z-index:999;box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
+      '<button onclick="window.print()" style="padding:7px 16px;font-size:10pt;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;display:flex;align-items:center;gap:5px;"><span>🖨️</span> <span>สั่งพิมพ์ (Print)</span></button>' +
+      '<button onclick="saveAsPDF()" style="padding:7px 16px;font-size:10pt;background:#0284c7;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;display:flex;align-items:center;gap:5px;"><span>📥</span> <span>บันทึกเป็น PDF</span></button>' +
+      '<button onclick="shareExecutiveToLine()" style="padding:7px 16px;font-size:10pt;background:#06c755;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:bold;display:flex;align-items:center;gap:5px;"><span>📲</span> <span>ส่งไปที่ LINE</span></button>' +
+      '<button onclick="window.close()" style="padding:7px 14px;font-size:10pt;background:#64748b;color:#fff;border:none;border-radius:6px;cursor:pointer;margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
     '<div style="padding: 12px 16px;">' +
       '<div class="header">' +
@@ -12118,7 +12141,25 @@ function printMonthlyExecutiveReport() {
         '</div>' +
       '</div>' +
     '</div>' +
-    '<script>setTimeout(function(){ window.print(); }, 600);<\/script>' +
+    '<script>' +
+      'function saveAsPDF() {' +
+        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
+        'window.print();' +
+      '}' +
+      'function shareExecutiveToLine() {' +
+        'var title = "📊 รายงานสรุปผู้บริหาร TPM Executive Summary";' +
+        'var summary = "📅 งวดข้อมูล: " + esc(range.label) + " (" + esc(scope) + ")\\n✅ TPM Completion: " + m.tpmCompRate + "% (เสร็จ " + m.donePlans + "/" + m.totalPlans + " แผน)\\n🚨 ปัญหา Breakdown ทั้งหมด: " + m.totalIssues + " เคส (ปิดแล้ว " + m.closedIssues + " เคส)";' +
+        'var url = "https://tpm-system-wen.vercel.app/";' +
+        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
+        'if (navigator.share) {' +
+          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
+            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+          '});' +
+        '} else {' +
+          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+        '}' +
+      '}' +
+    '<\/script>' +
     '</body></html>';
 
   win.document.open();
@@ -14385,13 +14426,34 @@ async function openPMPrintForm(moldId) {
       '@media print { .no-print { display: none !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .pm-page { page-break-after: always; break-after: page; } .pm-page:last-child { page-break-after: avoid; break-after: avoid; } }' +
     '</style></head><body>' +
 
-    '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:10px; padding:8px 12px; background:#f8fafc; margin-bottom:8px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap; position:sticky; top:0; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.05);">' +
-      '<button onclick="window.print()" style="padding:7px 20px; font-size:10.5pt; background:#1e40af; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold; box-shadow:0 1px 3px rgba(0,0,0,0.12);">🖨️ สั่งพิมพ์ / Print (A4 แนวนอน ' + (totalPages > 1 ? totalPages + ' หน้า' : '1 หน้า') + ')</button>' +
-      '<button onclick="if(window.opener&&window.opener.openPMPrintForm){window.close();window.opener.openPMPrintForm(\'' + mold.ID + '\');}else{location.reload();}" style="padding:7px 16px; font-size:10.5pt; background:#0284c7; color:#fff; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">🔄 รีเฟรชข้อมูล</button>' +
-      '<button onclick="window.close()" style="padding:7px 16px; font-size:10.5pt; background:#64748b; color:#fff; border:none; border-radius:5px; cursor:pointer; margin-left:auto;">✕ ปิดหน้าต่าง</button>' +
+    '<div class="no-print" style="display:flex; justify-content:center; align-items:center; gap:8px; padding:8px 12px; background:#1e293b; margin-bottom:8px; border-bottom:1px solid #334155; flex-wrap:wrap; position:sticky; top:0; z-index:100; box-shadow:0 2px 6px rgba(0,0,0,0.2);">' +
+      '<button onclick="window.print()" style="padding:7px 16px; font-size:10pt; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>🖨️</span> <span>สั่งพิมพ์ (Print)</span></button>' +
+      '<button onclick="saveAsPDF()" style="padding:7px 16px; font-size:10pt; background:#0284c7; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>📥</span> <span>บันทึกเป็น PDF</span></button>' +
+      '<button onclick="sharePMToLine()" style="padding:7px 16px; font-size:10pt; background:#06c755; color:#fff; border:none; border-radius:6px; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px;"><span>📲</span> <span>ส่งไปที่ LINE</span></button>' +
+      '<button onclick="if(window.opener&&window.opener.openPMPrintForm){window.close();window.opener.openPMPrintForm(\'' + mold.ID + '\');}else{location.reload();}" style="padding:7px 14px; font-size:10pt; background:#475569; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 รีเฟรช</button>' +
+      '<button onclick="window.close()" style="padding:7px 14px; font-size:10pt; background:#64748b; color:#fff; border:none; border-radius:6px; cursor:pointer; margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
 
     pagesHtml +
+    '<script>' +
+      'function saveAsPDF() {' +
+        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 แนวนอนสวยงามให้อัตโนมัติครับ");' +
+        'window.print();' +
+      '}' +
+      'function sharePMToLine() {' +
+        'var title = "📋 แบบฟอร์มตรวจเช็คแม่พิมพ์ (TPM Checklist) - ' + escapeHtml(mold.Name || '') + '";' +
+        'var summary = "🧩 โมล: ' + escapeHtml(mold.Name || '') + (mold.AssetNo ? ' (' + escapeHtml(mold.AssetNo) + ')' : '') + '\\n📅 ประจำงวด: FY' + curFY + '\\n🏭 Vendor: ' + escapeHtml(mold.Vendor || '-') + '";' +
+        'var url = "https://tpm-system-wen.vercel.app/?asset=' + encodeURIComponent(mold.ID || mold.AssetNo || '') + '";' +
+        'var fullText = title + "\\n" + summary + "\\n🔗 ดูข้อมูลโมล 360°: " + url;' +
+        'if (navigator.share) {' +
+          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
+            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+          '});' +
+        '} else {' +
+          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+        '}' +
+      '}' +
+    '<\/script>' +
     '</body></html>';
 
   if (!printWin || printWin.closed) {
@@ -15864,8 +15926,10 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
       '@media print { .no-print { display: none !important; } }' +
     '</style>' +
     '</head><body>' +
-    '<div class="no-print" style="position:fixed;top:0;left:0;right:0;background:#1e293b;color:#fff;padding:6px;display:flex;gap:10px;justify-content:center;z-index:9999;font-size:12px;">' +
-      '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">🖨️ สั่งพิมพ์สติ๊กเกอร์ (5x5 cm)</button>' +
+    '<div class="no-print" style="position:fixed;top:0;left:0;right:0;background:#1e293b;color:#fff;padding:6px 12px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap;z-index:9999;font-size:12px;box-shadow:0 2px 6px rgba(0,0,0,0.25);">' +
+      '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">🖨️ พิมพ์สติ๊กเกอร์ (5x5 cm)</button>' +
+      '<button onclick="saveAsPDF()" style="background:#0284c7;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">📥 บันทึก PDF</button>' +
+      '<button onclick="shareQRToLine()" style="background:#06c755;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;font-weight:bold;">📲 ส่งไปที่ LINE</button>' +
       '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:5px 12px;border-radius:4px;cursor:pointer;">✕ ปิด</button>' +
     '</div>' +
     '<div class="sticker-box">' +
@@ -15877,7 +15941,25 @@ function printAssetQRSticker(assetIdOrNo, isBatch) {
         '<div class="asset-sub">' + subInfo + '</div>' +
       '</div>' +
     '</div>' +
-    '<script>setTimeout(function(){ window.print(); }, 400);<\/script>' +
+    '<script>' +
+      'function saveAsPDF() {' +
+        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"");' +
+        'window.print();' +
+      '}' +
+      'function shareQRToLine() {' +
+        'var title = "🏷️ QR Code อุปกรณ์: " + ' + JSON.stringify(asset.Name || '') + ';' +
+        'var summary = "🔢 รหัส Asset: " + ' + JSON.stringify(asset.AssetNo || asset.ID) + ' + "\\nℹ️ ข้อมูล: " + ' + JSON.stringify(subInfo) + ';' +
+        'var url = ' + JSON.stringify(targetUrl) + ';' +
+        'var fullText = title + "\\n" + summary + "\\n🔗 ลิงก์สแกนตรวจสอบ 360°:\\n" + url;' +
+        'if (navigator.share) {' +
+          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
+            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+          '});' +
+        '} else {' +
+          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+        '}' +
+      '}' +
+    '<\/script>' +
     '</body></html>';
 
   var printWin = window.open('', '_blank');
@@ -15981,14 +16063,35 @@ function executeBatchQRPrint() {
       '@media print { .no-print { display: none !important; } body { padding: 0; } }' +
     '</style>' +
     '</head><body>' +
-    '<div class="no-print" style="position:sticky;top:0;background:#1e293b;color:#fff;padding:8px 12px;display:flex;gap:12px;align-items:center;justify-content:center;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.2);margin-bottom:8mm;">' +
-      '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:6px 16px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:13px;">🖨️ สั่งพิมพ์สติ๊กเกอร์ทั้งหมด (' + list.length + ' ดวง)</button>' +
-      '<span style="font-size:12px;color:#94a3b8;">เรียง 3 คอลัมน์บนกระดาษ A4</span>' +
-      '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:13px;margin-left:12px;">✕ ปิดหน้าต่าง</button>' +
+    '<div class="no-print" style="position:sticky;top:0;background:#1e293b;color:#fff;padding:8px 12px;display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,0.25);margin-bottom:8mm;">' +
+      '<button onclick="window.print()" style="background:#2563eb;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:12px;">🖨️ สั่งพิมพ์ (' + list.length + ' ดวง)</button>' +
+      '<button onclick="saveAsPDF()" style="background:#0284c7;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:12px;">📥 บันทึกเป็น PDF</button>' +
+      '<button onclick="shareBatchQRToLine()" style="background:#06c755;color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-weight:bold;font-size:12px;">📲 ส่งไปที่ LINE</button>' +
+      '<span style="font-size:11px;color:#94a3b8;margin:0 4px;">เรียง 3 คอลัมน์บน A4</span>' +
+      '<button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;font-size:12px;margin-left:auto;">✕ ปิด</button>' +
     '</div>' +
     '<div class="grid-container">' +
       stickersHtml +
     '</div>' +
+    '<script>' +
+      'function saveAsPDF() {' +
+        'alert("📥 เคล็ดลับการบันทึก PDF:\n\nในหน้าต่างพิมพ์ ให้เลือกปลายทาง (Destination) เป็น:\n\"Save as PDF\" หรือ \"บันทึกเป็น PDF\"\nระบบจะสร้างไฟล์เอกสาร PDF A4 สวยงามให้อัตโนมัติครับ");' +
+        'window.print();' +
+      '}' +
+      'function shareBatchQRToLine() {' +
+        'var title = "🏷️ แผ่นสติ๊กเกอร์ QR Code รวม A4 (' + list.length + ' ดวง)";' +
+        'var summary = "รายการสติ๊กเกอร์แม่พิมพ์/เครื่องจักรสำหรับติดหน้างาน จำนวน ' + list.length + ' รายการ";' +
+        'var url = "https://tpm-system-wen.vercel.app/";' +
+        'var fullText = title + "\\n" + summary + "\\n🔗 เข้าสู่ระบบ TPM: " + url;' +
+        'if (navigator.share) {' +
+          'navigator.share({ title: title, text: fullText, url: url }).catch(function(err){' +
+            'if (err.name !== "AbortError") window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+          '});' +
+        '} else {' +
+          'window.open("https://line.me/R/share?text=" + encodeURIComponent(fullText), "_blank");' +
+        '}' +
+      '}' +
+    '<\/script>' +
     '</body></html>';
 
   var printWin = window.open('', '_blank');
